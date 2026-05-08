@@ -1,0 +1,15 @@
+// Placeholder schema for Phase 3 scaffold — replaced wholesale in Phase 4.
+// Exists only so `prisma generate` produces a client and the API can boot.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ScaffoldPlaceholder {
+  id String @id @default(cuid())
+}
