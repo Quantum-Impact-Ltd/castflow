@@ -133,49 +133,129 @@ export default async function ArtistLayout({ children }) {
 | Static pages                    | Real-time messaging     |
 | Data that doesn't change often  | Anything with useEffect |
 
-## Data Fetching Pattern
+## Data Fetching Architecture
+
+The standard layered pattern is:
+
+```
+Component → useQuery / useMutation → service (lib/api/*) → fetcher (lib/fetcher.ts)
+```
+
+**Hard rules:**
+
+- Components never call `fetcher` directly. They call hooks.
+- Hooks never embed business logic. They wrap a service call and wire `queryKey`, `staleTime`, `onSuccess` invalidation, etc.
+- Service modules in `lib/api/*` are pure, framework-agnostic async functions (no React, no Next imports). They validate inputs against `@castflow/validators` schemas and return data typed against `@castflow/types`.
+- Query keys come from `lib/query-keys.ts` — never inline a key string.
+- Server Components fetch by calling service functions directly (they are isomorphic). Pass results down as props and let client components hydrate via `initialData`.
 
 ```typescript
-// Server Component — fetch directly, no useEffect
+// Server Component — calls a service function directly
+import { listJobs } from '@/lib/api/jobs'
+
 export default async function JobFeedPage({ searchParams }) {
-  const jobs = await getJobs(searchParams)  // Direct API call
+  const jobs = await listJobs(searchParams)
   return <JobFeed initialJobs={jobs} />
 }
 
-// Client Component — TanStack Query for interactive updates
+// Client Component — useQuery hydrates from the server result
 'use client'
-function JobFeed({ initialJobs }) {
+import { useQuery } from '@tanstack/react-query'
+import { listJobs } from '@/lib/api/jobs'
+import { queryKeys } from '@/lib/query-keys'
+
+function JobFeed({ initialJobs }: { initialJobs: Job[] }) {
   const { data: jobs } = useQuery({
-    queryKey: ['jobs', filters],
-    queryFn: () => api.get('/jobs', { params: filters }),
-    initialData: initialJobs,  // Hydrate from server
-    staleTime: 30_000,
+    queryKey: queryKeys.jobs.list(filters),
+    queryFn: ({ signal }) => listJobs(filters, { signal }),
+    initialData: initialJobs,
+  })
+  // …render
+}
+```
+
+## Fetcher (lib/fetcher.ts)
+
+The fetcher is a thin native-`fetch` wrapper. Only `lib/api/*` service modules import it.
+
+- Base URL: `${NEXT_PUBLIC_API_URL}/api/v1`
+- Sends `credentials: 'include'` for Better Auth cookies
+- Unwraps the `{success,data}` envelope and throws a typed `ApiError` on `{success:false}` or non-OK status
+- Browser-only `/login` redirect on HTTP 401 (preserves prior axios-interceptor behavior; SSR callers handle their own redirect strategy)
+- Accepts `{ signal }` so TanStack Query auto-cancels stale requests
+- Accepts `{ params }` for query strings
+
+```typescript
+// lib/fetcher.ts (excerpt)
+export async function fetcher<T>(path: string, opts?: RequestOptions): Promise<T>
+export class ApiError extends Error {
+  readonly code: string
+  readonly status: number
+  readonly fields?: Record<string, string[]>
+}
+```
+
+## Service Pattern (lib/api/\*)
+
+```typescript
+// lib/api/jobs.ts
+import { fetcher } from '@/lib/fetcher'
+import type { Job, JobFilters } from '@castflow/types'
+
+export function listJobs(filters: JobFilters, init?: { signal?: AbortSignal }) {
+  return fetcher<Job[]>('/jobs', { params: filters, ...init })
+}
+
+export function getJob(id: string, init?: { signal?: AbortSignal }) {
+  return fetcher<Job>(`/jobs/${id}`, init)
+}
+
+export function createJob(input: CreateJobInput) {
+  return fetcher<Job>('/jobs', { method: 'POST', body: input })
+}
+```
+
+Services do not exist until the feature that needs them does. Add per-feature, not preemptively.
+
+## Hook Pattern (lib/hooks/\*)
+
+```typescript
+// lib/hooks/use-jobs.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { listJobs, createJob } from '@/lib/api/jobs'
+import { queryKeys } from '@/lib/query-keys'
+import { toast } from 'sonner'
+
+export function useJobs(filters: JobFilters) {
+  return useQuery({
+    queryKey: queryKeys.jobs.list(filters),
+    queryFn: ({ signal }) => listJobs(filters, { signal }),
+  })
+}
+
+export function useCreateJob() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: createJob,
+    onSuccess: (job) => {
+      // Targeted invalidation only — do NOT invalidate `queryKeys.jobs.all`
+      // unless the mutation truly affects every job query.
+      void qc.invalidateQueries({ queryKey: queryKeys.caster.jobs() })
+      qc.setQueryData(queryKeys.jobs.detail(job.id), job)
+    },
+    onError: (err) => toast.error(err.message),
   })
 }
 ```
 
-## API Client
+## QueryClient (lib/query-client.ts)
 
-```typescript
-// lib/api.ts — never call fetch directly, always use this
-import axios from 'axios'
+- Per-request on the server (no cross-user cache leaks), shared singleton in the browser
+- `staleTime: 30s`, `gcTime: 5m`
+- `retry: 2` for network/5xx; `retry: 0` for 4xx (validation, auth, not-found, conflict)
+- Mutations do not retry — surface failures immediately
 
-export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL + '/api/v1',
-  withCredentials: true, // for Better Auth cookies
-})
-
-// Response interceptor — handles auth errors globally
-api.interceptors.response.use(
-  (res) => res.data, // unwrap { success: true, data: ... }
-  (err) => {
-    if (err.response?.status === 401) {
-      // redirect to login
-    }
-    return Promise.reject(err.response?.data?.error)
-  }
-)
-```
+`providers/index.tsx` calls `getQueryClient()` and mounts `ReactQueryDevtools` in development only.
 
 ## Form Pattern
 
@@ -191,9 +271,9 @@ function JobPostForm() {
     defaultValues: { ... }
   })
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    await api.post('/jobs', data)
-  })
+  const createJob = useCreateJob()  // from lib/hooks/use-jobs
+
+  const onSubmit = form.handleSubmit((data) => createJob.mutate(data))
 
   return (
     <form onSubmit={onSubmit}>
@@ -225,35 +305,44 @@ const handleNext = async () => {
 
 ## File Upload Pattern
 
-```typescript
-// 1. Get presigned URL from API
-// 2. Upload directly to R2 (never through Next.js server)
-// 3. Confirm URL to API
+Live in `lib/api/uploads.ts` as a service. The R2 PUT uses raw `fetch`
+(not the API fetcher) because it goes to a third-party origin, not our API.
 
-async function uploadPortfolioImage(file: File) {
-  // Step 1
-  const { uploadUrl, publicUrl } = await api.post('/uploads/presigned-url', {
-    type: 'portfolio_photo',
-    contentType: file.type,
-    size: file.size,
+```typescript
+// lib/api/uploads.ts
+import { fetcher } from '@/lib/fetcher'
+
+interface PresignedUrl {
+  uploadUrl: string
+  publicUrl: string
+}
+
+export async function uploadPortfolioImage(file: File): Promise<string> {
+  // 1. Get presigned URL from our API
+  const { uploadUrl, publicUrl } = await fetcher<PresignedUrl>('/uploads/presigned-url', {
+    method: 'POST',
+    body: { type: 'portfolio_photo', contentType: file.type, size: file.size },
   })
 
-  // Step 2 — upload directly to R2
-  await fetch(uploadUrl, {
+  // 2. Upload directly to R2 — raw fetch, not our API
+  const r2 = await fetch(uploadUrl, {
     method: 'PUT',
     body: file,
     headers: { 'Content-Type': file.type },
   })
+  if (!r2.ok) throw new Error('R2 upload failed')
 
-  // Step 3 — tell API it's done
-  await api.post('/uploads/confirm', {
-    url: publicUrl,
-    type: 'portfolio_photo',
+  // 3. Confirm to our API
+  await fetcher('/uploads/confirm', {
+    method: 'POST',
+    body: { url: publicUrl, type: 'portfolio_photo' },
   })
 
   return publicUrl
 }
 ```
+
+Wrap this in a `useUploadPortfolioImage` mutation hook when consumed from a component.
 
 ## Real-time Messaging
 
@@ -291,26 +380,30 @@ function MessageThread({ threadId }) {
 - New job matching notifications are shown as a **daily digest** — not individual notifications per job
 - All other notifications are real-time in-app + email
 
-## Key Query Keys (TanStack Query)
+## Query Keys (TanStack Query)
 
-Use these consistently so cache invalidation works correctly:
+All keys come from `lib/query-keys.ts`. Never inline a string. Use the
+factory both for `useQuery` and for targeted invalidation.
 
 ```typescript
-// Jobs
-;['jobs', filters][('job', jobId)][('jobs', 'saved')][('caster', 'jobs')][ // Job feed // Single job // Saved jobs // Caster's own jobs
-  // Bids
-  ('bids', jobId)
-][('artist', 'bids')][('bid', bidId)][ // All bids on a job (caster view) // Artist's own bids // Single bid
-  // Bookings
-  ('bookings', 'artist')
-][('bookings', 'caster')][('booking', bookingId)][
-  // Messages
-  'threads'
-][('messages', threadId)][ // Inbox // Thread messages
-  // Misc
-  'notifications'
-][('artist', 'earnings')][('talent', 'search', filters)]
+import { queryKeys } from '@/lib/query-keys'
+
+useQuery({ queryKey: queryKeys.jobs.list(filters), queryFn: ... })
+useQuery({ queryKey: queryKeys.jobs.detail(jobId), queryFn: ... })
+
+queryClient.invalidateQueries({ queryKey: queryKeys.bids.forJob(jobId) })
+queryClient.setQueryData(queryKeys.jobs.detail(job.id), job)
 ```
+
+Resources covered: `jobs`, `caster.jobs`, `bids`, `artist.bids`,
+`artist.earnings`, `bookings`, `threads.inbox`, `messages.forThread`,
+`notifications.all`, `talent.search`. Add new resources to the factory
+before using them.
+
+**Invalidation rule:** invalidate the narrowest key that covers the
+mutation's effect. Avoid blanket calls like
+`invalidateQueries({ queryKey: queryKeys.jobs.all })` unless the mutation
+genuinely affects every cached job query.
 
 ## shadcn/ui Usage
 

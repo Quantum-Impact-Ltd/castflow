@@ -64,6 +64,7 @@
 - `.env.local.example` and `.env.local` created with `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - `bun run typecheck` passes with zero errors
 - **Phase 6: full-stack verification complete** — `bun run typecheck`, `bun run lint`, and `bun run format:check` all green across the four workspaces. Both apps boot end-to-end on their target ports (api 3001, web 3000). API health check (`/health`) returns the canonical envelope. Unknown API routes (`/api/v1/*`) now return the structured `{success:false,error:{code:"NOT_FOUND",message:"Route not found"}}` envelope. Frontend routing matrix confirmed: `/`, `/login`, `/artists/test-id` return 200; `/artist/dashboard`, `/caster/dashboard`, `/admin` return 307 → `/login` when unauthenticated. Better Auth's `/api/auth/get-session` round-trips end-to-end through the `auth-server.ts` proxy (returns `null` for unauthenticated requests, which is what makes the auth-guard layouts redirect).
+- **TanStack Query foundation** — `axios` removed; the data-fetching stack is now `Component → useQuery/useMutation → service (lib/api/*) → fetcher (lib/fetcher.ts)`. Native-fetch wrapper with typed `ApiError` (`code`, `status`, `fields`), envelope unwrap, `AbortSignal` support, and a browser-only 401-redirect (preserves prior interceptor behavior; SSR callers handle their own redirect strategy). `lib/query-client.ts` rewritten to the App-Router-recommended per-request pattern (`getQueryClient()` returns a fresh client on the server, a singleton in the browser); defaults are `staleTime: 30s`, `gcTime: 5m`, retry skipped for 4xx (only network/5xx retried up to twice), mutations never retry. `providers/index.tsx` mounts `ReactQueryDevtools` in development only. `lib/query-keys.ts` is the single source-of-truth key factory (jobs / caster.jobs / bids / artist.bids / artist.earnings / bookings / threads / messages / notifications / talent). Service and hook layers are scaffolded as a documented pattern in `apps/web/CLAUDE.md` but **not pre-populated** — added per feature, not preemptively.
 
 ---
 
@@ -92,7 +93,12 @@
 - **Phase 5: empty `(artist)`, `(caster)`, `(admin)` route groups before adding routes** — Next.js complains if a route group exists with no routes inside. The auth-guard layouts plus the panel pages (added in Step 11) populate them.
 - **Phase 6: `apps/api/tsconfig.json` `include`** — was `["src", "prisma"]` so `tsc` could see `prisma/seed.ts`, but with `rootDir: "src"` that file triggered `TS6059: not under 'rootDir'`. Dropped `prisma` from `include` — the seed is run independently with `bun prisma/seed.ts` and does not need to be part of the typecheck graph. If we ever wire seeding into a build/CI pipeline that requires it to compile, give the seed its own `tsconfig.seed.json` with a separate `rootDir`.
 - **Phase 6: `app.notFound()` handler added** — without it, Hono served plain text `404 Not Found` for unknown routes, breaking the universal-envelope contract. Now every unknown route returns `{success:false,error:{code:"NOT_FOUND",message:"Route not found"}}` with HTTP 404.
-- **Phase 6: `apps/web/lib/api.ts` lint/typecheck conflict** — axios's typed response interceptor expects an `AxiosResponse<T>` return shape, but we unwrap the envelope to `res.data` so callers receive `data` directly. After typing `res` as `AxiosResponse<unknown>`, the unwrap was flagged by both `@typescript-eslint/no-unsafe-return` and `TS2345`. Resolved with an `as never` cast at the unwrap, plus a typed `ApiErrorEnvelope` for the error path. The `as never` is intentional and documented inline — we are short-circuiting the axios contract at runtime.
+- **Phase 6: `apps/web/lib/api.ts` lint/typecheck conflict** — axios's typed response interceptor expects an `AxiosResponse<T>` return shape, but we unwrap the envelope to `res.data` so callers receive `data` directly. After typing `res` as `AxiosResponse<unknown>`, the unwrap was flagged by both `@typescript-eslint/no-unsafe-return` and `TS2345`. Resolved with an `as never` cast at the unwrap, plus a typed `ApiErrorEnvelope` for the error path. **Superseded immediately afterwards** — `lib/api.ts` and the `axios` dependency were removed in favour of the `lib/fetcher.ts` native-fetch wrapper (see TanStack Query architecture caveat below). Kept the entry for context; the workaround is no longer load-bearing.
+- **TanStack Query architecture caveats** —
+  - `lib/fetcher.ts`'s 401-redirect fires only when `typeof window !== 'undefined'`. Server components / route handlers receive the thrown `ApiError` and decide their own redirect (currently `auth-server.ts` returns `null` on non-OK, so the auth-guard layouts still 307 cleanly). If a server component ever needs to call the API directly, do not assume the fetcher will handle 401 — wrap the call and check `error.status`.
+  - `lib/query-client.ts` uses the per-request pattern (`getQueryClient()`). Anything that imports `queryClient` directly (the old singleton export) will break — there is no longer a module-scope export. Always go through `useQueryClient()` in components or call `getQueryClient()` for a server-side cache.
+  - `lib/query-keys.ts` mirrors the resource list documented in `apps/web/CLAUDE.md`. When adding a new resource, update both the factory and the docs; otherwise contributors will inline strings.
+  - `lib/api/*` and `lib/hooks/*` directories are documented in `apps/web/CLAUDE.md` but are **intentionally empty** until the first feature lands. The pattern is the contract; the files are not.
 - **Phase 6: `apps/web/lib/auth-server.ts` redundant unions** — `'artist' | 'caster' | 'admin' | string` and `'pending' | 'approved' | 'rejected' | string` collapsed to `string` per `@typescript-eslint/no-redundant-type-constituents`. Dropped the `| string` fallbacks — the literal unions are now load-bearing. If the API ever returns a value outside the literal set, the JSON cast will silently widen at runtime; tighten the parse with a runtime guard if that becomes a problem.
 - **Phase 6: `.prettierignore` additions** — `next-env.d.ts` is regenerated by Next.js on every `dev`/`build` with formatting that does not match our prettier config, and `.claude/settings.local.json` is rewritten by the Claude harness. Both are now ignored so `bun run format:check` stays green between local sessions.
 
@@ -166,7 +172,7 @@ Added during Phase 5 (workspace `apps/web`):
 - `@castflow/types@workspace:*` / `@castflow/validators@workspace:*`
 - `better-auth@1.6.9`
 - `@tanstack/react-query@5.100.9`
-- `axios@1.16.0`
+- ~~`axios@1.16.0`~~ removed in TanStack Query foundation step (replaced by native-fetch wrapper in `lib/fetcher.ts`)
 - `react-hook-form@7.75.0` / `@hookform/resolvers@5.2.2`
 - `zod@3.25.76` (pinned to `^3.23.0`)
 - `@stripe/stripe-js@9.4.0` / `@stripe/react-stripe-js@6.3.0`
@@ -178,6 +184,14 @@ Added during Phase 5 (workspace `apps/web`):
 - `class-variance-authority@^0.7.1`, `clsx@^2.1.1`, `tailwind-merge@^3.5.0`, `lucide-react@^1.14.0`, `radix-ui@^1.4.3`, `tw-animate-css@^1.4.0`, `next-themes@^0.4.6`, `shadcn@^4.7.0` (pulled in by shadcn init / `add` runs)
 
 `bun install` after Phase 5 dependency additions: 877 installs across 939 packages.
+
+Added during the TanStack Query foundation step (post-Phase 6, workspace `apps/web`):
+
+- `@tanstack/react-query-devtools@5.100.9` (devDependency)
+
+Removed:
+
+- `axios@1.16.0` and its deps
 
 ---
 
