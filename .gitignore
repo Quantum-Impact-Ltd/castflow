@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+dist
+.next
+build
+out
+*.tsbuildinfo
+
+# Turbo
+.turbo
+
+# Environment files — never commit real env files
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.local.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Prisma — don't commit generated migration SQL
+prisma/migrations/*.sql
+
+# Bun
+bun.lockb
