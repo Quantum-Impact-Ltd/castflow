@@ -11,11 +11,7 @@ export function requireRole(...roles: UserRole[]) {
     }
 
     if (!roles.includes(user.role as UserRole)) {
-      throw new AppError(
-        'FORBIDDEN',
-        'You do not have permission to perform this action',
-        403
-      )
+      throw new AppError('FORBIDDEN', 'You do not have permission to perform this action', 403)
     }
 
     await next()

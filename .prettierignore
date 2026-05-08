@@ -6,3 +6,7 @@ build
 *.lock
 bun.lockb
 prisma/migrations
+
+# Auto-generated / local-only
+next-env.d.ts
+.claude/settings.local.json

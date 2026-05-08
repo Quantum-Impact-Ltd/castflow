@@ -7,20 +7,20 @@
 
 ## Current phase
 
-**Phase 6 — Verification**
+**Feature development**
 
 ---
 
 ## Phase completion status
 
-| Phase | Description                                                              | Status         |
-| ----- | ------------------------------------------------------------------------ | -------------- |
-| 1     | Monorepo foundation — folder structure, Turborepo, configs, linting      | ✅ Complete    |
-| 2     | Shared packages — @castflow/types and @castflow/validators               | ✅ Complete    |
-| 3     | API scaffold — folder structure, env, lib singletons, errors, middleware | ✅ Complete    |
-| 4     | Prisma schema — full DB schema, first migration                          | ✅ Complete    |
-| 5     | Frontend scaffold — Next.js, folder structure, providers, lib            | ✅ Complete    |
-| 6     | Verification — both apps run, typecheck passes, health check responds    | ⬜ Not started |
+| Phase | Description                                                              | Status      |
+| ----- | ------------------------------------------------------------------------ | ----------- |
+| 1     | Monorepo foundation — folder structure, Turborepo, configs, linting      | ✅ Complete |
+| 2     | Shared packages — @castflow/types and @castflow/validators               | ✅ Complete |
+| 3     | API scaffold — folder structure, env, lib singletons, errors, middleware | ✅ Complete |
+| 4     | Prisma schema — full DB schema, first migration                          | ✅ Complete |
+| 5     | Frontend scaffold — Next.js, folder structure, providers, lib            | ✅ Complete |
+| 6     | Verification — both apps run, typecheck passes, health check responds    | ✅ Complete |
 
 ---
 
@@ -63,6 +63,7 @@
 - `tsconfig.json` extends root, sets `noEmit`, `declaration: false`, `declarationMap: false`, `exactOptionalPropertyTypes: false` (see caveats)
 - `.env.local.example` and `.env.local` created with `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - `bun run typecheck` passes with zero errors
+- **Phase 6: full-stack verification complete** — `bun run typecheck`, `bun run lint`, and `bun run format:check` all green across the four workspaces. Both apps boot end-to-end on their target ports (api 3001, web 3000). API health check (`/health`) returns the canonical envelope. Unknown API routes (`/api/v1/*`) now return the structured `{success:false,error:{code:"NOT_FOUND",message:"Route not found"}}` envelope. Frontend routing matrix confirmed: `/`, `/login`, `/artists/test-id` return 200; `/artist/dashboard`, `/caster/dashboard`, `/admin` return 307 → `/login` when unauthenticated. Better Auth's `/api/auth/get-session` round-trips end-to-end through the `auth-server.ts` proxy (returns `null` for unauthenticated requests, which is what makes the auth-guard layouts redirect).
 
 ---
 
@@ -89,6 +90,11 @@
 - **Phase 5: page count** — spec says "97 stubs" but the exact counts are 92 `page.tsx` files + 5 `layout.tsx` files (root, onboarding, artist, caster, admin) = 97 route files total. No discrepancy; just clarifying for future readers.
 - **Phase 5: removed default `app/page.tsx`** — `create-next-app` generates a starter homepage; deleted it before writing the public homepage stub so the stub is the authoritative file.
 - **Phase 5: empty `(artist)`, `(caster)`, `(admin)` route groups before adding routes** — Next.js complains if a route group exists with no routes inside. The auth-guard layouts plus the panel pages (added in Step 11) populate them.
+- **Phase 6: `apps/api/tsconfig.json` `include`** — was `["src", "prisma"]` so `tsc` could see `prisma/seed.ts`, but with `rootDir: "src"` that file triggered `TS6059: not under 'rootDir'`. Dropped `prisma` from `include` — the seed is run independently with `bun prisma/seed.ts` and does not need to be part of the typecheck graph. If we ever wire seeding into a build/CI pipeline that requires it to compile, give the seed its own `tsconfig.seed.json` with a separate `rootDir`.
+- **Phase 6: `app.notFound()` handler added** — without it, Hono served plain text `404 Not Found` for unknown routes, breaking the universal-envelope contract. Now every unknown route returns `{success:false,error:{code:"NOT_FOUND",message:"Route not found"}}` with HTTP 404.
+- **Phase 6: `apps/web/lib/api.ts` lint/typecheck conflict** — axios's typed response interceptor expects an `AxiosResponse<T>` return shape, but we unwrap the envelope to `res.data` so callers receive `data` directly. After typing `res` as `AxiosResponse<unknown>`, the unwrap was flagged by both `@typescript-eslint/no-unsafe-return` and `TS2345`. Resolved with an `as never` cast at the unwrap, plus a typed `ApiErrorEnvelope` for the error path. The `as never` is intentional and documented inline — we are short-circuiting the axios contract at runtime.
+- **Phase 6: `apps/web/lib/auth-server.ts` redundant unions** — `'artist' | 'caster' | 'admin' | string` and `'pending' | 'approved' | 'rejected' | string` collapsed to `string` per `@typescript-eslint/no-redundant-type-constituents`. Dropped the `| string` fallbacks — the literal unions are now load-bearing. If the API ever returns a value outside the literal set, the JSON cast will silently widen at runtime; tighten the parse with a runtime guard if that becomes a problem.
+- **Phase 6: `.prettierignore` additions** — `next-env.d.ts` is regenerated by Next.js on every `dev`/`build` with formatting that does not match our prettier config, and `.claude/settings.local.json` is rewritten by the Claude harness. Both are now ignored so `bun run format:check` stays green between local sessions.
 
 ---
 
@@ -96,19 +102,19 @@
 
 These need to be filled in manually before certain phases will work:
 
-| Variable                | Needed for                 | Set? |
-| ----------------------- | -------------------------- | ---- |
-| `DATABASE_URL`          | Phase 4 (Prisma migration) | ✅ Set (alwaysdata Postgres) |
+| Variable                | Needed for                                              | Set?                                 |
+| ----------------------- | ------------------------------------------------------- | ------------------------------------ |
+| `DATABASE_URL`          | Phase 4 (Prisma migration)                              | ✅ Set (alwaysdata Postgres)         |
 | `SHADOW_DATABASE_URL`   | `prisma migrate dev` (Phase 4 workaround — see caveats) | ⬜ (not set; `db push` used instead) |
-| `BETTER_AUTH_SECRET`    | Phase 6 (auth)             | ⬜ (placeholder in `.env`)   |
-| `STRIPE_SECRET_KEY`     | Payment features           | ⬜ (placeholder in `.env`)   |
-| `STRIPE_WEBHOOK_SECRET` | Webhook handler            | ⬜ (placeholder in `.env`)   |
-| `R2_ACCOUNT_ID`         | File uploads               | ⬜ (placeholder in `.env`)   |
-| `R2_ACCESS_KEY_ID`      | File uploads               | ⬜ (placeholder in `.env`)   |
-| `R2_SECRET_ACCESS_KEY`  | File uploads               | ⬜ (placeholder in `.env`)   |
-| `RESEND_API_KEY`        | Emails                     | ⬜ (placeholder in `.env`)   |
-| `GOOGLE_CLIENT_ID`      | Social login               | ⬜   |
-| `APPLE_CLIENT_ID`       | Social login               | ⬜   |
+| `BETTER_AUTH_SECRET`    | Phase 6 (auth)                                          | ⬜ (placeholder in `.env`)           |
+| `STRIPE_SECRET_KEY`     | Payment features                                        | ⬜ (placeholder in `.env`)           |
+| `STRIPE_WEBHOOK_SECRET` | Webhook handler                                         | ⬜ (placeholder in `.env`)           |
+| `R2_ACCOUNT_ID`         | File uploads                                            | ⬜ (placeholder in `.env`)           |
+| `R2_ACCESS_KEY_ID`      | File uploads                                            | ⬜ (placeholder in `.env`)           |
+| `R2_SECRET_ACCESS_KEY`  | File uploads                                            | ⬜ (placeholder in `.env`)           |
+| `RESEND_API_KEY`        | Emails                                                  | ⬜ (placeholder in `.env`)           |
+| `GOOGLE_CLIENT_ID`      | Social login                                            | ⬜                                   |
+| `APPLE_CLIENT_ID`       | Social login                                            | ⬜                                   |
 
 `apps/api/.env` was created from `.env.example` with the placeholder values to allow the app to boot. Replace placeholders with real values before exercising the features that depend on them.
 
@@ -177,11 +183,35 @@ Added during Phase 5 (workspace `apps/web`):
 
 ## Next up
 
-Run Phase 6 — Verification. Boot both apps end-to-end (`apps/api` on 3001, `apps/web` on 3000), confirm the API health check responds, confirm the web typecheck passes, and confirm `auth.api.getSession` actually round-trips against `apps/api`'s `/api/auth/get-session`. Phase 5 verified the web side in isolation only (the API was not running, so `getSession` always returned `null`, which is what made the auth-guard 307 redirects fire).
+Foundation complete. Ready for feature development.
 
-Open follow-ups (not blockers for Phase 6):
+Suggested build order (each one is a complete vertical slice):
+
+1. Auth flows — register (artist + caster), login, email verify, social login
+2. Artist onboarding — personal info, stats, portfolio upload, ID doc, submit for review
+3. Admin: artist application queue — approve and reject with reason
+4. Caster: post a job — full 6-step wizard, both payment types
+5. Artist: job feed — browse, filter, view job detail
+6. Artist: submit a bid — propose rate, cover note, highlight portfolio
+7. Caster: bid management — view bids, shortlist, reject, accept
+8. Booking flow — booking created, escrow payment via Stripe
+9. Contract — generate, display, e-sign both parties
+10. Post-shoot — confirm completion, escrow release to artist
+11. Reviews — both directions
+12. Disputes — raise, submit sides, admin resolves
+13. Messaging — in-platform chat, WebSocket real-time
+14. Notifications — email triggers for all key events
+15. Admin: full dashboard — users, jobs, payments, disputes, analytics
+
+When starting each feature:
+
+- Read CLAUDE.md and CONTEXT.md first
+- Build the service method first, then the route, then the UI
+- Write to CONTEXT.md at the end of every session
+
+Open follow-ups (carried over from Phase 5; not blockers for feature work):
 
 - Provision a shadow DB on alwaysdata and convert the current `db push` schema into a real `prisma migrate dev --name init` migration history before any production work.
 - Replace the `ScaffoldPlaceholder` history (it never persisted to the DB — only the placeholder `schema.prisma` referenced it) once the migration history is bootstrapped.
-- Confirm `apps/api` exposes `/api/auth/get-session` (Better Auth's default route). If the API mounts auth at a different path, update `apps/web/lib/auth-server.ts` to match.
 - Decide whether to keep `apps/web/tsconfig.json`'s `exactOptionalPropertyTypes: false` long-term, or to patch the offending shadcn components (`dropdown-menu.tsx`, `sonner.tsx`) to satisfy the strict setting.
+- Revisit `apps/web/lib/auth-server.ts`'s `as never` / hand-rolled session shape once Better Auth's actual `getSession` payload is locked in by the auth phase — and consider replacing the literal-only role/status unions with a runtime guard so the typed shape is enforced, not just declared.

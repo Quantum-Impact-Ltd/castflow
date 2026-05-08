@@ -6,6 +6,6 @@
     "types": ["bun"],
     "moduleResolution": "Bundler"
   },
-  "include": ["src", "prisma"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

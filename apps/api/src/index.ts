@@ -40,9 +40,7 @@ app.use(
 )
 
 // ── Health check ───────────────────────────────────────────────────────────
-app.get('/health', (c) =>
-  c.json({ success: true, data: { status: 'ok', env: env.NODE_ENV } })
-)
+app.get('/health', (c) => c.json({ success: true, data: { status: 'ok', env: env.NODE_ENV } }))
 
 // ── Better Auth ────────────────────────────────────────────────────────────
 app.on(['GET', 'POST'], '/api/auth/**', (c) => auth.handler(c.req.raw))
@@ -86,6 +84,11 @@ app.get(
       },
     }
   })
+)
+
+// ── 404 handler ────────────────────────────────────────────────────────────
+app.notFound((c) =>
+  c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } }, 404)
 )
 
 // ── Global error handler ───────────────────────────────────────────────────

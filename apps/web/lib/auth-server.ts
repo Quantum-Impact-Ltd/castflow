@@ -7,8 +7,8 @@
 type SessionUser = {
   id: string
   email: string
-  role: 'artist' | 'caster' | 'admin' | string
-  approvalStatus?: 'pending' | 'approved' | 'rejected' | string
+  role: 'artist' | 'caster' | 'admin'
+  approvalStatus?: 'pending' | 'approved' | 'rejected'
   [key: string]: unknown
 }
 
