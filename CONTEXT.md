@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**Phase 4 — Prisma schema**
+**Phase 5 — Frontend scaffold**
 
 ---
 
@@ -18,7 +18,7 @@
 | 1     | Monorepo foundation — folder structure, Turborepo, configs, linting      | ✅ Complete    |
 | 2     | Shared packages — @castflow/types and @castflow/validators               | ✅ Complete    |
 | 3     | API scaffold — folder structure, env, lib singletons, errors, middleware | ✅ Complete    |
-| 4     | Prisma schema — full DB schema, first migration                          | ⬜ Not started |
+| 4     | Prisma schema — full DB schema, first migration                          | ✅ Complete    |
 | 5     | Frontend scaffold — Next.js, folder structure, providers, lib            | ⬜ Not started |
 | 6     | Verification — both apps run, typecheck passes, health check responds    | ⬜ Not started |
 
@@ -50,6 +50,9 @@
 - `app` exported as named export for future test use; default export wires `port`, `fetch`, `websocket` for `Bun.serve`
 - Global error handler catches `AppError`, Prisma `P2002`/`P2025`, and falls back to `INTERNAL_ERROR`
 - Placeholder `prisma/schema.prisma` (single `ScaffoldPlaceholder` model) so `prisma generate` succeeds and the app can boot before Phase 4 — to be replaced wholesale in Phase 4
+- Full Prisma schema (18 domain models, all enums) + Better Auth tables (`user`, `session`, `account`, `verification`)
+- Database synced via `prisma db push` (schema applied to alwaysdata Postgres) and Prisma Client generated
+- `prisma/seed.ts` stub created (no seed data yet)
 
 ---
 
@@ -64,6 +67,9 @@
 - **Phase 3: `auth.ts` additionalFields** — added a `status` field (UserStatus) that the spec omitted. The `authenticate` middleware checks `session.user.status === 'suspended' | 'banned'`, which would not typecheck without it. Defaulted to `'pending'`, `input: false`. Phase 4 should ensure this aligns with the canonical `User.status: UserStatus` in `@castflow/types`.
 - **Phase 3: service stubs** — each service stub assigns `protected static readonly db = prisma` so the `prisma` import is referenced (avoids ESLint `no-unused-vars` complaints once linting is run; harmless under tsc).
 - **Phase 3: placeholder Prisma schema** — added a one-model placeholder schema so `prisma generate` succeeds and `lib/prisma.ts`'s `new PrismaClient()` doesn't throw at import time. The model name is `ScaffoldPlaceholder` (Prisma rejects identifiers starting with `_`). Phase 4 replaces the entire schema.
+- **Phase 4: `prisma migrate dev` blocked by managed Postgres** — alwaysdata's role lacks `CREATE DATABASE`, so Prisma can't spin up the shadow DB it needs for `migrate dev` (`Error: P3014`). Used `prisma db push` instead — schema is live on the DB but no `migrations/` folder exists yet. To switch to migrations later, provision a second empty DB on alwaysdata, set `shadowDatabaseUrl = env("SHADOW_DATABASE_URL")` in the datasource block, then run `prisma migrate dev --name init`.
+- **Phase 4: Better Auth conventions for auth tables** — Better Auth's Prisma adapter expects singular table names (`user`, `session`, `account`, `verification`), camelCase columns (no `@map`), and `User.role`/`User.status` as `String` (not enum). The merged schema follows that exactly for those four models, while every domain model keeps snake_case `@@map`/`@map` and Prisma enums. The `UserRole` and `UserStatus` enums remain in the schema as canonical type definitions even though `User` stores them as strings — this matches `auth.ts`'s `additionalFields` configuration.
+- **Phase 4: `Review` reviewee FK collision** — `Review.revieweeId` is the FK for both `artistReviewee` and `casterReviewee` relations (one record points to either an artist or caster). Prisma generates the same default constraint name for both, so each relation needs an explicit `map:` argument (`reviews_reviewee_artist_fkey` / `reviews_reviewee_caster_fkey`). Document well — if anyone changes these relations, both `map:` names must remain unique.
 
 ---
 
@@ -73,7 +79,8 @@ These need to be filled in manually before certain phases will work:
 
 | Variable                | Needed for                 | Set? |
 | ----------------------- | -------------------------- | ---- |
-| `DATABASE_URL`          | Phase 4 (Prisma migration) | ⬜ (placeholder in `.env`)   |
+| `DATABASE_URL`          | Phase 4 (Prisma migration) | ✅ Set (alwaysdata Postgres) |
+| `SHADOW_DATABASE_URL`   | `prisma migrate dev` (Phase 4 workaround — see caveats) | ⬜ (not set; `db push` used instead) |
 | `BETTER_AUTH_SECRET`    | Phase 6 (auth)             | ⬜ (placeholder in `.env`)   |
 | `STRIPE_SECRET_KEY`     | Payment features           | ⬜ (placeholder in `.env`)   |
 | `STRIPE_WEBHOOK_SECRET` | Webhook handler            | ⬜ (placeholder in `.env`)   |
@@ -120,8 +127,18 @@ Added during Phase 3 (workspace `apps/api`):
 
 `bun install` after Phase 3 dependency additions: 562 packages installed.
 
+Phase 4 used:
+
+- `prisma@5.22.0` / `@prisma/client@5.22.0` (already installed in Phase 3)
+- `@better-auth/cli` (run via `bunx` for `generate`; not added as a dependency)
+
 ---
 
 ## Next up
 
-Run Phase 4 prompt — Prisma schema and first migration. The placeholder `prisma/schema.prisma` will be replaced entirely with the canonical schema documented in `apps/api/prisma/CLAUDE.md`.
+Run Phase 5 prompt — Frontend scaffold (Next.js App Router, folder structure, providers, lib). The DB schema and Prisma Client are now ready, so any frontend work that needs typed access to the data model can import from `@prisma/client`.
+
+Open follow-ups (not blockers for Phase 5):
+
+- Provision a shadow DB on alwaysdata and convert the current `db push` schema into a real `prisma migrate dev --name init` migration history before any production work.
+- Replace the `ScaffoldPlaceholder` history (it never persisted to the DB — only the placeholder `schema.prisma` referenced it) once the migration history is bootstrapped.
