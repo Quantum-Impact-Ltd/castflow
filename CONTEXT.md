@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**Phase 2 — Shared packages**
+**Phase 3 — API scaffold**
 
 ---
 
@@ -16,7 +16,7 @@
 | Phase | Description                                                              | Status         |
 | ----- | ------------------------------------------------------------------------ | -------------- |
 | 1     | Monorepo foundation — folder structure, Turborepo, configs, linting      | ✅ Complete    |
-| 2     | Shared packages — @castflow/types and @castflow/validators               | ⬜ Not started |
+| 2     | Shared packages — @castflow/types and @castflow/validators               | ✅ Complete    |
 | 3     | API scaffold — folder structure, env, lib singletons, errors, middleware | ⬜ Not started |
 | 4     | Prisma schema — full DB schema, first migration                          | ⬜ Not started |
 | 5     | Frontend scaffold — Next.js, folder structure, providers, lib            | ⬜ Not started |
@@ -34,17 +34,18 @@
 - Prettier config (no semis, single quotes, 100 print width, LF endings)
 - VS Code settings (format on save, ESLint auto-fix, TypeScript workspace SDK)
 - `bun install` run successfully (132 packages)
+- `@castflow/types` — all TypeScript interfaces, enums, and API response types (`enums.ts`, `entities.ts`, `api.ts`)
+- `@castflow/validators` — all Zod schemas: auth, artist, job, bid, booking, review, upload
 
 ---
 
 ## Known caveats and decisions
 
-_Populated as implementation progresses. Examples of what goes here:_
-
-- _"Used X instead of Y because of Z"_
-- _"Deferred feature X to later — see note"_
-- _"Found issue with package X — workaround is Y"_
-- _"Environment variable X needs to be set manually before Phase 4"_
+- **`turbo.json`: `pipeline` → `tasks`** — Turbo 2.x renamed the field; the Phase 1 spec used the old name. Updated in Phase 2 when typecheck failed.
+- **`packageManager`: pinned to `bun@1.3.11`** — Turbo 2.x rejects `bun@latest`; requires a strict semver pin. The Phase 1 spec used `bun@latest`.
+- **`zod` pinned to `^3.23.0`** per spec — note that zod v4 exists but our schemas target v3 API (`.refine` with object-shape options, etc.).
+- **`updateBidSchema` exports**: only `submitBidSchema`/`updateBidSchema` named values exported; `UpdateBidInput` type is not yet used and not exported. Add the inferred type when the bid edit endpoint is built.
+- **`ageMin/ageMax` validation in `createJobSchema`**: the spec sets `min(18)` for both, but the existing `Job` interface allows age ranges starting from 18 — the validator's lower bound (18) is the canonical one for casting purposes (no minors).
 
 ---
 
@@ -80,8 +81,12 @@ Installed during Phase 1 (`bun install`):
 - `eslint-config-prettier@9.1.2`
 - `@types/node@20.19.40`
 
+Added during Phase 2:
+
+- `zod@3.25.76` (resolved from `^3.23.0`) — pinned to v3 API; v4 will require schema rewrites
+
 ---
 
 ## Next up
 
-Run Phase 2 prompt — shared packages.
+Run Phase 3 prompt — API scaffold.

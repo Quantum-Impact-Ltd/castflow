@@ -1,0 +1,70 @@
+import { z } from 'zod'
+
+const MIN_AGE = 18
+
+function ageCheck(dob: string) {
+  const age = (Date.now() - new Date(dob).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+  return age >= MIN_AGE
+}
+
+export const artistPersonalInfoSchema = z.object({
+  dob: z.string().refine(ageCheck, 'You must be 18 or older to register on CastFlow'),
+  gender: z.string().min(1, 'Gender is required'),
+  pronouns: z.string().max(50).optional(),
+  city: z.string().min(2).max(100).trim(),
+  bio: z.string().max(300).optional(),
+})
+
+export const modelStatsSchema = z.object({
+  heightCm: z.number().int().min(100).max(250),
+  weightKg: z.number().min(30).max(300).optional(),
+  dressSize: z.string().min(1),
+  shoeSize: z.string().min(1),
+  bustCm: z.number().int().min(50).max(200).optional(),
+  waistCm: z.number().int().min(40).max(180).optional(),
+  hipCm: z.number().int().min(50).max(200).optional(),
+  hairColour: z.string().min(1),
+  eyeColour: z.string().min(1),
+  skinTone: z.enum(['fair', 'light', 'medium', 'olive', 'tan', 'deep']),
+})
+
+export const actorStatsSchema = z
+  .object({
+    heightCm: z.number().int().min(100).max(250),
+    hairColour: z.string().min(1),
+    eyeColour: z.string().min(1),
+    voiceType: z.string().max(50).optional(),
+    spotlightUrl: z.string().url().optional().or(z.literal('')),
+    equityMember: z.boolean().default(false),
+    ageRangeMin: z.number().int().min(18).max(80),
+    ageRangeMax: z.number().int().min(18).max(80),
+  })
+  .refine((d) => d.ageRangeMin <= d.ageRangeMax, {
+    message: 'Minimum age must be less than maximum age',
+    path: ['ageRangeMax'],
+  })
+
+export const artistExperienceSchema = z.object({
+  experienceLevel: z.enum(['new_face', 'semi_pro', 'professional']),
+  instagramHandle: z
+    .string()
+    .max(50)
+    .regex(/^[a-zA-Z0-9._]*$/, 'Invalid Instagram handle')
+    .optional(),
+  hourlyRate: z.number().min(1).max(10000).optional(),
+  halfDayRate: z.number().min(1).max(10000).optional(),
+  fullDayRate: z.number().min(1).max(10000).optional(),
+})
+
+export const artistSkillSchema = z.object({
+  skillType: z.enum(['accent', 'language', 'special_skill', 'training']),
+  skillValue: z.string().min(1).max(100).trim(),
+})
+
+export const updateAvailabilitySchema = z.object({
+  availabilityStatus: z.enum(['available', 'unavailable']),
+})
+
+export type ArtistPersonalInfoInput = z.infer<typeof artistPersonalInfoSchema>
+export type ModelStatsInput = z.infer<typeof modelStatsSchema>
+export type ActorStatsInput = z.infer<typeof actorStatsSchema>
