@@ -119,12 +119,18 @@ export class ReviewService {
       throw new AppError('INVALID_STATE', 'You have already reviewed this booking', 409)
     }
 
+    // Split-FK schema: route the reviewee id into the right column depending
+    // on which side is being reviewed. Exactly one column is non-null —
+    // the `reviews_exactly_one_reviewee` CHECK constraint enforces this at
+    // the DB level as well.
     const review = await prisma.$transaction(async (tx) => {
       const row = await tx.review.create({
         data: {
           bookingId,
           reviewerId: reviewerProfileId,
-          revieweeId: revieweeProfileId,
+          ...(reviewerRole === 'caster'
+            ? { artistRevieweeId: revieweeProfileId, casterRevieweeId: null }
+            : { artistRevieweeId: null, casterRevieweeId: revieweeProfileId }),
           reviewerRole,
           rating: input.rating,
           comment: input.comment ?? null,
@@ -166,7 +172,14 @@ export class ReviewService {
 
   static async listForArtist(profileId: string) {
     return prisma.review.findMany({
-      where: { revieweeId: profileId, reviewerRole: 'caster', isRemoved: false },
+      where: { artistRevieweeId: profileId, isRemoved: false },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  static async listForCaster(profileId: string) {
+    return prisma.review.findMany({
+      where: { casterRevieweeId: profileId, isRemoved: false },
       orderBy: { createdAt: 'desc' },
     })
   }

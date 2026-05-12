@@ -564,25 +564,33 @@ model Message {
 }
 
 model Review {
-  id              String    @id @default(uuid())
-  bookingId       String    @map("booking_id")
-  booking         Booking   @relation(fields: [bookingId], references: [id])
-  reviewerId      String    @map("reviewer_id")
-  revieweeId      String    @map("reviewee_id")
-  reviewerRole    String    @map("reviewer_role")  // 'caster' | 'artist'
-  rating          Int       // 1-5
-  comment         String?
-  isFlagged       Boolean   @default(false) @map("is_flagged")
-  flagReason      String?   @map("flag_reason")
-  isRemoved       Boolean   @default(false) @map("is_removed")
+  id                String   @id @default(uuid())
+  bookingId         String   @map("booking_id")
+  booking           Booking  @relation(fields: [bookingId], references: [id])
+  reviewerId        String   @map("reviewer_id")
+  // Exactly one of these two is set, never both — a caster reviewing the
+  // artist populates `artistRevieweeId`; an artist reviewing the caster
+  // populates `casterRevieweeId`. Enforced at the service layer plus a
+  // `reviews_exactly_one_reviewee` CHECK constraint applied via raw SQL
+  // (`prisma db push` does not emit CHECK clauses).
+  artistRevieweeId  String?  @map("artist_reviewee_id")
+  casterRevieweeId  String?  @map("caster_reviewee_id")
+  reviewerRole      String   @map("reviewer_role")  // 'caster' | 'artist'
+  rating            Int      // 1-5
+  comment           String?
+  isFlagged         Boolean  @default(false) @map("is_flagged")
+  flagReason        String?  @map("flag_reason")
+  isRemoved         Boolean  @default(false) @map("is_removed")
 
-  // Relations for caster/artist reviewees
-  artistReviewee  ArtistProfile? @relation("RevieweeArtist", fields: [revieweeId], references: [id])
-  casterReviewee  CasterProfile? @relation("RevieweeCaster", fields: [revieweeId], references: [id])
+  // Each relation targets ONE table only — no more dual-FK violation.
+  artistReviewee    ArtistProfile? @relation("RevieweeArtist", fields: [artistRevieweeId], references: [id])
+  casterReviewee    CasterProfile? @relation("RevieweeCaster", fields: [casterRevieweeId], references: [id])
 
-  createdAt       DateTime  @default(now()) @map("created_at")
+  createdAt         DateTime @default(now()) @map("created_at")
 
   @@unique([bookingId, reviewerId])
+  @@index([artistRevieweeId])
+  @@index([casterRevieweeId])
   @@map("reviews")
 }
 

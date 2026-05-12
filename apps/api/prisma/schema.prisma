@@ -620,7 +620,13 @@ model Review {
   bookingId    String  @map("booking_id")
   booking      Booking @relation(fields: [bookingId], references: [id])
   reviewerId   String  @map("reviewer_id")
-  revieweeId   String  @map("reviewee_id")
+  // Exactly one of `artistRevieweeId` / `casterRevieweeId` is non-null —
+  // depending on whether the reviewer is the caster (writing about the
+  // artist) or the artist (writing about the caster). Enforced at the
+  // service layer + a `reviews_exactly_one_reviewee` CHECK constraint
+  // applied via raw SQL (`prisma db push` does not emit CHECK clauses).
+  artistRevieweeId String? @map("artist_reviewee_id")
+  casterRevieweeId String? @map("caster_reviewee_id")
   reviewerRole String  @map("reviewer_role")
   rating       Int
   comment      String?
@@ -628,13 +634,14 @@ model Review {
   flagReason   String? @map("flag_reason")
   isRemoved    Boolean @default(false) @map("is_removed")
 
-  artistReviewee ArtistProfile? @relation("RevieweeArtist", fields: [revieweeId], references: [id], map: "reviews_reviewee_artist_fkey")
-  casterReviewee CasterProfile? @relation("RevieweeCaster", fields: [revieweeId], references: [id], map: "reviews_reviewee_caster_fkey")
+  artistReviewee ArtistProfile? @relation("RevieweeArtist", fields: [artistRevieweeId], references: [id])
+  casterReviewee CasterProfile? @relation("RevieweeCaster", fields: [casterRevieweeId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([bookingId, reviewerId])
-  @@index([revieweeId])
+  @@index([artistRevieweeId])
+  @@index([casterRevieweeId])
   @@map("reviews")
 }
 

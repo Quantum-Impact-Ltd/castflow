@@ -288,7 +288,15 @@ export interface Review {
   id: string
   bookingId: string
   reviewerId: string
-  revieweeId: string
+  /**
+   * Exactly one of `artistRevieweeId` / `casterRevieweeId` is non-null.
+   * When the reviewer is a caster (writing about the artist), only
+   * `artistRevieweeId` is populated; when the reviewer is an artist
+   * (writing about the caster), only `casterRevieweeId` is populated.
+   * Enforced by a `reviews_exactly_one_reviewee` CHECK constraint.
+   */
+  artistRevieweeId: string | null
+  casterRevieweeId: string | null
   reviewerRole: ReviewerRole
   rating: number // 1-5
   comment: string | null

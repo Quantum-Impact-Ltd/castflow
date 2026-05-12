@@ -115,13 +115,15 @@ export async function cleanupTestData(): Promise<void> {
     await prisma.job.deleteMany({ where: { id: { in: jobIds } } })
   }
 
-  // Reviews where reviewee is a test profile (rare — booking-based deletes
-  // should have caught them, but be defensive).
+  // Reviews where the reviewee is a test profile (rare — booking-based deletes
+  // should have caught them, but be defensive). The schema splits reviewee
+  // into `artistRevieweeId` / `casterRevieweeId` columns, each with its own FK
+  // to the relevant profile table.
   if (artistIds.length > 0) {
-    await prisma.review.deleteMany({ where: { revieweeId: { in: artistIds } } })
+    await prisma.review.deleteMany({ where: { artistRevieweeId: { in: artistIds } } })
   }
   if (casterIds.length > 0) {
-    await prisma.review.deleteMany({ where: { revieweeId: { in: casterIds } } })
+    await prisma.review.deleteMany({ where: { casterRevieweeId: { in: casterIds } } })
   }
 
   // Artist child tables (no cascade in schema).
