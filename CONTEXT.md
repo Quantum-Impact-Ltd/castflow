@@ -1145,3 +1145,43 @@ HANDOFF.md §4 Tier B/C/D are still open:
 - **Tier D** — webhook reconciliation: feed a stub event to `/webhooks/stripe` and assert the right service method fired + DB transitioned. Cover: `payment_intent.succeeded`, `payment_intent.canceled`, `charge.refunded`, `charge.dispute.created`, `account.updated`, `account.application.deauthorized`.
 
 After Tier B/C/D the backend is at "minimally trustworthy" and frontend work resumes.
+
+### Backend test pass — Tiers B/C/D (closed)
+
+Suite now stands at **136 pass / 5 skip / 0 fail across 18 files (141 tests, ~400 expectations)**. Tier B/C/D all landed; the skips are blocked on a single discovered schema bug (see "Open bugs surfaced" below).
+
+**Tier B files added** (all under `apps/api/tests/`):
+
+- `bids/bid-flow.test.ts` (19) — submit (validation, duplicate guard, invite-only gate, JOB_CLOSED, hourly hours-required, unapproved-artist FORBIDDEN), edit (rate/coverNote, BID_LOCKED on non-pending, FORBIDDEN on another artist's bid), withdraw, shortlist (unlocks the messaging thread), reject (rejectionReason persisted), undoReject (24h window — `$executeRawUnsafe` to backdate `updated_at` for the >24h case), acceptBid (booking creation, sibling-bid expiry on headcount-fill, BID_NOT_PENDING on withdrawn, hourly totalAmount = rate × hours).
+- `bids/counter-offer.test.ts` (8) — propose (shortlisted-only, one-pending-per-bid, hourly hours-required), accept (overwrites `bid.proposedRate` + `estimatedHours` but keeps bid status), decline (bid rate unchanged), idempotent re-accept rejection, non-owner FORBIDDEN.
+- `invites/invite-flow.test.ts` (14) — invite (idempotent guard, unapproved-artist guard, JOB_CLOSED, non-owner NOT_FOUND), accept/decline transitions + FORBIDDEN for wrong artist, INVALID_STATE on re-transition, full bid-gate matrix (accepted invite ALLOWS bid on invite-only; declined/pending invite blocks with FORBIDDEN), and `getForArtist` location stripping + NOT_FOUND for outsiders.
+- `contracts/contract-flow.test.ts` (8) — generate (creates pending_signatures, derives paymentTerms from booking type, idempotent on re-generate, non-party FORBIDDEN), sign (first signature → partially_signed, second → fully_signed and triggers PDF render to R2 with `castflow-contracts` bucket + `contracts/${bookingId}/${contractId}.pdf` key; verified via polling `r2MockState.calls` for `PutObjectCommand`), double-sign-same-side CONTRACT_ALREADY_SIGNED, 72h window enforcement via `$executeRawUnsafe` backdate of `contracts.created_at`, signature-name VALIDATION_ERROR for short strings.
+- `reviews/review-flow.test.ts` (5 + 5 skipped) — pre-window (INVALID_STATE), post-window, non-completed booking, admin FORBIDDEN, non-party FORBIDDEN. The successful-insert paths (caster→artist + artist→caster + uniqueness + ratings-cache increment) are `describe.skip(...)` because of the dual-FK schema bug documented below.
+- `admin/power-tools.test.ts` (6) — exercises the actual HTTP routes via `app.request` with a Better Auth admin session cookie. force-release writes AdminLog + transfers to artist Connect; force-refund cancels intent + writes AdminLog; remove-job cancels job, expires pending/shortlisted bids (leaves accepted alone), cascade-refunds held escrows on attached bookings via `JobService.adminRemove`, writes AdminLog. Plus VALIDATION_ERROR for short notes/reason and FORBIDDEN for non-admin sessions.
+- `calendar/feed.test.ts` (9) — `ensureToken` idempotency, `regenerateToken` rotates (old token → NOT_FOUND), empty calendar wrapper (`BEGIN:VCALENDAR…PRODID:-//CastFlow//Bookings//EN…END:VCALENDAR`), VEVENT shape with UTC DTSTART/DTEND, CRLF line endings, location hidden pre-signing / revealed once `fully_signed`, cancelled bookings omitted, caster-role feed scope, NOT_FOUND on bogus token. Tests un-fold lines (RFC 5545 wraps at 73 chars) before substring matching.
+- `notifications/notification-dispatch.test.ts` (7) — `notifyEvent` writes in-app row AND email-inbox entry, `email: false` skips email only, missing-user is swallowed (fire-and-forget contract holds), `notifyAdmins` fans out to active admins only (suspended skipped), 1h dedup window blocks repeat `(type, relatedEntityId)` firings, different `relatedEntityId` values bypass dedup, listing + markRead + markAllRead semantics.
+
+**Tier C — `uploads/key-ownership.test.ts` (6)**: accepts `${type}/${userId}/…` keys, rejects wrong-user prefix, wrong-type prefix, no prefix at all (flat filename), valid-user + wrong-type-folder; valid id_document upload patches `artistProfile.idDocumentUrl` and resets `idVerified=false`.
+
+**Tier D — `webhooks/stripe-webhook.test.ts` (11)**: signature handling (no header → 400, constructEvent throws → 400), event dispatch matrix (`payment_intent.succeeded` marks held + booking confirmed, `payment_intent.canceled` marks refunded + cancelled, `charge.refunded` full → refunded + cancelled, partial → partially_refunded + booking unchanged, `charge.dispute.created` marks both disputed, `account.updated` syncs `payoutsEnabled`, `account.application.deauthorized` clears `stripeAccountId` + `payoutsEnabled`, unhandled event types are 200 + no-op), and a re-delivery idempotency check.
+
+**Test-infrastructure additions** —
+
+- The Stripe mock helpers grew a `seedPaymentIntent({id, amount, status})` for tests that build `Payment` rows directly. `stripeMockState.nextEvent` + `stripeMockState.constructEventThrows` drive the webhook signature stubs.
+- The R2 mock's recorded calls (`r2MockState.calls`) are used in contract-flow tests to assert PDF upload happens — polled because the render is fire-and-forget.
+- The dual-FK `casterReviewee` constraint surfaced via real test data (see Open bugs). The skipped tests are intentionally retained as regression markers — they will start passing the moment the schema is fixed.
+- `BookingService.cancel` 3-strike admin alert and `DisputeService.adminResolve` frivolous-loss alert tests rely on polling `prisma.notification.findFirst` because the dispatches are `void NotificationService.notifyAdmins(...)`.
+- A pattern emerged for date-window tests: backdate the relevant row with `prisma.$executeRawUnsafe(\`UPDATE … SET … = NOW() - INTERVAL 'X hours' WHERE id = $1\`, id)`. Used for the 24h undo-reject window and the 72h contract-signing window.
+
+### Open bugs surfaced by the test pass
+
+- **`Review.revieweeId` has dual FK constraints (SCHEMA BUG, BLOCKING)** — the model declares both `artistReviewee` and `casterReviewee` relations on the same `revieweeId` column. Postgres enforces BOTH `reviews_reviewee_artist_fkey` and `reviews_reviewee_caster_fkey` on every insert, requiring the value to exist in BOTH `artist_profiles` AND `caster_profiles`. Profile UUIDs do not collide across those tables, so EVERY `ReviewService.submit` call raises `P2003`. The service is unreachable in production. Confirmed against the live alwaysdata Postgres via `pg_get_constraintdef`. Tests in `reviews/review-flow.test.ts` document this with `describe.skip(...)` blocks; the pre-insert validation tests (window gating, role checks) still run because they throw before the failing INSERT. Fix options: (a) split `revieweeId` into nullable `artistRevieweeId` / `casterRevieweeId` columns and conditionally populate one; (b) drop one of the two relations from the schema and resolve at the service layer; (c) keep the column but add a `CHECK (reviewer_role IN ('caster','artist'))` partial-FK pattern using two `WHERE` clauses on each constraint (requires raw SQL since Prisma doesn't model partial FKs).
+
+### Next up (post-Tier D)
+
+The backend is at "minimally trustworthy" coverage per HANDOFF.md §4. Remaining gaps:
+
+- Decide on a fix for the dual-FK review schema bug above, migrate, re-enable the 5 skipped tests.
+- Rate-limit middleware tests (HANDOFF.md §4 Tier C item 14) — explicitly deferred there as low-value.
+- Property-based / fuzz tests, load/perf tests, frontend E2E — deferred per HANDOFF.md "Coverage to leave for later".
+- Frontend resumes: Feature #2 (Artist Onboarding) is the next slice per the feature build order above.
