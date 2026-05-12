@@ -3,6 +3,19 @@ import { env } from '../lib/env'
 import { AppError } from '../errors'
 import { EmailService } from './EmailService'
 
+// In-process dedup state for notifyAdmins. Single-instance only; for
+// multi-replica deployments swap to Redis.
+const adminAlertDedup = new Map<string, number>()
+const ADMIN_DEDUP_WINDOW_MS = 60 * 60 * 1000
+let lastAdminDedupSweep = 0
+function sweepAdminDedup(now: number): void {
+  if (now - lastAdminDedupSweep < ADMIN_DEDUP_WINDOW_MS) return
+  lastAdminDedupSweep = now
+  for (const [k, t] of adminAlertDedup) {
+    if (now - t > ADMIN_DEDUP_WINDOW_MS) adminAlertDedup.delete(k)
+  }
+}
+
 /**
  * In-app + email notification dispatch. For MVP we persist notifications to
  * the DB synchronously inside the originating transaction (caller passes the
@@ -40,6 +53,7 @@ export type CastflowNotificationType =
   | 'invite_received'
   | 'invite_accepted'
   | 'invite_declined'
+  | 'job_critical_change'
 
 interface CreateArgs {
   userId: string
@@ -121,6 +135,51 @@ export class NotificationService {
         error: err instanceof Error ? err.message : String(err),
       })
     }
+  }
+
+  /**
+   * Fan-out an event to every admin user. Used for ops-style alerts
+   * (3-strike review, frivolous-dispute pattern, payout failures).
+   *
+   * Deduped in-process: identical `(type, entityId)` events within
+   * `ADMIN_DEDUP_WINDOW_MS` (1h default) only fire once. Prevents a busy
+   * day from spamming every admin with dozens of identical alerts.
+   * The dedup is per-instance — fine for single-replica Railway MVP;
+   * swap for Redis when we scale past 1.
+   */
+  static async notifyAdmins(args: {
+    type: CastflowNotificationType
+    title: string
+    body: string
+    relatedEntityType?: string
+    relatedEntityId?: string
+  }): Promise<void> {
+    const dedupKey = `${args.type}:${args.relatedEntityId ?? '_'}`
+    const now = Date.now()
+    const lastFiredAt = adminAlertDedup.get(dedupKey)
+    if (lastFiredAt && now - lastFiredAt < ADMIN_DEDUP_WINDOW_MS) {
+      return
+    }
+    adminAlertDedup.set(dedupKey, now)
+    sweepAdminDedup(now)
+
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin', status: 'active' },
+      select: { id: true },
+    })
+    await Promise.all(
+      admins.map((admin) =>
+        NotificationService.notifyEvent({
+          userId: admin.id,
+          type: args.type,
+          title: args.title,
+          body: args.body,
+          ...(args.relatedEntityType ? { relatedEntityType: args.relatedEntityType } : {}),
+          ...(args.relatedEntityId ? { relatedEntityId: args.relatedEntityId } : {}),
+          email: { ctaUrl: `${env.FRONTEND_URL}/admin` },
+        })
+      )
+    )
   }
 
   static async listForUser(userId: string, opts?: { unreadOnly?: boolean; limit?: number }) {

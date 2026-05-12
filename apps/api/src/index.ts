@@ -22,6 +22,7 @@ import { notificationRoutes } from './routes/notifications'
 import { uploadRoutes } from './routes/uploads'
 import { talentRoutes } from './routes/talent'
 import { inviteRoutes } from './routes/invites'
+import { calendarRoutes } from './routes/calendar'
 import { webhookRoutes } from './routes/webhooks'
 import { adminRoutes } from './routes/admin'
 
@@ -85,6 +86,7 @@ api.route('/notifications', notificationRoutes)
 api.route('/uploads', uploadRoutes)
 api.route('/talent', talentRoutes)
 api.route('/invites', inviteRoutes)
+api.route('/calendar', calendarRoutes)
 api.route('/admin', adminRoutes)
 
 // ── Stripe webhook ─────────────────────────────────────────────────────────

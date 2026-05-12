@@ -215,13 +215,24 @@ export class BookingService {
     }
 
     // Strike system (PRD §10.6): artist-initiated late cancels increment
-    // strikeCount; caster cancels do not. 3-strike admin review is a
-    // future cron — for now we just keep the counter accurate.
+    // strikeCount; caster cancels do not. On the 3rd strike fan an alert
+    // out to all admins for review per PRD §13.4 — admin decides whether
+    // to suspend.
     if (cancellingParty === 'artist' && tier === 'under_48h') {
-      await prisma.artistProfile.update({
+      const updated = await prisma.artistProfile.update({
         where: { id: booking.artistId },
         data: { strikeCount: { increment: 1 } },
+        select: { id: true, strikeCount: true, firstName: true, lastName: true },
       })
+      if (updated.strikeCount >= 3) {
+        void NotificationService.notifyAdmins({
+          type: 'artist_rejected', // reuse — closest existing "admin attention" type
+          title: '3-strike review required',
+          body: `Artist ${updated.firstName} ${updated.lastName} (${updated.id}) reached ${updated.strikeCount} late-cancel strikes. Review whether to suspend.`,
+          relatedEntityType: 'artist_profile',
+          relatedEntityId: updated.id,
+        })
+      }
     }
 
     const updated = await prisma.booking.update({

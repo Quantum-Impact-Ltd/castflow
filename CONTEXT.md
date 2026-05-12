@@ -727,10 +727,318 @@ To make PDF contracts work alongside the rest of the workspace:
 - Bid edit while pending (PRD §10.5)
 - Critical-field-change bidder notifications (PRD §10.3)
 - 3-strike auto admin-review + frivolous-dispute auto-alert
-- Admin force-release / refund / remove-job (PRD §6.4–6.5)
 - Contact-detail redaction in messages
 - Job auto-expiry reminders + daily-digest matching emails
 - Welcome / artist_approved / artist_rejected emails
+
+## Admin power tools (PRD §6.4–6.5)
+
+Admin can now force-move money and force-remove jobs from the admin panel.
+Typecheck, lint, prettier, and 11/11 tests still green.
+
+### Force-release / force-refund escrow
+
+- `PaymentService.releaseEscrow` accepts a new `actor: 'admin'` (alongside
+  `'caster' | 'auto'`). All existing gating (held → released; Connect-ready
+  artist) still applies — admin can't conjure money, just bypass the caster's
+  confirmation step.
+- `POST /api/v1/admin/payments/bookings/:bookingId/release` calls
+  `releaseEscrow({ actor: 'admin' })` + writes an
+  `AdminLog(action: 'force_release_escrow')` with the admin's notes.
+- `POST /api/v1/admin/payments/bookings/:bookingId/refund` calls
+  `refundEscrow(notes)` + writes `AdminLog(action: 'force_refund_escrow')`.
+- Both routes require an `actionBodySchema` payload with `notes`
+  (3–1000 chars). Admin must explain the action so the log is auditable.
+
+### Force-remove job
+
+- New `JobService.adminRemove(jobId, reason)` — flips `job.status → 'cancelled'`,
+  expires pending/shortlisted bids inside a single transaction, then refunds
+  any in-flight `escrowStatus: 'held'` payments on bookings spawned by this
+  job (best-effort outside the transaction so a Stripe hiccup doesn't undo
+  the cancellation). Refund errors are logged but don't stop the loop.
+- `POST /api/v1/admin/jobs/:id/remove` (admin-only) with body
+  `{ reason: string min(5) max(1000) }`. Writes
+  `AdminLog(action: 'remove_job')`.
+
+### Implementation notes
+
+- All three power-tools require notes/reason from the admin so every action
+  is auditable via `AdminLog`. The reason is also passed downstream as the
+  `cancellationReason` / refund reason where applicable.
+- `releaseEscrow({ actor: 'admin' })` still throws `PAYOUT_NOT_READY` if the
+  artist hasn't completed Connect onboarding — admin can't ship a transfer
+  to nowhere. UI should surface this and prompt admin to chase the artist.
+
+## Backend polish batch (final pre-frontend pass)
+
+Closes the remaining PRD-MVP backend gaps. Typecheck, lint, prettier, and
+11/11 tests still green.
+
+### Bid edit while pending (PRD §10.5)
+
+- `BidService.updateBid(userId, bidId, input)` — partial update of
+  `proposedRate / estimatedHours / coverNote / highlightedPortfolioItems`.
+  Only callable by the bid owner; only while `status === 'pending'`.
+  Re-enforces the hourly-job estimatedHours requirement.
+- New validator export `UpdateBidInput` (already had the schema).
+- Route: `PATCH /api/v1/bids/:id` (artist).
+
+### Bid reject-undo within 24h (PRD §10.5)
+
+- `BidService.undoReject(userId, bidId)` — caster restores a rejected bid to
+  `pending` if `now - updatedAt < 24h` and the job is still active. Notifies
+  the artist (reuses `bid_received` type).
+- Route: `POST /api/v1/bids/:id/undo-reject` (caster).
+
+### Critical-field-change bidder notifications (PRD §10.3)
+
+- `JobService.updateJob` now diffs `shootDate / rateAmount / locationCity /
+  applicationDeadline` against the pre-edit values. If any changed, fans a
+  notification out to all bidders whose status is `pending` or `shortlisted`
+  ("A job you bid on was updated — caster changed `<fields>`"). Uses
+  `job_matching_posted` as the closest existing event type.
+
+### Approve / reject + welcome notifications
+
+- `ArtistService.approveApplication` now also fires `artist_approved` to the
+  artist's user (CTA: dashboard).
+- `ArtistService.rejectApplication` fires `artist_rejected` with the reason.
+- New `ArtistService.sendWelcomeAfterVerification({ userId, email, role })`
+  helper composes the right first-name lookup and calls
+  `EmailService.sendWelcomeEmail`. Wired into Better Auth's
+  `emailVerification.afterEmailVerification` hook in `lib/auth.ts` (lazily
+  imports `ArtistService` to avoid a circular import at module load).
+  Failures inside the hook are caught + logged so a Resend hiccup doesn't
+  break Better Auth's verify response.
+
+### 3-strike auto admin alert + frivolous-dispute alert (PRD §13.4–13.5)
+
+- New `NotificationService.notifyAdmins({ type, title, body, … })` —
+  fan-out helper that finds every `role: 'admin', status: 'active'` user and
+  calls `notifyEvent` for each (with `/admin` as the default CTA).
+- `BookingService.cancel`: on artist `under_48h` cancel, after incrementing
+  `strikeCount`, if the new value is `>= 3` fires a `3-strike review`
+  admin alert.
+- `DisputeService.adminResolve`: after the resolution + money movement, if
+  the outcome is `full_release_to_artist` (caster loses) or
+  `full_refund_to_caster` (artist loses), counts the loser's lifetime losses
+  with the same resolution. If `>= 3`, fires a
+  `Frivolous-dispute pattern` admin alert. Splits and escalations don't
+  count toward the streak.
+
+### Contact-detail redaction (PRD §10.10)
+
+- `MessageService.sendMessage` runs the body through `EMAIL_RE` + `PHONE_RE`
+  before insert. Matches set `Message.isFlagged: true` for the admin
+  moderation queue (`/api/v1/admin/flagged/messages` already paginates these).
+  We **don't block** — false positives on prop/scene descriptions would be
+  worse than the redaction itself. Repeat offenders get handled manually
+  via the existing admin status flip.
+
+### Auto-expiry reminders + matching-job digest (deferred)
+
+These need a cron / scheduler that we don't yet have in MVP. Documented
+here so it's not forgotten:
+
+- 14-day-no-activity job reminder email → caster.
+- Daily-digest of matching jobs → artist.
+- 7-day pre-shoot reminder, 24h-pre-shoot reminder, etc.
+
+Plumbing: each of these needs (a) a scheduler — Cloudflare Cron Triggers or
+Railway-side bun script invoked on a cron, (b) a "last reminded at" column
+on the relevant row so we don't double-fire. The notification helpers and
+email templates are already in place; only the scheduler is missing.
+
+## Next up
+
+Backend hardening (HANDOFF.md §5) is now complete + polished:
+
+1. ✅ Rate limiting + suspend-invalidates-session + upload key-ownership check
+2. ✅ Remaining §4.1 security gaps (high + medium + low)
+3. ✅ §4.2 optimizations
+4. ✅ Stripe Connect + artist payouts
+5. ✅ Notification + email event wiring
+6. ✅ PDF contract generation
+7. ✅ Dispute payout movement + cancellation-fee Stripe split + strike system
+8. ✅ Job invites + invite-only visibility
+9. ✅ Admin power tools (force-release / refund / remove-job)
+10. ✅ Final polish (bid edit, reject-undo, critical-change notifications,
+    approve/reject + welcome emails, 3-strike + frivolous-dispute alerts,
+    message redaction)
+
+**Backend is now feature-complete to PRD-MVP scope.** Only the cron-bound
+items (auto-expiry reminders, matching-job digest) and the open Phase 2
+items remain. Frontend work resumes from `/onboarding/*` per the original
+feature list — see "Feature build order" near the top of this file.
+
+## Phase 2 add-ons (vendor-free, backend-only)
+
+Two PRD Phase 2 items shipped without needing a vendor account or frontend
+work. Typecheck, lint, prettier, and 11/11 tests still green.
+
+### Comp-card auto-generator
+
+- `apps/api/src/templates/comp-card-pdf.ts` — print-friendly A4 comp-card
+  template (header + stats column + bio/skills column + 6-photo portfolio
+  grid + footer). Same `createElement` pattern as the contract PDF; no JSX
+  runtime needed in apps/api.
+- `ArtistService.generateCompCard(profileId): Promise<Buffer>` —
+  approved-only gate; pulls model/actor stats + skills + first 6 approved
+  photos (`isApproved: true, type: 'photo'`, ordered by `displayOrder`).
+  Returns the raw PDF buffer rendered on demand (no R2 caching for MVP —
+  stats change whenever the artist edits, and rendering is cheap).
+- `GET /api/v1/artists/:id/comp-card` (public, no auth) — streams the PDF.
+  `?download=1` flips `Content-Disposition` to `attachment`; default is
+  inline so a browser preview "just works".
+
+### Counter-offers on bids
+
+- New `CounterOffer` Prisma model + `CounterOfferStatus` enum
+  (`pending | accepted | declined | withdrawn`). `Bid.counterOffers` back
+  relation. Pushed to alwaysdata.
+- Validator `counterOfferSchema` (`proposedRate, estimatedHours?, message?`)
+  exported from `@castflow/validators`.
+- `BidService.proposeCounterOffer(userId, bidId, input)` — artist only,
+  shortlisted bids only, single pending offer per bid. Notifies caster
+  (`bid_received` reused).
+- `BidService.acceptCounterOffer / declineCounterOffer(userId, counterOfferId)`
+  — caster only. Accept overwrites `Bid.proposedRate` /
+  `Bid.estimatedHours` with the counter's values inside a transaction;
+  decline leaves the original bid intact. Notifies artist.
+- Routes:
+  - `POST /api/v1/bids/:id/counter` (artist)
+  - `POST /api/v1/bids/counter/:counterId/accept` (caster)
+  - `POST /api/v1/bids/counter/:counterId/decline` (caster)
+
+### Scope / non-goals
+
+- No multi-round negotiation chain — one pending counter per bid; if
+  declined, artist can submit another (the previous one stays `declined`).
+- Counter-offers don't bypass the `under_48h` shoot-window or any other
+  bid timing gates; once a bid is accepted the booking is created from
+  the (counter-)adjusted `proposedRate`.
+- Comp-cards are public: anyone with the profile id can download. PRD
+  treats them as marketing artefacts. If we later want to restrict to
+  logged-in casters, gate the route — but that breaks the typical
+  "share this comp-card" flow.
+
+### Remaining Phase 2 items (still open)
+
+- Portfolio watermarking (deferred — "CastFlow" isn't the final brand name,
+  so hardcoding it into the watermark text would create rework)
+- Multi-seat caster teams (needs design)
+- Subscription tiers (needs Stripe Subscriptions wiring + product design)
+- AI matching (needs design — rule-based vs embedding-based)
+- Mobile app, background-check, DocuSign, Onfido (all blocked on vendor
+  accounts or a different stack)
+
+## Phase 2: Calendar ICS export
+
+Per-user one-way calendar subscription. User pastes a URL into Apple /
+Google / Outlook and their CastFlow shoots auto-sync.
+
+### Schema
+
+- `User.calendarToken String? @unique` — URL-safe random secret. Null
+  until the first feed-URL fetch. Pushed via `prisma db push`.
+
+### Service — `CalendarService`
+
+- `ensureToken(userId)` — idempotent; lazily generates on first call so the
+  feed URL stays stable across reloads.
+- `regenerateToken(userId)` — rotates the token; old URL stops resolving
+  immediately. Returns the new URL.
+- `feedUrl(token)` — composes the public `/api/v1/calendar/feed/<token>.ics`.
+- `buildFeed(token)` — finds the user by token, queries their `confirmed +
+  completed` bookings, emits a spec-compliant ICS payload (CRLF, line
+  folding, escape of `\ , ;` and newlines, UTC `DTSTAMP/DTSTART/DTEND`).
+  Locations only appear on events with `contract.status === 'fully_signed'`
+  — pre-signature events show "Location: revealed once both parties sign
+  the contract" in the description so the shoot is visible in the
+  calendar but the address stays hidden.
+- Admin tokens fall through to an empty calendar (no 403 — calendar apps
+  would unsubscribe on errors, and admins don't have personal shoots).
+
+### Routes — `/api/v1/calendar`
+
+- `GET /me` (auth) — returns `{ url }` with the active feed URL.
+- `POST /me/regenerate` (auth) — rotates the token; returns the new URL.
+- `GET /feed/:tokenFile` (public) — `:tokenFile` is `<token>.ics`. Strips
+  the suffix, builds the feed, returns `text/calendar; charset=utf-8` with
+  a `Cache-Control: private, max-age=600` so calendar apps refresh ~hourly.
+
+### Implementation notes
+
+- ICS standard requires CRLF (`\r\n`) line endings and folding of lines
+  >75 octets with `CRLF + space`. The hand-rolled `foldLine` does that;
+  no third-party dependency.
+- Token is 40-char URL-safe base64 (`crypto.getRandomValues(40 bytes)`).
+  At 40 random URL-safe chars (~6 bits each) the brute-force search space
+  is ~10^72 — fine for a non-rotating secret in a public URL.
+- The feed URL uses `env.BETTER_AUTH_URL` as the host (that's the API
+  origin). When backend and frontend differ, this is correct — calendar
+  apps need to hit the API, not the SPA.
+- Events derive duration from `Job.shootDurationHours` (defaults to 4h if
+  somehow missing). Start time prefers `Booking.callTime` over
+  `Booking.shootDate` when set.
+- Cancelled/disputed bookings are intentionally NOT in the feed — the
+  calendar should reflect the user's actual commitments. They can still
+  see the cancellation in the dashboard.
+
+## Re-audit pass (post-new-features)
+
+Targeted security + optimization scan over everything shipped since the
+original HANDOFF.md §4 audit. Typecheck, lint, prettier, 11/11 tests still
+green.
+
+### Security fixes
+
+- **Shoot-location leak in invite detail** — `JobInviteService.getForArtist`
+  was returning `Job.shootLocationDetail` + `Job.callTime` to invited
+  artists pre-booking. Both are now stripped to `null` unconditionally per
+  the non-negotiable in the root CLAUDE.md ("shoot location hidden until
+  contract fully_signed").
+- **Calendar feed rate limit** — `GET /api/v1/calendar/feed/:tokenFile` was
+  un-throttled. Added IP-based `rateLimit({ scope: 'calendar:feed',
+  windowMs: 60_000, max: 60 })`. The 40-char URL-safe token is intractable
+  to brute-force on its own, but this is defence-in-depth in case a token
+  leaks through proxy/access logs.
+- **Connect deauthorize webhook** — handled `account.application.deauthorized`
+  via `PaymentService.clearConnectAccount(stripeAccountId)`. Clears
+  `stripeAccountId` + `payoutsEnabled` so future
+  `releaseEscrow` / `partialRelease` calls throw `PAYOUT_NOT_READY`
+  instead of attempting a 401-bound transfer.
+
+### Optimizations
+
+- **`Dispute(resolution)` index** — `DisputeService.adminResolve` runs a
+  lifetime-loss aggregate on every resolve to drive the frivolous-dispute
+  alert. Added `@@index([resolution])` so that count short-circuits.
+- **`notifyAdmins` dedup** — identical `(type, entityId)` admin alerts
+  within a 1h window now fire once. In-process `Map` with lazy hourly
+  sweep; single-instance MVP only — note to swap for Redis when we scale
+  past one replica.
+
+### Polish
+
+- **`job_critical_change` notification type** — `JobService.updateJob` was
+  using `job_matching_posted` as a workaround for the critical-field
+  change fan-out. Added a proper `job_critical_change` type to
+  `CastflowNotificationType` and switched the call site to it.
+
+### Re-audit follow-ups (still open)
+
+- **Comp-card route is fully public** — anyone with a profile ID can pull
+  the PDF. Intentional ("marketing artefact" per PRD), but acknowledged
+  as a conscious decision rather than an oversight. If we later want
+  caster-only, gate the route.
+- **JobService.updateJob fan-out for critical changes** — serial-ish
+  notification dispatch per bidder. Fine at MVP scale; needs batching if a
+  job ever has hundreds of bidders.
+- **Comp-card / calendar caching** — neither caches its rendered output.
+  Comp-card by `(profileId, updatedAt)` and calendar by `(token,
+  bookings_max_updated_at)` would be cheap wins later.
 
 ## Next up
 

@@ -37,6 +37,18 @@ async function profileIdForUser(user: UserCtx): Promise<{
 }
 
 /**
+ * Cheap heuristic for off-platform contact attempts. Two patterns:
+ *   - email: `local@domain.tld`
+ *   - phone-ish: 9+ digits (with optional separators and a leading +)
+ * False positives are acceptable — admin moderation queue handles the rest.
+ */
+const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/i
+const PHONE_RE = /(?:\+\d[\d\s().-]{7,}|\d[\d\s().-]{8,})/
+function containsContactDetails(content: string): boolean {
+  return EMAIL_RE.test(content) || PHONE_RE.test(content)
+}
+
+/**
  * Given a thread and the sender's user id, return the user id of the OTHER
  * participant — or null if we can't resolve (e.g. admin senders, which don't
  * happen in this MVP). Used to address message_received notifications.
@@ -125,12 +137,20 @@ export class MessageService {
       throw new AppError('THREAD_LOCKED', 'You cannot message before being shortlisted', 403)
     }
 
+    // Contact-detail redaction (PRD §10.10): flag messages that look like
+    // they're trying to share phone numbers or emails so admin can review.
+    // We DON'T block — that would risk false positives on prop/scene
+    // descriptions. The flag lights up the admin moderation queue; repeat
+    // offenders get warned/suspended manually.
+    const isFlagged = containsContactDetails(content)
+
     const message = await prisma.$transaction(async (tx) => {
       const row = await tx.message.create({
         data: {
           threadId,
           senderId: user.id,
           content,
+          isFlagged,
         },
       })
       await tx.messageThread.update({

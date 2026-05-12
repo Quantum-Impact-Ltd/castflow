@@ -152,6 +152,13 @@ enum InviteStatus {
   declined
 }
 
+enum CounterOfferStatus {
+  pending
+  accepted
+  declined
+  withdrawn
+}
+
 // ─── MODELS ───────────────────────────────────────────────────────────────────
 
 // ─── BETTER AUTH TABLES ───────────────────────────────────────────────────────
@@ -171,6 +178,10 @@ model User {
   profileId      String?
   approvalStatus String?
   status         String    @default("pending")
+  // Per-user secret token for the ICS calendar subscription URL.
+  // Anyone with the URL can read (calendar apps don't send cookies); user
+  // regenerates if compromised. Null until first calendar fetch.
+  calendarToken  String?   @unique
 
   sessions      Session[]
   accounts      Account[]
@@ -449,12 +460,28 @@ model Bid {
   submittedAt               DateTime  @default(now()) @map("submitted_at")
   updatedAt                 DateTime  @updatedAt @map("updated_at")
 
-  booking Booking?
+  booking        Booking?
+  counterOffers  CounterOffer[]
 
   @@unique([jobId, artistId])
   @@index([artistId, status])
   @@index([jobId, status])
   @@map("bids")
+}
+
+model CounterOffer {
+  id             String             @id @default(uuid())
+  bidId          String             @map("bid_id")
+  bid            Bid                @relation(fields: [bidId], references: [id])
+  proposedRate   Decimal            @db.Decimal(10, 2) @map("proposed_rate")
+  estimatedHours Decimal?           @db.Decimal(4, 1) @map("estimated_hours")
+  message        String?
+  status         CounterOfferStatus @default(pending)
+  createdAt      DateTime           @default(now()) @map("created_at")
+  respondedAt    DateTime?          @map("responded_at")
+
+  @@index([bidId, status])
+  @@map("counter_offers")
 }
 
 model Booking {
@@ -634,6 +661,7 @@ model Dispute {
   createdAt  DateTime  @default(now()) @map("created_at")
   resolvedAt DateTime? @map("resolved_at")
 
+  @@index([resolution])
   @@map("disputes")
 }
 

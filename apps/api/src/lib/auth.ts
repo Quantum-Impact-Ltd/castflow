@@ -33,6 +33,24 @@ export const auth = betterAuth({
       const verifyUrl = `${env.FRONTEND_URL}/verify-email/${encodeURIComponent(token)}`
       await EmailService.sendVerificationEmail({ to: user.email, verifyUrl })
     },
+    afterEmailVerification: async (user: { id: string; email: string; role?: string }) => {
+      // Fire the welcome email post-verification. Best-effort: a failure must
+      // not bubble back into Better Auth and break the verify request.
+      try {
+        const role = user.role === 'caster' ? 'caster' : 'artist'
+        const { ArtistService } = await import('../services/ArtistService')
+        await ArtistService.sendWelcomeAfterVerification({
+          userId: user.id,
+          email: user.email,
+          role,
+        })
+      } catch (err) {
+        console.error('[auth] welcome email failed', {
+          userId: user.id,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
+    },
     autoSignInAfterVerification: false,
     sendOnSignUp: true,
   },

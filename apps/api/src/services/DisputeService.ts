@@ -255,6 +255,41 @@ export class DisputeService {
       })
     }
 
+    // Frivolous-dispute admin alert (PRD §13.5). A party "loses" when the
+    // resolution favours the other side (`full_release_to_artist` is a loss
+    // for the caster; `full_refund_to_caster` is a loss for the artist).
+    // Splits and escalations don't count. On the 3rd lifetime loss for a
+    // party we ping admins so they can decide whether to flag/suspend.
+    let loserProfileId: string | null = null
+    let loserSide: 'caster' | 'artist' | null = null
+    if (input.resolution === 'full_release_to_artist') {
+      loserProfileId = dispute.booking.casterId
+      loserSide = 'caster'
+    } else if (input.resolution === 'full_refund_to_caster') {
+      loserProfileId = dispute.booking.artistId
+      loserSide = 'artist'
+    }
+    if (loserProfileId && loserSide) {
+      const losingResolution =
+        loserSide === 'artist' ? 'full_refund_to_caster' : 'full_release_to_artist'
+      const lostCount = await prisma.dispute.count({
+        where: {
+          resolution: losingResolution,
+          booking:
+            loserSide === 'artist' ? { artistId: loserProfileId } : { casterId: loserProfileId },
+        },
+      })
+      if (lostCount >= 3) {
+        void NotificationService.notifyAdmins({
+          type: 'dispute_resolved',
+          title: 'Frivolous-dispute pattern',
+          body: `${loserSide === 'artist' ? 'Artist' : 'Caster'} ${loserProfileId} has now lost ${lostCount} disputes. Review for warning/suspension.`,
+          relatedEntityType: loserSide === 'artist' ? 'artist_profile' : 'caster_profile',
+          relatedEntityId: loserProfileId,
+        })
+      }
+    }
+
     return resolved
   }
 }

@@ -1,4 +1,4 @@
-import type { SubmitBidInput } from '@castflow/validators'
+import type { SubmitBidInput, UpdateBidInput, CounterOfferInput } from '@castflow/validators'
 import type { BidStatus } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
@@ -113,6 +113,44 @@ export class BidService {
     return bid
   }
 
+  /**
+   * Artist edits their own bid while it's still pending (PRD §10.5).
+   * Locked once the caster shortlists/rejects/accepts.
+   */
+  static async updateBid(userId: string, bidId: string, input: UpdateBidInput) {
+    const artist = await getArtistProfile(userId)
+    const bid = await prisma.bid.findUnique({
+      where: { id: bidId },
+      include: { job: { select: { paymentType: true } } },
+    })
+    if (!bid) throw new AppError('NOT_FOUND', 'Bid not found', 404)
+    if (bid.artistId !== artist.id) throw new AppError('FORBIDDEN', 'Not your bid', 403)
+    if (bid.status !== 'pending') {
+      throw new AppError('BID_LOCKED', `Cannot edit a ${bid.status} bid`, 400)
+    }
+
+    if (bid.job.paymentType === 'hourly' && input.estimatedHours === null) {
+      throw new AppError(
+        'HOURS_REQUIRED_FOR_HOURLY',
+        'Estimated hours required for hourly jobs',
+        400,
+        { estimatedHours: ['Required'] }
+      )
+    }
+
+    const data: Record<string, unknown> = {}
+    if (input.proposedRate !== undefined) data.proposedRate = input.proposedRate
+    if (input.estimatedHours !== undefined) {
+      data.estimatedHours = bid.job.paymentType === 'hourly' ? input.estimatedHours : null
+    }
+    if (input.coverNote !== undefined) data.coverNote = input.coverNote
+    if (input.highlightedPortfolioItems !== undefined) {
+      data.highlightedPortfolioItems = input.highlightedPortfolioItems
+    }
+
+    return prisma.bid.update({ where: { id: bidId }, data })
+  }
+
   static async withdrawBid(userId: string, bidId: string) {
     const artist = await getArtistProfile(userId)
     const bid = await prisma.bid.findUnique({ where: { id: bidId } })
@@ -217,6 +255,54 @@ export class BidService {
       type: 'bid_rejected',
       title: 'Your bid was declined',
       body: `Your bid on "${bid.job.title}" was not selected${reason ? `: ${reason}` : '.'}`,
+      relatedEntityType: 'bid',
+      relatedEntityId: bid.id,
+      email: { ctaUrl: `${env.FRONTEND_URL}/artist/bids` },
+    })
+
+    return updated
+  }
+
+  /**
+   * Caster undoes a rejection within 24 hours (PRD §10.5). Restores the bid
+   * to `pending` so it shows up in the open-bids list again.
+   */
+  static async undoReject(userId: string, bidId: string) {
+    const casterId = await getCasterProfileId(userId)
+    const bid = await prisma.bid.findUnique({
+      where: { id: bidId },
+      include: {
+        job: { select: { casterId: true, status: true, title: true } },
+        artist: { select: { userId: true } },
+      },
+    })
+    if (!bid) throw new AppError('NOT_FOUND', 'Bid not found', 404)
+    if (bid.job.casterId !== casterId) throw new AppError('FORBIDDEN', 'Not your job', 403)
+    if (bid.status !== 'rejected') {
+      throw new AppError('INVALID_STATE', `Bid is ${bid.status}, not rejected`, 400)
+    }
+    const hoursSinceReject = (Date.now() - bid.updatedAt.getTime()) / (1000 * 60 * 60)
+    if (hoursSinceReject > 24) {
+      throw new AppError(
+        'INVALID_STATE',
+        'Undo window has closed — rejections can only be reversed within 24 hours',
+        400
+      )
+    }
+    if (bid.job.status !== 'active') {
+      throw new AppError('JOB_CLOSED', `Job is ${bid.job.status}`, 410)
+    }
+
+    const updated = await prisma.bid.update({
+      where: { id: bidId },
+      data: { status: 'pending', rejectionReason: null },
+    })
+
+    void NotificationService.notifyEvent({
+      userId: bid.artist.userId,
+      type: 'bid_received',
+      title: 'Your bid is back in consideration',
+      body: `The caster restored your bid on "${bid.job.title}" — it's pending again.`,
       relatedEntityType: 'bid',
       relatedEntityId: bid.id,
       email: { ctaUrl: `${env.FRONTEND_URL}/artist/bids` },
@@ -393,5 +479,134 @@ export class BidService {
     }
 
     return updated
+  }
+
+  // ── Counter-offers (Phase 2) ─────────────────────────────────────────────
+  // Artist proposes a different rate after being shortlisted. Caster
+  // accepts (overwrites bid.proposedRate / estimatedHours) or declines
+  // (counter stays declined, bid keeps its original rate, status unchanged).
+  // Only one pending counter per bid at a time.
+
+  static async proposeCounterOffer(userId: string, bidId: string, input: CounterOfferInput) {
+    const artist = await getArtistProfile(userId)
+    const bid = await prisma.bid.findUnique({
+      where: { id: bidId },
+      include: {
+        job: { select: { paymentType: true, title: true, caster: { select: { userId: true } } } },
+      },
+    })
+    if (!bid) throw new AppError('NOT_FOUND', 'Bid not found', 404)
+    if (bid.artistId !== artist.id) throw new AppError('FORBIDDEN', 'Not your bid', 403)
+    if (bid.status !== 'shortlisted') {
+      throw new AppError(
+        'BID_NOT_PENDING',
+        'Counter-offers can only be proposed on shortlisted bids',
+        400
+      )
+    }
+    if (bid.job.paymentType === 'hourly' && !input.estimatedHours) {
+      throw new AppError(
+        'HOURS_REQUIRED_FOR_HOURLY',
+        'Estimated hours required for hourly jobs',
+        400,
+        { estimatedHours: ['Required'] }
+      )
+    }
+
+    const existingPending = await prisma.counterOffer.findFirst({
+      where: { bidId, status: 'pending' },
+      select: { id: true },
+    })
+    if (existingPending) {
+      throw new AppError('INVALID_STATE', 'A pending counter-offer already exists on this bid', 409)
+    }
+
+    const offer = await prisma.counterOffer.create({
+      data: {
+        bidId,
+        proposedRate: input.proposedRate,
+        estimatedHours:
+          bid.job.paymentType === 'hourly' && input.estimatedHours ? input.estimatedHours : null,
+        message: input.message ?? null,
+        status: 'pending',
+      },
+    })
+
+    void NotificationService.notifyEvent({
+      userId: bid.job.caster.userId,
+      type: 'bid_received',
+      title: 'Counter-offer on a shortlisted bid',
+      body: `An artist proposed a new rate of £${input.proposedRate} on "${bid.job.title}".`,
+      relatedEntityType: 'counter_offer',
+      relatedEntityId: offer.id,
+      email: { ctaUrl: `${env.FRONTEND_URL}/caster/bids/${bidId}` },
+    })
+
+    return offer
+  }
+
+  static async acceptCounterOffer(userId: string, counterOfferId: string) {
+    return BidService.respondToCounterOffer(userId, counterOfferId, 'accepted')
+  }
+
+  static async declineCounterOffer(userId: string, counterOfferId: string) {
+    return BidService.respondToCounterOffer(userId, counterOfferId, 'declined')
+  }
+
+  private static async respondToCounterOffer(
+    userId: string,
+    counterOfferId: string,
+    target: 'accepted' | 'declined'
+  ) {
+    const casterId = await getCasterProfileId(userId)
+    const offer = await prisma.counterOffer.findUnique({
+      where: { id: counterOfferId },
+      include: {
+        bid: {
+          include: {
+            job: { select: { casterId: true, title: true } },
+            artist: { select: { userId: true } },
+          },
+        },
+      },
+    })
+    if (!offer) throw new AppError('NOT_FOUND', 'Counter-offer not found', 404)
+    if (offer.bid.job.casterId !== casterId) {
+      throw new AppError('FORBIDDEN', 'Not your job', 403)
+    }
+    if (offer.status !== 'pending') {
+      throw new AppError('INVALID_STATE', `Counter-offer already ${offer.status}`, 400)
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.counterOffer.update({
+        where: { id: counterOfferId },
+        data: { status: target, respondedAt: new Date() },
+      })
+      if (target === 'accepted') {
+        await tx.bid.update({
+          where: { id: offer.bidId },
+          data: {
+            proposedRate: offer.proposedRate,
+            estimatedHours: offer.estimatedHours,
+          },
+        })
+      }
+
+      void NotificationService.notifyEvent({
+        userId: offer.bid.artist.userId,
+        type: target === 'accepted' ? 'bid_shortlisted' : 'bid_received',
+        title: target === 'accepted' ? 'Counter-offer accepted' : 'Counter-offer declined',
+        body:
+          target === 'accepted'
+            ? `The caster accepted your counter-offer of £${Number(offer.proposedRate)} on "${offer.bid.job.title}".`
+            : `The caster declined your counter-offer on "${offer.bid.job.title}". Your original bid still stands.`,
+        relatedEntityType: 'counter_offer',
+        relatedEntityId: offer.id,
+        email: { ctaUrl: `${env.FRONTEND_URL}/artist/bids` },
+      })
+
+      return updated
+    })
   }
 }

@@ -8,7 +8,10 @@ import type {
   Prisma,
 } from '@prisma/client'
 import { prisma } from '../lib/prisma'
+import { env } from '../lib/env'
 import { AppError } from '../errors'
+import { NotificationService } from './NotificationService'
+import { PaymentService } from './PaymentService'
 
 // Lazy expiry: a job is "live" while status='active' AND now < applicationDeadline.
 // We never run a scheduler; reads compute the effective state, writes flip on demand.
@@ -119,7 +122,56 @@ export class JobService {
     if (input.applicationDeadline !== undefined)
       data.applicationDeadline = new Date(input.applicationDeadline)
 
-    return prisma.job.update({ where: { id: jobId }, data })
+    // Detect critical-field changes BEFORE the update so we can diff against
+    // the persisted values, then notify all non-rejected bidders (PRD §10.3).
+    const criticalChanges: string[] = []
+    if (
+      input.shootDate !== undefined &&
+      new Date(input.shootDate).getTime() !== job.shootDate.getTime()
+    ) {
+      criticalChanges.push('shoot date')
+    }
+    if (
+      input.rateAmount !== undefined &&
+      Number(input.rateAmount) !== Number(job.rateAmount ?? 0)
+    ) {
+      criticalChanges.push('rate')
+    }
+    if (
+      input.locationCity !== undefined &&
+      input.locationCity.toLowerCase() !== job.locationCity.toLowerCase()
+    ) {
+      criticalChanges.push('location')
+    }
+    if (
+      input.applicationDeadline !== undefined &&
+      new Date(input.applicationDeadline).getTime() !== job.applicationDeadline.getTime()
+    ) {
+      criticalChanges.push('application deadline')
+    }
+
+    const updated = await prisma.job.update({ where: { id: jobId }, data })
+
+    if (criticalChanges.length > 0) {
+      const bidders = await prisma.bid.findMany({
+        where: { jobId, status: { in: ['pending', 'shortlisted'] } },
+        select: { id: true, artist: { select: { userId: true } } },
+      })
+      const summary = criticalChanges.join(', ')
+      for (const bid of bidders) {
+        void NotificationService.notifyEvent({
+          userId: bid.artist.userId,
+          type: 'job_critical_change',
+          title: 'A job you bid on was updated',
+          body: `The caster changed the ${summary} for "${job.title}". Review and re-confirm your bid.`,
+          relatedEntityType: 'bid',
+          relatedEntityId: bid.id,
+          email: { ctaUrl: `${env.FRONTEND_URL}/artist/bids` },
+        })
+      }
+    }
+
+    return updated
   }
 
   static async listMyJobs(
@@ -161,6 +213,49 @@ export class JobService {
       })
       return cancelled
     })
+  }
+
+  /**
+   * Admin force-remove a job (PRD §6.5). Flips status to cancelled, expires
+   * pending/shortlisted bids, and refunds any held escrows on bookings that
+   * sprang from this job. Refunds run after the DB transaction so the Stripe
+   * cancel calls don't hold a long-running transaction open.
+   */
+  static async adminRemove(jobId: string, reason: string) {
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      include: {
+        bookings: {
+          where: { payment: { is: { escrowStatus: 'held' } } },
+          select: { id: true },
+        },
+      },
+    })
+    if (!job) throw new AppError('NOT_FOUND', 'Job not found', 404)
+    if (job.status === 'cancelled') return job
+
+    await prisma.$transaction(async (tx) => {
+      await tx.job.update({ where: { id: jobId }, data: { status: 'cancelled' } })
+      await tx.bid.updateMany({
+        where: { jobId, status: { in: ['pending', 'shortlisted'] } },
+        data: { status: 'expired' },
+      })
+    })
+
+    // Refund any in-flight escrows held against this job. Best-effort: log
+    // failures but don't stop the loop — admin gets the rest of the cleanup.
+    for (const booking of job.bookings) {
+      try {
+        await PaymentService.refundEscrow(booking.id, `Admin removed job: ${reason}`)
+      } catch (err) {
+        console.error('[JobService.adminRemove] refund failed', {
+          bookingId: booking.id,
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }
+
+    return prisma.job.findUnique({ where: { id: jobId } })
   }
 
   // ── Public: list + detail (artist-facing) ─────────────────────────────────

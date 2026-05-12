@@ -139,6 +139,11 @@ export class JobInviteService {
   /**
    * Artist views a single invite + the full job detail (including the
    * `invite_only` jobs that don't appear in the public feed).
+   *
+   * SHOOT-LOCATION RULE: per the non-negotiable in the root CLAUDE.md,
+   * `shootLocationDetail` and `callTime` are NEVER returned before the
+   * booking's contract is `fully_signed`. An invite is pre-booking, so we
+   * strip them out unconditionally here.
    */
   static async getForArtist(userId: string, inviteId: string) {
     const artist = await getArtistProfile(userId)
@@ -153,7 +158,14 @@ export class JobInviteService {
       },
     })
     if (!invite) throw new AppError('NOT_FOUND', 'Invite not found', 404)
-    return invite
+    return {
+      ...invite,
+      job: {
+        ...invite.job,
+        shootLocationDetail: null,
+        callTime: null,
+      },
+    }
   }
 
   static async accept(userId: string, inviteId: string) {

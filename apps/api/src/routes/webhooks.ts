@@ -79,6 +79,15 @@ webhookRoutes.post('/stripe', async (c) => {
       })
       break
     }
+    case 'account.application.deauthorized': {
+      // Artist revoked our Connect access from the Stripe dashboard.
+      // Clear the binding so future releases throw PAYOUT_NOT_READY.
+      const account = event.account ?? event.data.object.id
+      if (typeof account === 'string') {
+        await PaymentService.clearConnectAccount(account)
+      }
+      break
+    }
     default:
       // Ignore unhandled types for now; record-only later if needed.
       break

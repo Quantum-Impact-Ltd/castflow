@@ -14,4 +14,12 @@ export const submitBidSchema = z.object({
 export const updateBidSchema = submitBidSchema.partial()
 // Only editable while bid.status === 'pending'
 
+export const counterOfferSchema = z.object({
+  proposedRate: z.number().min(1).max(100000),
+  estimatedHours: z.number().min(0.5).max(24).optional(),
+  message: z.string().max(500).optional(),
+})
+
 export type SubmitBidInput = z.infer<typeof submitBidSchema>
+export type UpdateBidInput = z.infer<typeof updateBidSchema>
+export type CounterOfferInput = z.infer<typeof counterOfferSchema>

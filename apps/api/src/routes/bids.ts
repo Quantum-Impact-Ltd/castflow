@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z, type ZodType } from 'zod'
-import { submitBidSchema } from '@castflow/validators'
+import { submitBidSchema, updateBidSchema, counterOfferSchema } from '@castflow/validators'
 import { authenticate } from '../middleware/authenticate'
 import { requireRole } from '../middleware/requireRole'
 import { rateLimitByUser } from '../middleware/rateLimit'
@@ -45,6 +45,13 @@ bidRoutes.post('/jobs/:jobId', authenticate, requireRole('artist'), submitBidLim
   const input = await parseBody(c, submitBidSchema)
   const jobId = c.req.param('jobId') ?? ''
   const bid = await BidService.submitBid(user.id, jobId, input)
+  return c.json({ success: true, data: bid })
+})
+
+bidRoutes.patch('/:id', authenticate, requireRole('artist'), async (c) => {
+  const user = c.get('user')
+  const input = await parseBody(c, updateBidSchema)
+  const bid = await BidService.updateBid(user.id, c.req.param('id') ?? '', input)
   return c.json({ success: true, data: bid })
 })
 
@@ -94,9 +101,35 @@ bidRoutes.post('/:id/reject', authenticate, requireRole('caster'), async (c) => 
   return c.json({ success: true, data: bid })
 })
 
+bidRoutes.post('/:id/undo-reject', authenticate, requireRole('caster'), async (c) => {
+  const user = c.get('user')
+  const bid = await BidService.undoReject(user.id, c.req.param('id') ?? '')
+  return c.json({ success: true, data: bid })
+})
+
 bidRoutes.post('/:id/accept', authenticate, requireRole('caster'), async (c) => {
   const user = c.get('user')
   const body = await parseBody(c, acceptBodySchema)
   const booking = await BidService.acceptBid(user.id, c.req.param('id') ?? '', body.shootLocation)
   return c.json({ success: true, data: booking })
+})
+
+// ── Counter-offers (Phase 2) ───────────────────────────────────────────────
+bidRoutes.post('/:id/counter', authenticate, requireRole('artist'), async (c) => {
+  const user = c.get('user')
+  const input = await parseBody(c, counterOfferSchema)
+  const offer = await BidService.proposeCounterOffer(user.id, c.req.param('id') ?? '', input)
+  return c.json({ success: true, data: offer })
+})
+
+bidRoutes.post('/counter/:counterId/accept', authenticate, requireRole('caster'), async (c) => {
+  const user = c.get('user')
+  const offer = await BidService.acceptCounterOffer(user.id, c.req.param('counterId') ?? '')
+  return c.json({ success: true, data: offer })
+})
+
+bidRoutes.post('/counter/:counterId/decline', authenticate, requireRole('caster'), async (c) => {
+  const user = c.get('user')
+  const offer = await BidService.declineCounterOffer(user.id, c.req.param('counterId') ?? '')
+  return c.json({ success: true, data: offer })
 })

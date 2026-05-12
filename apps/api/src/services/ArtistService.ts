@@ -5,7 +5,11 @@ import type {
   ArtistExperienceInput,
 } from '@castflow/validators'
 import { prisma } from '../lib/prisma'
+import { env } from '../lib/env'
 import { AppError } from '../errors'
+import { NotificationService } from './NotificationService'
+import { EmailService } from './EmailService'
+import { renderCompCardPdf } from '../templates/comp-card-pdf'
 
 async function getProfileByUser(userId: string) {
   const profile = await prisma.artistProfile.findUnique({
@@ -181,8 +185,8 @@ export class ArtistService {
     if (!profile) throw new AppError('NOT_FOUND', 'Artist profile not found', 404)
     if (profile.approvalStatus === 'approved') return profile
 
-    return prisma.$transaction(async (tx) => {
-      const updated = await tx.artistProfile.update({
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.artistProfile.update({
         where: { id: profile.id },
         data: {
           approvalStatus: 'approved',
@@ -207,8 +211,23 @@ export class ArtistService {
           notes: args.notes ?? null,
         },
       })
-      return updated
+      return row
     })
+
+    void NotificationService.notifyEvent({
+      userId: profile.userId,
+      type: 'artist_approved',
+      title: 'Your CastFlow profile is approved!',
+      body: 'Welcome to CastFlow — you can now bid on jobs and accept invites.',
+      relatedEntityType: 'artist_profile',
+      relatedEntityId: profile.id,
+      email: {
+        ctaUrl: `${env.FRONTEND_URL}/artist/dashboard`,
+        ctaLabel: 'Go to dashboard',
+      },
+    })
+
+    return updated
   }
 
   static async rejectApplication(args: { profileId: string; adminId: string; reason: string }) {
@@ -223,8 +242,8 @@ export class ArtistService {
     if (!profile) throw new AppError('NOT_FOUND', 'Artist profile not found', 404)
     if (profile.approvalStatus === 'rejected') return profile
 
-    return prisma.$transaction(async (tx) => {
-      const updated = await tx.artistProfile.update({
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.artistProfile.update({
         where: { id: profile.id },
         data: {
           approvalStatus: 'rejected',
@@ -246,7 +265,112 @@ export class ArtistService {
           notes: args.reason,
         },
       })
-      return updated
+      return row
     })
+
+    void NotificationService.notifyEvent({
+      userId: profile.userId,
+      type: 'artist_rejected',
+      title: 'Your CastFlow application was not approved',
+      body: `Reason: ${args.reason}`,
+      relatedEntityType: 'artist_profile',
+      relatedEntityId: profile.id,
+      email: { ctaUrl: `${env.FRONTEND_URL}/onboarding/pending` },
+    })
+
+    return updated
+  }
+
+  /**
+   * Render a comp-card PDF for a public, approved artist. Returns the raw
+   * Buffer so the route can stream it (no R2 caching for MVP — the data
+   * changes whenever the artist edits their profile, and rendering is
+   * cheap enough to do on demand).
+   */
+  static async generateCompCard(profileId: string): Promise<Buffer> {
+    const profile = await prisma.artistProfile.findUnique({
+      where: { id: profileId },
+      include: {
+        modelStats: true,
+        actorStats: true,
+        skills: true,
+        portfolioItems: {
+          where: { isApproved: true, type: 'photo' },
+          orderBy: { displayOrder: 'asc' },
+          take: 6,
+        },
+      },
+    })
+    if (!profile) throw new AppError('NOT_FOUND', 'Artist profile not found', 404)
+    if (profile.approvalStatus !== 'approved') {
+      throw new AppError('FORBIDDEN', 'Comp-card is only available for approved artists', 403)
+    }
+
+    return renderCompCardPdf({
+      firstName: profile.firstName,
+      artistType: profile.artistType,
+      city: profile.city ?? 'UK',
+      bio: profile.bio,
+      experienceLevel: profile.experienceLevel ?? 'new_face',
+      ratingAvg: profile.ratingAvg ? Number(profile.ratingAvg) : null,
+      ratingCount: profile.ratingCount,
+      jobsCompleted: profile.jobsCompleted,
+      modelStats: profile.modelStats
+        ? {
+            heightCm: profile.modelStats.heightCm,
+            dressSize: profile.modelStats.dressSize,
+            shoeSize: profile.modelStats.shoeSize,
+            bustCm: profile.modelStats.bustCm,
+            waistCm: profile.modelStats.waistCm,
+            hipCm: profile.modelStats.hipCm,
+            hairColour: profile.modelStats.hairColour,
+            eyeColour: profile.modelStats.eyeColour,
+            skinTone: profile.modelStats.skinTone,
+          }
+        : null,
+      actorStats: profile.actorStats
+        ? {
+            heightCm: profile.actorStats.heightCm,
+            hairColour: profile.actorStats.hairColour,
+            eyeColour: profile.actorStats.eyeColour,
+            voiceType: profile.actorStats.voiceType,
+            ageRangeMin: profile.actorStats.ageRangeMin,
+            ageRangeMax: profile.actorStats.ageRangeMax,
+          }
+        : null,
+      skills: profile.skills.map((s) => ({
+        skillType: s.skillType,
+        skillValue: s.skillValue,
+      })),
+      portfolioPhotos: profile.portfolioItems.map((p) => p.url),
+    })
+  }
+
+  /**
+   * Fire a welcome email after a user verifies their email. Better Auth's
+   * `emailVerification` hook calls this via a small adapter (see auth.ts).
+   * Idempotent at the EmailService layer — duplicate sends are unlikely
+   * since BA fires the verify hook once per token.
+   */
+  static async sendWelcomeAfterVerification(args: {
+    userId: string
+    email: string
+    role: 'artist' | 'caster'
+  }) {
+    let firstName = 'there'
+    if (args.role === 'artist') {
+      const profile = await prisma.artistProfile.findUnique({
+        where: { userId: args.userId },
+        select: { firstName: true },
+      })
+      if (profile?.firstName) firstName = profile.firstName
+    } else {
+      const profile = await prisma.casterProfile.findUnique({
+        where: { userId: args.userId },
+        select: { contactName: true },
+      })
+      if (profile?.contactName) firstName = profile.contactName.split(' ')[0] ?? 'there'
+    }
+    await EmailService.sendWelcomeEmail({ to: args.email, role: args.role, firstName })
   }
 }

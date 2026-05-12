@@ -153,6 +153,25 @@ export class PaymentService {
   }
 
   /**
+   * Webhook: `account.application.deauthorized`. The artist revoked the
+   * platform's access from their Stripe dashboard. Clear our cached
+   * account binding so future `releaseEscrow` / `partialRelease` calls
+   * throw `PAYOUT_NOT_READY` and surface to admin instead of attempting
+   * a transfer to an account that would 401.
+   */
+  static async clearConnectAccount(accountId: string) {
+    const profile = await prisma.artistProfile.findFirst({
+      where: { stripeAccountId: accountId },
+      select: { id: true },
+    })
+    if (!profile) return null
+    return prisma.artistProfile.update({
+      where: { id: profile.id },
+      data: { stripeAccountId: null, payoutsEnabled: false },
+    })
+  }
+
+  /**
    * Webhook: `account.updated`. Mirror Stripe's `payouts_enabled` flag onto
    * the cached column so `releaseEscrow` can gate without an RPC.
    */
@@ -312,7 +331,7 @@ export class PaymentService {
    * money stuck on the platform. The caller (manual confirm or
    * `maybeAutoRelease`) decides whether to surface, notify, or retry later.
    */
-  static async releaseEscrow(bookingId: string, opts: { actor: 'caster' | 'auto' }) {
+  static async releaseEscrow(bookingId: string, opts: { actor: 'caster' | 'auto' | 'admin' }) {
     const payment = await prisma.payment.findUnique({
       where: { bookingId },
       include: {

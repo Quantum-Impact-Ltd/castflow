@@ -76,3 +76,19 @@ artistRoutes.post('/me/submit', authenticate, requireRole('artist'), async (c) =
   const profile = await ArtistService.submitForReview(user.id)
   return c.json({ success: true, data: profile })
 })
+
+/**
+ * Comp-card PDF for an approved artist (Phase 2). Anyone with the profile id
+ * can download it — comp-cards are explicitly public marketing artefacts.
+ * Returns `application/pdf` for `?download=1`, otherwise inline.
+ */
+artistRoutes.get('/:id/comp-card', async (c) => {
+  const buffer = await ArtistService.generateCompCard(c.req.param('id') ?? '')
+  const isDownload = c.req.query('download') === '1'
+  c.header('Content-Type', 'application/pdf')
+  c.header(
+    'Content-Disposition',
+    `${isDownload ? 'attachment' : 'inline'}; filename="comp-card.pdf"`
+  )
+  return c.body(new Uint8Array(buffer))
+})
