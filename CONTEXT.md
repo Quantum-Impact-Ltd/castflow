@@ -1106,3 +1106,42 @@ Open follow-ups (carried over from Phase 5; not blockers for feature work):
 - Replace the `ScaffoldPlaceholder` history (it never persisted to the DB — only the placeholder `schema.prisma` referenced it) once the migration history is bootstrapped.
 - Decide whether to keep `apps/web/tsconfig.json`'s `exactOptionalPropertyTypes: false` long-term, or to patch the offending shadcn components (`dropdown-menu.tsx`, `sonner.tsx`) to satisfy the strict setting.
 - Revisit `apps/web/lib/auth-server.ts`'s `as never` / hand-rolled session shape once Better Auth's actual `getSession` payload is locked in by the auth phase — and consider replacing the literal-only role/status unions with a runtime guard so the typed shape is enforced, not just declared.
+
+### Backend test pass — Tier A (money + sensitive-field flows)
+
+Closed the highest-priority gaps from HANDOFF.md §4 Tier A. Suite is **43/43 green** under `bun test`.
+
+**Files added** (all under `apps/api/`):
+
+- `bunfig.toml` — `[test] preload = ["./tests/helpers/setup.ts"]`. Registers Stripe + R2 module mocks before any service code resolves its imports, so downstream `import { stripe } from '../lib/stripe'` returns the mock.
+- `tests/helpers/setup.ts` — calls `mock.module(...)` against the resolved absolute paths of `src/lib/stripe.ts` and `src/lib/r2.ts`.
+- `tests/helpers/stripe-mock.ts` — fluent stub of `paymentIntents.{create,capture,cancel}`, `transfers.create`, `accounts.{create,retrieve}`, `accountLinks.create`, `refunds.create`, `webhooks.constructEvent`. Each method is a Bun `mock()` so tests can assert call counts/args. Exports `seedConnectAccount`, `seedPaymentIntent`, `resetStripeMockState`, `resetStripeMockCalls`.
+- `tests/helpers/r2-mock.ts` — no-op `r2.send` that records the command class name + input for PDF-upload assertions.
+- `tests/helpers/factories.ts` — `createTestAdmin / Caster / Artist / Job / Bid / Booking / Payment / Contract` plus the `createBookingScenario` convenience that builds caster + artist + job + bid + booking + payment + (optional) contract in one call. Auto-seeds the Stripe mock with the artist's Connect account + the payment intent.
+- `tests/helpers/cleanup.ts` — `cleanupTestData()`: id-based deletes in dependency order across messages/threads → reviews/disputes/payments/contracts → bookings → counterOffers/bids/jobInvites → jobs → notifications/adminLogs → artist child tables → profiles → users. Sequential awaits (not `$transaction`) so a partial failure can't roll back earlier stages.
+- `tests/payments/release-escrow.test.ts` — 5 tests: PAYOUT_NOT_READY gating × 2, happy path (capture + transfer + booking→completed), idempotent re-release, INVALID_STATE on non-held escrow.
+- `tests/payments/partial-release.test.ts` — 6 tests: invalid pct (0/100/101), PAYOUT_NOT_READY, capture+transfer split with `cancellation_fee`, split resolution without fee, INVALID_STATE on non-held.
+- `tests/bookings/cancel.test.ts` — 9 tests: validation, full tier matrix (artist >7d / under_48h / Connect-not-ready fallback, caster >48h / under_48h), strike increment, 3-strike admin alert, idempotency on already-cancelled, INVALID_STATE on completed.
+- `tests/disputes/admin-resolve.test.ts` — 7 tests: full_release_to_artist, full_refund_to_caster, split with custom `splitArtistPct`, escalated (no money movement), idempotency on already-resolved, non-admin FORBIDDEN, 3rd-frivolous-loss admin alert.
+- `tests/sensitive-fields.test.ts` — 5 tests: `JobService.getPublicDetail` strips `shootLocationDetail/callTime`; `JobInviteService.getForArtist` does the same unconditionally (pre-booking); `BookingService.getById` strips `shootLocation/callTime` until contract `fully_signed`; `GET /api/v1/talent/:id` end-to-end via `app.request` omits `lastName / dob / idDocumentUrl / userId / approvalNotes / strikeCount / approvedById`.
+
+**Test infrastructure caveats** —
+
+- `apps/api/package.json` `test` script now passes `--timeout 60000`. Bun's default 5s test+hook timeout is far too short for the remote alwaysdata Postgres (each query ~200–500ms; full cleanup is 10+ sequential queries).
+- Cleanup runs once per file (`beforeAll` + `afterAll`), **not** per test. Tests use `randomUUID()`-suffixed `@castflow.test` emails so cross-test data doesn't collide, and per-test cleanup over the remote DB exceeded even the 60s hook budget. If a test ever depends on a clean DB row count, scope it inside its own `describe` block with a local `beforeEach` cleanup.
+- `cleanupTestData` does **not** rely on the User→Profile cascade. Earlier attempts using `$transaction([…])` array form rolled back the whole cleanup on a single late failure, and relation-filtered `deleteMany` clauses left stray rows. The current implementation snapshots ids up front and deletes profiles + users explicitly in stage order.
+- Notifications fired via `void NotificationService.notifyEvent({...})` and `notifyAdmins({...})` are fire-and-forget. Tests that assert on the notification row poll (`for i<20; await 100ms`) rather than relying on a single `setTimeout`.
+- `NotificationService.notifyAdmins` keeps an in-process 1h dedup map keyed by `(type, relatedEntityId)`. Tests that need a fresh fire use a unique `relatedEntityId` (the factory's `randomUUID()` profile ids satisfy this naturally). If we ever want to assert "alert was NOT fired again within 1h", reset the dedup map manually — there is no public reset helper yet.
+- The Stripe mock is a single shared singleton (mocks register once via the preload). `resetStripeMockCalls()` clears `mock.calls` between tests; `resetStripeMockState()` clears the seeded intents/accounts/transfers. Both run in `beforeEach`.
+- `bun test` doesn't typecheck, so tests file can use looser shapes than `bun run typecheck` would allow. Trade-off documented in the test infrastructure caveats above.
+- `tests/sensitive-fields.test.ts` exercises the `/api/v1/talent/:id` route end-to-end through `app.request` with a Better Auth-issued session cookie. The pattern (signup → mark verified → signin → reuse Set-Cookie) is copy-pastable for future route-level tests.
+
+### Next up (post-Tier A)
+
+HANDOFF.md §4 Tier B/C/D are still open:
+
+- **Tier B** — bid flow (submit/edit/withdraw/shortlist/reject/undo/accept), counter-offer flow, job invite flow + `invite_only` bid gate, contract flow (generate/sign/72h window/PDF render), review flow (14–28d window/uniqueness/rating cache), admin power tools + AdminLog rows, calendar feed (token rotate, ICS shape, location gating), notification dispatch correctness.
+- **Tier C** — upload key-ownership check (`confirmUpload` rejects mismatched key prefixes).
+- **Tier D** — webhook reconciliation: feed a stub event to `/webhooks/stripe` and assert the right service method fired + DB transitioned. Cover: `payment_intent.succeeded`, `payment_intent.canceled`, `charge.refunded`, `charge.dispute.created`, `account.updated`, `account.application.deauthorized`.
+
+After Tier B/C/D the backend is at "minimally trustworthy" and frontend work resumes.

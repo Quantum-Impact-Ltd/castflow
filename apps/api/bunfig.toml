@@ -1,0 +1,6 @@
+[test]
+# Preload registers Stripe + R2 module mocks before any service code is
+# imported. `mock.module` resolves to the underlying file path; once
+# registered, every subsequent `import { stripe } from '../lib/stripe'`
+# (and the equivalent for r2) returns the mocked exports.
+preload = ["./tests/helpers/setup.ts"]
