@@ -6,6 +6,7 @@ import { env } from './lib/env'
 import { auth } from './lib/auth'
 import { AppError } from './errors'
 
+import { rateLimit } from './middleware/rateLimit'
 import { authRoutes } from './routes/auth'
 import { artistRoutes } from './routes/artists'
 import { casterRoutes } from './routes/casters'
@@ -20,6 +21,7 @@ import { disputeRoutes } from './routes/disputes'
 import { notificationRoutes } from './routes/notifications'
 import { uploadRoutes } from './routes/uploads'
 import { talentRoutes } from './routes/talent'
+import { inviteRoutes } from './routes/invites'
 import { webhookRoutes } from './routes/webhooks'
 import { adminRoutes } from './routes/admin'
 
@@ -43,6 +45,26 @@ app.use(
 app.get('/health', (c) => c.json({ success: true, data: { status: 'ok', env: env.NODE_ENV } }))
 
 // ── Better Auth ────────────────────────────────────────────────────────────
+// Throttle the auth surface before delegating to Better Auth's handler.
+// Login: 10 attempts / 15 min per IP. Password reset: 5 / hour per IP.
+app.use(
+  '/api/auth/sign-in/*',
+  rateLimit({
+    scope: 'auth:sign-in',
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: 'Too many sign-in attempts. Try again later.',
+  })
+)
+app.use(
+  '/api/auth/forget-password',
+  rateLimit({
+    scope: 'auth:forget-password',
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: 'Too many password-reset requests. Try again later.',
+  })
+)
 app.on(['GET', 'POST'], '/api/auth/**', (c) => auth.handler(c.req.raw))
 
 // ── API v1 ─────────────────────────────────────────────────────────────────
@@ -62,6 +84,7 @@ api.route('/disputes', disputeRoutes)
 api.route('/notifications', notificationRoutes)
 api.route('/uploads', uploadRoutes)
 api.route('/talent', talentRoutes)
+api.route('/invites', inviteRoutes)
 api.route('/admin', adminRoutes)
 
 // ── Stripe webhook ─────────────────────────────────────────────────────────

@@ -10,3 +10,7 @@ prisma/migrations
 # Auto-generated / local-only
 next-env.d.ts
 .claude/settings.local.json
+
+# Playwright outputs
+test-results
+playwright-report

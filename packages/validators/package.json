@@ -9,8 +9,9 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix"
+    "lint": "eslint src --ext .ts --ignore-pattern '*.test.ts'",
+    "lint:fix": "eslint src --ext .ts --ignore-pattern '*.test.ts' --fix",
+    "test": "bun test"
   },
   "dependencies": {
     "zod": "^3.23.0"

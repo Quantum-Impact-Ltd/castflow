@@ -1,5 +1,44 @@
 import { Hono } from 'hono'
+import { z } from 'zod'
+import { authenticate } from '../middleware/authenticate'
+import { ContractService } from '../services/ContractService'
+import { AppError } from '../errors'
 
-export const contractRoutes = new Hono()
+type AppEnv = { Variables: { user: { id: string; role: 'admin' | 'caster' | 'artist' } } }
 
-// TODO: implement
+export const contractRoutes = new Hono<AppEnv>()
+
+contractRoutes.use('*', authenticate)
+
+const signBodySchema = z.object({ signatureName: z.string().min(2).max(100) })
+
+contractRoutes.get('/bookings/:bookingId', async (c) => {
+  const user = c.get('user')
+  const contract = await ContractService.getForBooking(user, c.req.param('bookingId') ?? '')
+  return c.json({ success: true, data: contract })
+})
+
+contractRoutes.post('/bookings/:bookingId/generate', async (c) => {
+  const user = c.get('user')
+  const contract = await ContractService.generateForBooking(user, c.req.param('bookingId') ?? '')
+  return c.json({ success: true, data: contract })
+})
+
+contractRoutes.post('/bookings/:bookingId/sign', async (c) => {
+  const user = c.get('user')
+  const parsed = signBodySchema.safeParse(await c.req.json())
+  if (!parsed.success) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Invalid input',
+      400,
+      parsed.error.flatten().fieldErrors as Record<string, string[]>
+    )
+  }
+  const contract = await ContractService.sign(
+    user,
+    c.req.param('bookingId') ?? '',
+    parsed.data.signatureName
+  )
+  return c.json({ success: true, data: contract })
+})

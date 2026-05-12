@@ -232,17 +232,17 @@ model Verification {
 model ArtistProfile {
   id                 String             @id @default(uuid())
   userId             String             @unique @map("user_id")
-  user               User               @relation(fields: [userId], references: [id])
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   artistType         ArtistType         @map("artist_type")
 
   firstName          String             @map("first_name")
   lastName           String             @map("last_name")
-  dob                DateTime
-  gender             String
+  dob                DateTime?
+  gender             String?
   pronouns           String?
-  city               String
+  city               String?
   bio                String?
-  experienceLevel    ExperienceLevel    @map("experience_level")
+  experienceLevel    ExperienceLevel?   @map("experience_level")
   instagramHandle    String?            @map("instagram_handle")
   availabilityStatus AvailabilityStatus @default(available) @map("availability_status")
 
@@ -250,7 +250,8 @@ model ArtistProfile {
   approvalNotes  String?        @map("approval_notes")
   approvedById   String?        @map("approved_by_id")
   approvedAt     DateTime?      @map("approved_at")
-  idDocumentUrl  String         @map("id_document_url")
+  submittedAt    DateTime?      @map("submitted_at")
+  idDocumentUrl  String?        @map("id_document_url")
   idVerified     Boolean        @default(false) @map("id_verified")
 
   ratingAvg     Decimal? @db.Decimal(2, 1) @map("rating_avg")
@@ -258,6 +259,13 @@ model ArtistProfile {
   jobsCompleted Int      @default(0) @map("jobs_completed")
   responseRate  Decimal? @db.Decimal(5, 2) @map("response_rate")
   strikeCount   Int      @default(0) @map("strike_count")
+
+  // Stripe Connect Express account id. Null until the artist starts the
+  // payout-setup flow. Cached `payoutsEnabled` mirrors Stripe's account
+  // capability so we can gate escrow release without an extra round-trip
+  // — but it's authoritative-on-Stripe; trust the cache only at write time.
+  stripeAccountId String?  @unique @map("stripe_account_id")
+  payoutsEnabled  Boolean  @default(false) @map("payouts_enabled")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -339,7 +347,7 @@ model PortfolioItem {
 model CasterProfile {
   id               String      @id @default(uuid())
   userId           String      @unique @map("user_id")
-  user             User        @relation(fields: [userId], references: [id])
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   companyName      String      @map("company_name")
   companyType      CompanyType @map("company_type")
   contactName      String      @map("contact_name")
@@ -481,6 +489,9 @@ model Booking {
   reviews  Review[]
   dispute  Dispute?
 
+  @@index([artistId])
+  @@index([casterId])
+  @@index([status])
   @@map("bookings")
 }
 
@@ -543,6 +554,7 @@ model Payment {
   refundedAt    DateTime? @map("refunded_at")
   createdAt     DateTime  @default(now()) @map("created_at")
 
+  @@index([escrowStatus])
   @@map("payments")
 }
 
@@ -595,6 +607,7 @@ model Review {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([bookingId, reviewerId])
+  @@index([revieweeId])
   @@map("reviews")
 }
 
@@ -648,5 +661,7 @@ model AdminLog {
   notes      String?
   createdAt  DateTime @default(now()) @map("created_at")
 
+  @@index([adminId])
+  @@index([entityType, entityId])
   @@map("admin_logs")
 }

@@ -68,3 +68,5 @@ export const updateAvailabilitySchema = z.object({
 export type ArtistPersonalInfoInput = z.infer<typeof artistPersonalInfoSchema>
 export type ModelStatsInput = z.infer<typeof modelStatsSchema>
 export type ActorStatsInput = z.infer<typeof actorStatsSchema>
+export type ArtistExperienceInput = z.infer<typeof artistExperienceSchema>
+export type ArtistSkillInput = z.infer<typeof artistSkillSchema>

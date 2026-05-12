@@ -39,3 +39,5 @@ export const resetPasswordSchema = z.object({
 export type RegisterArtistInput = z.infer<typeof registerArtistSchema>
 export type RegisterCasterInput = z.infer<typeof registerCasterSchema>
 export type LoginInput = z.infer<typeof loginSchema>
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>

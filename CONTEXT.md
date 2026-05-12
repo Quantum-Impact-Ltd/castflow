@@ -22,6 +22,14 @@
 | 5     | Frontend scaffold — Next.js, folder structure, providers, lib            | ✅ Complete |
 | 6     | Verification — both apps run, typecheck passes, health check responds    | ✅ Complete |
 
+## Feature completion status
+
+| #   | Feature                                                            | Status         |
+| --- | ------------------------------------------------------------------ | -------------- |
+| 01  | Auth (register/login/verify/reset, Google OAuth, redirect-by-role) | ✅ Complete    |
+| 02  | Artist onboarding                                                  | ⬜ Not started |
+| 03  | Admin: application queue                                           | ⬜ Not started |
+
 ---
 
 ## What has been built
@@ -66,6 +74,43 @@
 - **Phase 6: full-stack verification complete** — `bun run typecheck`, `bun run lint`, and `bun run format:check` all green across the four workspaces. Both apps boot end-to-end on their target ports (api 3001, web 3000). API health check (`/health`) returns the canonical envelope. Unknown API routes (`/api/v1/*`) now return the structured `{success:false,error:{code:"NOT_FOUND",message:"Route not found"}}` envelope. Frontend routing matrix confirmed: `/`, `/login`, `/artists/test-id` return 200; `/artist/dashboard`, `/caster/dashboard`, `/admin` return 307 → `/login` when unauthenticated. Better Auth's `/api/auth/get-session` round-trips end-to-end through the `auth-server.ts` proxy (returns `null` for unauthenticated requests, which is what makes the auth-guard layouts redirect).
 - **TanStack Query foundation** — `axios` removed; the data-fetching stack is now `Component → useQuery/useMutation → service (lib/api/*) → fetcher (lib/fetcher.ts)`. Native-fetch wrapper with typed `ApiError` (`code`, `status`, `fields`), envelope unwrap, `AbortSignal` support, and a browser-only 401-redirect (preserves prior interceptor behavior; SSR callers handle their own redirect strategy). `lib/query-client.ts` rewritten to the App-Router-recommended per-request pattern (`getQueryClient()` returns a fresh client on the server, a singleton in the browser); defaults are `staleTime: 30s`, `gcTime: 5m`, retry skipped for 4xx (only network/5xx retried up to twice), mutations never retry. `providers/index.tsx` mounts `ReactQueryDevtools` in development only. `lib/query-keys.ts` is the single source-of-truth key factory (jobs / caster.jobs / bids / artist.bids / artist.earnings / bookings / threads / messages / notifications / talent). Service and hook layers are scaffolded as a documented pattern in `apps/web/CLAUDE.md` but **not pre-populated** — added per feature, not preemptively.
 
+### Feature 01 — Authentication (✅ complete)
+
+**Backend**
+
+- `apps/api/src/errors/ErrorCodes.ts` extended with `EMAIL_TAKEN`, `WEAK_PASSWORD`, `INVALID_TOKEN`, `BANNED`, `SUSPENDED`.
+- `apps/api/src/lib/auth.ts` Better Auth instance wired with Resend-backed `emailVerification.sendVerificationEmail`, `sendResetPassword`, and a `databaseHooks.user.create.before` that blocks any banned email from re-registering. `emailVerification.sendOnSignUp: true`. Verification + reset URLs are rewritten to point at the frontend (`${FRONTEND_URL}/verify-email/[token]` and `/reset-password/[token]`).
+- `apps/api/src/services/EmailService.ts` implements `sendVerificationEmail`, `sendPasswordReset`, `sendWelcomeEmail` via Resend. Includes a `NODE_ENV === 'test'` in-memory inbox with `__lastEmail(to)` / `__clearTestInbox()` helpers so tests don't need to mock the SDK.
+- `apps/api/src/services/AuthService.ts` exposes `registerArtist` / `registerCaster`. Each: (1) pre-checks email uniqueness via Prisma (Better Auth's `requireEmailVerification: true` enables account-enumeration protection, which makes its `signUpEmail` return a fake-success on duplicates — so we must pre-check ourselves), (2) calls `auth.api.signUpEmail({ body: { email, password, name, role } })`, (3) verifies the user row actually persisted (defence in depth), (4) runs `prisma.$transaction` to create the matching profile row + set `user.role` / `profileId` / `approvalStatus` / `status='active'`. On any post-signup failure, rolls back by deleting the user (cascade clears account/session/profile rows).
+- `apps/api/src/routes/auth.ts` mounts `POST /api/v1/auth/register-artist` and `POST /api/v1/auth/register-caster`. Both validate input with the Zod schemas from `@castflow/validators` (returning `VALIDATION_ERROR` with `fields`) before invoking the service.
+- Login / logout / forgot-password / reset-password / verify-email / social Google are all handled by Better Auth's auto-mounted `/api/auth/**` handler — no app code beyond the callbacks above.
+
+**Prisma**
+
+- `ArtistProfile.user` and `CasterProfile.user` relations now have `onDelete: Cascade` so the rollback path is clean.
+- `ArtistProfile.dob`, `gender`, `city`, `experienceLevel`, `idDocumentUrl` are now nullable. Registration only collects `firstName`/`lastName`/`artistType`; full onboarding (feature #2) fills in the rest. Talent search must filter on `approvalStatus === 'approved'` to avoid surfacing un-onboarded artists.
+
+**Frontend**
+
+- `apps/web/lib/api/auth.ts` — service layer: `registerArtist`, `registerCaster`, `login`, `logout`, `forgotPassword`, `resetPassword`, `resendVerification`, `getSession`. The two register endpoints hit `/api/v1/auth/*` via the standard `fetcher`; the rest hit Better Auth's `/api/auth/*` via a local `betterAuthRequest` helper (outside the `/api/v1` base path the fetcher prefixes).
+- `apps/web/lib/hooks/use-auth.ts` — TanStack Query mutation hooks: `useRegisterArtist`, `useRegisterCaster`, `useLogin`, `useLogout`, `useForgotPassword`, `useResetPassword`, `useResendVerification`. `useLogin`/`useLogout` invalidate `['session']`. All wrap their mutationFn so RHF passes only the input (TanStack v5 also passes a context arg that would otherwise leak into `init`).
+- `apps/web/lib/auth-redirect.ts` — pure `postLoginPath(user)` helper. Admin → `/admin`, caster → `/caster/dashboard`, artist+approved → `/artist/dashboard`, artist otherwise → `/onboarding/pending`.
+- Pages: `/register` (role chooser), `/register/artist`, `/register/caster`, `/login` (email/password + Google button), `/verify-email` (resend + "check your inbox" state), `/verify-email/[token]` (server-side calls Better Auth verify endpoint and renders success/failure), `/forgot-password` (always renders success — never leaks whether an email exists), `/reset-password/[token]`, `/reset-password` (fallback for missing token), `/onboarding/pending` (artist post-register landing).
+- Register forms use `react-hook-form` + `zodResolver` and extend the shared schemas locally with a `confirmPassword` mirror. Server-side field errors from the API are mapped onto RHF fields via `form.setError(field, { type: 'server' })`; non-field errors render inline.
+
+**Validators**
+
+- `packages/validators/src/auth.ts` now exports `ForgotPasswordInput` and `ResetPasswordInput` types (previously only the schemas were exported).
+
+**Tests**
+
+- `packages/validators/src/auth.test.ts` — 13 validator tests (V1–V13), all passing under `bun test`.
+- `apps/web/lib/auth-redirect.test.ts` — 6 redirect-helper tests (W1–W5 plus a missing-status fallback), all passing under Vitest.
+- `apps/web/lib/api/auth.test.ts` — 4 service tests (path/method/body, AbortSignal forwarding, `getSession` null on non-OK), passing under Vitest.
+- `apps/api/tests/auth/register-artist.test.ts` — 4 API integration tests (A1 valid registration, A2 duplicate email → 409, A3 weak password → VALIDATION_ERROR, A6 verification email dispatched). Tests use the in-memory test inbox and unique `@castflow.test` emails; `afterEach` purges any test-domain users.
+- `apps/api/tests/auth/register-caster.test.ts` — 1 valid signup (A7) + parameterised companyType test (A8). All four companyTypes pass.
+- The detailed test plan in `docs/features/01-auth.md` (21 API + 17 frontend + 7 E2E) is intentionally **not exhausted** — the baseline above covers core paths; the full plan is revisited after the broader feature work.
+
 ---
 
 ## Known caveats and decisions
@@ -101,6 +146,24 @@
   - `lib/api/*` and `lib/hooks/*` directories are documented in `apps/web/CLAUDE.md` but are **intentionally empty** until the first feature lands. The pattern is the contract; the files are not.
 - **Phase 6: `apps/web/lib/auth-server.ts` redundant unions** — `'artist' | 'caster' | 'admin' | string` and `'pending' | 'approved' | 'rejected' | string` collapsed to `string` per `@typescript-eslint/no-redundant-type-constituents`. Dropped the `| string` fallbacks — the literal unions are now load-bearing. If the API ever returns a value outside the literal set, the JSON cast will silently widen at runtime; tighten the parse with a runtime guard if that becomes a problem.
 - **Phase 6: `.prettierignore` additions** — `next-env.d.ts` is regenerated by Next.js on every `dev`/`build` with formatting that does not match our prettier config, and `.claude/settings.local.json` is rewritten by the Claude harness. Both are now ignored so `bun run format:check` stays green between local sessions.
+- **Test infrastructure caveats** —
+  - `NODE_ENV=test` is now accepted by `apps/api/src/lib/env.ts` (the Zod enum was widened from `['development','staging','production']` to include `'test'`). `bun test` sets this implicitly. If you ever read `env.NODE_ENV` for branching logic, treat `'test'` like `'development'`.
+  - API tests live in `apps/api/tests/` (outside `rootDir: "src"`). They are run by `bun test`, which transpiles each file individually and does not consult `tsconfig.json` — so the `rootDir` constraint is not violated at runtime. Trade-off: `bun run typecheck` (which is `tsc --noEmit`) **does not typecheck the test files**. If we want test typechecking, add `apps/api/tsconfig.test.json` with `rootDir: "."` and `include: ["src","tests"]`, plus a `typecheck:tests` script.
+  - Web tests are co-located (`*.test.ts(x)` beside the file under test). Vitest config at `apps/web/vitest.config.ts`, setup file `apps/web/vitest.setup.ts`. `'@/'` path alias is mirrored from `tsconfig` paths into Vitest's `resolve.alias`.
+  - Playwright is **at the repo root**, not inside `apps/web`, because E2E exercises both apps. `playwright.config.ts` does NOT have a `webServer` block — you must `bun run dev` first, then `bun run test:e2e` in a second terminal. Before first run on a new machine: `bun run test:e2e:install` to fetch the Chromium binary.
+  - `turbo.json` `test` task `dependsOn: ["^build"]` and `outputs: ["coverage/**"]`. The "no output files found" warning at the end of `bun run test` is benign (no coverage emitted yet).
+  - `.prettierignore` now also ignores `test-results` and `playwright-report` (Playwright run artefacts).
+- **Feature 01 caveats** —
+  - **Better Auth's enumeration protection breaks the naïve duplicate-email path.** With `requireEmailVerification: true` (which we want), `auth.api.signUpEmail` no longer throws on a duplicate email — it returns a fake "success" payload with a generated user id that never persists, so any downstream profile-create fails with a foreign-key error and you get a 500 instead of a 409. `AuthService.assertEmailAvailable` pre-checks the email against `prisma.user` before calling Better Auth. There is still a tiny TOCTOU window between the pre-check and the BA call; the DB unique constraint catches concurrent dupes, and the `signUp` helper does a post-hoc `findUnique({ id })` as belt-and-braces.
+  - **ArtistProfile required fields relaxed.** `dob`, `gender`, `city`, `experienceLevel`, `idDocumentUrl` are now nullable on the schema so registration can create a "shell" profile with just `firstName`/`lastName`/`artistType`. Onboarding (feature #2) **must** fill these before submission and `talent` search must filter on `approvalStatus === 'approved'` (which already requires onboarding to be complete).
+  - **Cascade onDelete on profile→user relations.** `ArtistProfile.user` and `CasterProfile.user` now have `onDelete: Cascade`. This is what makes the `AuthService` rollback path safe: deleting the user wipes the partially-created profile, sessions, accounts.
+  - **First/Last name strategy.** Spec open question #1 resolved as: Better Auth's `user.name` stores `"firstName lastName"` (or `contactName` for casters); the split form lives on `ArtistProfile.firstName/lastName`. Display name is a profile concern, identity is a user concern.
+  - **Verification + reset link URLs.** Better Auth defaults to a callback on the API host. We rewrite both to point at the frontend: `${FRONTEND_URL}/verify-email/[token]` and `${FRONTEND_URL}/reset-password/[token]`. The `[token]` page is a server component that calls the API back to do the actual mutation.
+  - **`EmailService` test inbox.** In `NODE_ENV === 'test'` the service writes to an in-memory array instead of calling Resend, exposed via `EmailService.__lastEmail(to)` / `__clearTestInbox()`. Tests should `beforeEach(() => EmailService.__clearTestInbox())` and not rely on order across files. Importing those helpers in non-test code is a smell.
+  - **Apple OAuth web button intentionally hidden.** Credentials are stubbed in `auth.ts` (so the social provider object stays optional via the env-driven guard), but the login page only renders a Google button. Wire Apple in when we ship the iOS app or when product asks.
+  - **Forgot-password endpoint always returns 200.** This matches the spec's A16 rule (don't leak account existence). The frontend's `ForgotPasswordForm` renders the same "if an account exists…" success state regardless of mutation success/failure (uses `onSettled`).
+  - **`docs/features/01-auth.md` test plan partially covered.** We implemented only the high-value baseline (~24 tests vs the spec's full ~58). The remaining test work — RTL form tests, BA-flow integration (login/logout/reset/verify), and the 7 E2E paths — is deferred until the feature stack is broader. Spec is the source of truth; CONTEXT just reflects current state.
+  - **`packages/validators` test wiring.** Added `"test": "bun test"` script plus a `--ignore-pattern '*.test.ts'` flag on the lint script. The package's `tsconfig.json` excludes `*.test.ts` so the test file doesn't need to satisfy `rootDir`/strict types from the workspace root. Trade-off: validator test files are not typechecked by `bun run typecheck`; they're checked at `bun test` runtime by Bun's transpiler. Same trade-off as `apps/api/tests/`.
 
 ---
 
@@ -108,19 +171,19 @@
 
 These need to be filled in manually before certain phases will work:
 
-| Variable                | Needed for                                              | Set?                                 |
-| ----------------------- | ------------------------------------------------------- | ------------------------------------ |
-| `DATABASE_URL`          | Phase 4 (Prisma migration)                              | ✅ Set (alwaysdata Postgres)         |
-| `SHADOW_DATABASE_URL`   | `prisma migrate dev` (Phase 4 workaround — see caveats) | ⬜ (not set; `db push` used instead) |
-| `BETTER_AUTH_SECRET`    | Phase 6 (auth)                                          | ⬜ (placeholder in `.env`)           |
-| `STRIPE_SECRET_KEY`     | Payment features                                        | ⬜ (placeholder in `.env`)           |
-| `STRIPE_WEBHOOK_SECRET` | Webhook handler                                         | ⬜ (placeholder in `.env`)           |
-| `R2_ACCOUNT_ID`         | File uploads                                            | ⬜ (placeholder in `.env`)           |
-| `R2_ACCESS_KEY_ID`      | File uploads                                            | ⬜ (placeholder in `.env`)           |
-| `R2_SECRET_ACCESS_KEY`  | File uploads                                            | ⬜ (placeholder in `.env`)           |
-| `RESEND_API_KEY`        | Emails                                                  | ⬜ (placeholder in `.env`)           |
-| `GOOGLE_CLIENT_ID`      | Social login                                            | ⬜                                   |
-| `APPLE_CLIENT_ID`       | Social login                                            | ⬜                                   |
+| Variable                | Needed for                                              | Set?                                             |
+| ----------------------- | ------------------------------------------------------- | ------------------------------------------------ |
+| `DATABASE_URL`          | Phase 4 (Prisma migration)                              | ✅ Set (alwaysdata Postgres)                     |
+| `SHADOW_DATABASE_URL`   | `prisma migrate dev` (Phase 4 workaround — see caveats) | ⬜ (not set; `db push` used instead)             |
+| `BETTER_AUTH_SECRET`    | Feature 01 (auth) — must be ≥32 chars                   | ⚠ Required for real auth (placeholder in `.env`) |
+| `STRIPE_SECRET_KEY`     | Payment features                                        | ⬜ (placeholder in `.env`)                       |
+| `STRIPE_WEBHOOK_SECRET` | Webhook handler                                         | ⬜ (placeholder in `.env`)                       |
+| `R2_ACCOUNT_ID`         | File uploads                                            | ⬜ (placeholder in `.env`)                       |
+| `R2_ACCESS_KEY_ID`      | File uploads                                            | ⬜ (placeholder in `.env`)                       |
+| `R2_SECRET_ACCESS_KEY`  | File uploads                                            | ⬜ (placeholder in `.env`)                       |
+| `RESEND_API_KEY`        | Emails                                                  | ⬜ (placeholder in `.env`)                       |
+| `GOOGLE_CLIENT_ID`      | Social login                                            | ⬜                                               |
+| `APPLE_CLIENT_ID`       | Social login                                            | ⬜                                               |
 
 `apps/api/.env` was created from `.env.example` with the placeholder values to allow the app to boot. Replace placeholders with real values before exercising the features that depend on them.
 
@@ -193,16 +256,512 @@ Removed:
 
 - `axios@1.16.0` and its deps
 
+Added during test-infrastructure step (post-Phase 6):
+
+- Root: `@playwright/test@1.60.0` (devDependency)
+- `apps/web` devDependencies: `vitest@4.1.6`, `@vitejs/plugin-react@6.0.1`, `jsdom@29.1.1`, `@testing-library/react@16.3.2`, `@testing-library/jest-dom@6.9.1`, `@testing-library/user-event@14.6.1`, `@types/react@19.2.14`, `@types/react-dom@19.2.3` (the last two replaced unpinned `^19` placeholders)
+- `apps/api` adds no new deps — uses `bun test` (built into the runtime; `@types/bun` already pinned)
+
 ---
+
+## Backend security hardening (post-Feature-01, pre-Feature-02)
+
+Full sweep of `HANDOFF.md` §4.1 security gaps (high + medium + low). Typecheck,
+lint, prettier, and the 11 baseline tests still green after every checkpoint.
+
+### High priority (all done)
+
+- **Rate limiting** — `apps/api/src/middleware/rateLimit.ts` exposes a
+  `rateLimit({ scope, windowMs, max, key?, message? })` factory plus a
+  `rateLimitByUser` variant that keys on `c.get('user').id` (falls back to IP if
+  the user is not on context). Backed by an in-memory `Map<string, Bucket>` with
+  lazy sweep every 60s. **Bypassed when `env.NODE_ENV === 'test'`** so the suite
+  stays deterministic. Applied at:
+  - `app.use('/api/auth/sign-in/*', …)` — 10 / 15 min / IP
+  - `app.use('/api/auth/forget-password', …)` — 5 / hour / IP
+  - `authRoutes.post('/register-{artist,caster}', registerLimit, …)` —
+    10 / hour / IP
+  - `uploadRoutes.post('/presigned-url', presignLimit, …)` —
+    30 / 10 min / user
+  - `bidRoutes.post('/jobs/:jobId', …, submitBidLimit, …)` —
+    60 / hour / user
+  - `messageRoutes.post('/threads/:id', sendMessageLimit, …)` —
+    30 / minute / user
+  - The 429 response carries `Retry-After` and uses the new `RATE_LIMITED`
+    error code in `ErrorCodes.ts`.
+  - **Caveat:** in-memory state is per-instance. Once we run >1 API replica we
+    need Redis (or Upstash) as the shared store. For MVP single-instance Railway
+    this is good enough.
+- **Session revocation on admin suspend/ban** — `adminUserRoutes.post('/:id/status', …)`
+  in `apps/api/src/routes/admin/users.ts` now appends
+  `prisma.session.deleteMany({ where: { userId: id } })` to the same
+  `$transaction` when the new status is `suspended` or `banned`. The
+  `authenticate` middleware already blocked these statuses, but the session
+  token itself stayed valid for up to 7 days — now it's evicted atomically with
+  the status flip. Direct Prisma delete is used instead of Better Auth's
+  admin-plugin `revokeUserSessions` (we don't ship that plugin); the singular
+  `session` model is the same table BA writes to.
+- **Upload key-ownership check** — `UploadService.confirmUpload` now rejects any
+  payload whose `input.key` does not start with `${input.type}/${userId}/`
+  (the server-generated prefix from `getPresignedUrl`). Throws
+  `AppError('FORBIDDEN', …, 403)`. New portfolio items default to
+  `isApproved: false` (schema default is `true`, overridden explicitly) so
+  admin review is required before they go public — closes the "any image goes
+  live" gap from the audit.
+- **Stripe idempotency on escrow intent** — `PaymentService.createEscrowIntent`
+  now passes `{ idempotencyKey }` as the second arg to
+  `stripe.paymentIntents.create`. The key is `booking-${id}-intent` on first
+  attempt and `booking-${id}-retry-${prevIntentId}` if a previous intent
+  exists, so a flaky client retry returns the same PaymentIntent instead of
+  authorising twice and orphaning the previous hold.
+- **Webhook event expansion** — `routes/webhooks.ts` now also handles
+  `payment_intent.canceled`, `charge.refunded`, and `charge.dispute.created`.
+  Backed by three new idempotent reconcilers on `PaymentService`:
+  `markCanceledByIntent`, `markRefundedByCharge`, and `markDisputedByCharge`.
+  Refunds processed in the Stripe dashboard now flip
+  `Payment.escrowStatus → refunded|partially_refunded` (booking → `cancelled`
+  on full refund), cancelled intents same path, and chargeback disputes flip
+  both `Payment.escrowStatus → disputed` and `Booking.status → disputed`.
+- **Public job feed defence-in-depth** — `JobService.listPublic` and
+  `getPublicDetail` now also filter `headcountFilled < headcountRequired`.
+  The authoritative state machine (`acceptBid` flipping `Job.status → 'filled'`)
+  still does the heavy lifting; this is a belt-and-braces filter so a stuck
+  status flag can't surface a fully-booked job.
+- **Case-insensitive ban check** — `lib/auth.ts` `databaseHooks.user.create.before`
+  switched to `email: { equals, mode: 'insensitive' }` so direct DB seeds with
+  mixed-case emails can't slip a ban.
+
+### Medium priority (all done)
+
+- **Profile-completeness gating** — `ArtistService.submitForReview` now also
+  requires `idDocumentUrl` (PRD §8.1 step 5) and ≥3 portfolio photos
+  (PRD §8.1 step 4). Missing-ID falls under the existing
+  `VALIDATION_ERROR / missing[]` envelope; the portfolio gap uses the
+  pre-existing `MIN_PORTFOLIO_REQUIRED` error code.
+- **`idVerified` flip on approve** — `ArtistService.approveApplication` now
+  sets `idVerified: true` inside the same transaction so the "Verified" badge
+  (PRD §13.1) is no longer dead.
+- **Explicit select on talent detail** — `talentRoutes.get('/:id', …)` replaced
+  the post-fetch `undefined`-stripping with an explicit Prisma `select:` clause.
+  Sensitive fields (`lastName`, `dob`, `idDocumentUrl`, `userId`,
+  `approvalNotes`, `approvedById`, `strikeCount`, `updatedAt`) never leave the
+  DB. Anything not listed is excluded by definition.
+- **Logged AuthService rollback failures** — `AuthService.signUp` rollback now
+  logs the original error + the secondary delete error to `console.error`
+  instead of swallowing them via `.catch(() => undefined)`. Orphan Better Auth
+  user rows surface in logs for ops to clean up.
+
+### Low priority (all done)
+
+- **72-hour contract signing window** — `ContractService.sign` rejects with
+  `INVALID_STATE` once `now > contract.createdAt + 72h` (PRD §10.7).
+- **14–28 day review window** — `ReviewService.submit` rejects with
+  `INVALID_STATE` if `now < shootDate + 14d` or `now > shootDate + 28d`
+  (PRD §10.9).
+- **Cancellation tier table** — `BookingService.cancel` now derives a tier
+  (`more_than_7d` / `3_to_7d` / `under_48h` for artist cancels;
+  `more_than_48h` / `under_48h` for caster cancels) from `shootDate`. Only the
+  `under_48h` tier records a cancellation fee (50% of `totalAmount`). The
+  strike-increment/warning side-effect at each tier remains deferred — the
+  strike system itself is on the §4.4 deferred list, and the actual Stripe
+  split (capturing the fee rather than refunding the full escrow) is on the
+  same list. The structure is in place for those to drop in.
+
+## Backend optimizations (§4.2)
+
+Full sweep of `HANDOFF.md` §4.2. Typecheck, lint, prettier, and the 11
+baseline tests still green.
+
+- **Missing DB indexes** — added `@@index` on `Booking(artistId)`,
+  `Booking(casterId)`, `Booking(status)`, `Review(revieweeId)`,
+  `Payment(escrowStatus)`, `AdminLog(adminId)`, `AdminLog(entityType, entityId)`.
+  Applied via `prisma db push` (no shadow DB yet — see Phase 4 caveat). Run
+  `bunx prisma generate` if cloning fresh.
+- **Double-fetch / N+1 fixes**
+  - `BookingService.getById` only re-fetches if `maybeAutoRelease` actually
+    mutated the escrow status. Saves one query on the hot path.
+  - `BidService.listBidsForJob` collapsed to a single `prisma.job.findFirst`
+    where the `where` clause IS the authz check, and `bids` are included
+    inline. One round-trip instead of two.
+  - `MessageService.listMessages` collapsed similarly — one
+    `messageThread.findUnique({ include: { messages } })` plus an inline
+    participant check.
+- **Cursor pagination on heavy lists** — `apps/api/src/lib/pagination.ts`
+  exposes `parsePagination(c, default=25, max=100)` and `paginate(rows, limit)`.
+  The cursor spread (`...(cursor ? { cursor: { id: cursor }, skip: 1 } : {})`)
+  is inlined at each call site rather than extracted into a helper because
+  `exactOptionalPropertyTypes: true` makes a unioned helper return type
+  incompatible with Prisma's generated `FindManyArgs`. Wired into:
+  - `BidService.listMyBids` + `GET /api/v1/bids/me/list`
+  - `BookingService.getMyBookings` + `GET /api/v1/bookings/me/list`
+  - `JobService.listMyJobs` + `GET /api/v1/jobs/me/list`
+  - All admin lists: `users`, `bookings`, `jobs`, `payments`, `disputes`,
+    `flagged/messages`, `flagged/reviews`, `logs`
+  - Routes now return `{ success, data, meta: { nextCursor } }` so clients
+    can keep paging until `nextCursor === null`.
+- **`listApplications` portfolio over-include** — replaced
+  `include: { portfolioItems: true }` (25 rows × N items) with
+  `include: { _count: { select: { portfolioItems: true } } }`. Admin detail
+  open still loads the full portfolio per the existing detail endpoint.
+- **Incremental `refreshRatingCache`** — `ReviewService` now applies a
+  per-review increment (`newAvg = (oldAvg × oldCount + newRating) / newCount`)
+  instead of re-aggregating the entire reviews table on every submit. The
+  full-aggregate helper was removed for now — when admin remove-review lands,
+  add it back for authoritative recovery (noted inline in the
+  `applyRatingIncrement` doc comment).
+
+### Optimization carry-forwards
+
+- `MessageThread.lastMessageContent` cache for `listInbox` correlated subquery
+  — needs a schema column, deferred.
+- Session `additionalFields.profileId` populated post-registration to skip a
+  per-request profile lookup — small follow-up; touches `AuthService.signUp`.
+- `pg_trgm` GIN index for `Job.title/description` full-text — out of MVP scope.
+
+## Stripe Connect (artist payouts)
+
+End-to-end wiring of payouts to artists via Stripe Connect Express accounts.
+Typecheck, lint, prettier, and 11/11 tests still green.
+
+### Model
+
+We use the **separate charges and transfers** pattern:
+
+1. Caster confirms a booking → `createEscrowIntent` creates a manual-capture
+   PaymentIntent against the platform Stripe account. Money sits as an auth
+   hold on the caster's card.
+2. Webhook `payment_intent.amount_capturable_updated|succeeded` flips
+   `Payment.escrowStatus → held`.
+3. Caster confirms completion (or 48h auto-release fires) →
+   `releaseEscrow`:
+   - **Gate**: artist must have `stripeAccountId` + `payoutsEnabled: true`.
+     If not, throws `PAYOUT_NOT_READY` (HTTP 409) and the escrow stays
+     `held`. No orphan capture, no money stuck on platform.
+   - Captures the PaymentIntent (idempotency key `capture-${paymentId}`).
+   - Creates a `stripe.transfers.create` to the artist's Connect account
+     (idempotency key `transfer-${paymentId}`; `source_transaction` set to
+     the original charge so Stripe Connect reports tie out).
+   - Marks `escrowStatus → released`, persists `stripeTransferId`.
+4. `maybeAutoRelease` swallows `PAYOUT_NOT_READY` so an un-onboarded artist
+   doesn't 4xx every booking detail read; it logs `auto-release deferred`
+   and leaves the escrow `held` for the next opportunity.
+
+### Schema
+
+- New `ArtistProfile.stripeAccountId` (`String?  @unique @map`) and
+  `ArtistProfile.payoutsEnabled` (`Boolean @default(false) @map`). Pushed
+  via `prisma db push --accept-data-loss` (only adds a nullable unique
+  column to an empty table; no risk in practice). Client regenerated.
+
+### Service surface (`PaymentService`)
+
+- `createConnectOnboardingLink(userId)` — idempotently creates a Connect
+  Express account (`type: 'express'`, `country: 'GB'`,
+  `capabilities: { transfers: { requested: true } }`,
+  `business_type: 'individual'`), persists `stripeAccountId`, then returns
+  `{ url, expiresAt }` from `stripe.accountLinks.create({ type: 'account_onboarding' })`.
+- `getConnectStatus(userId)` — calls `stripe.accounts.retrieve` and returns
+  `{ connected, accountId, payoutsEnabled, detailsSubmitted, requirementsDue }`.
+  Reconciles the cached `payoutsEnabled` if it has drifted from Stripe.
+- `syncConnectAccountStatus({ id, payouts_enabled })` — webhook reconciler;
+  mirrors Stripe's `payouts_enabled` onto the cached column.
+- `releaseEscrow` — gated + transferring (see "Model" above).
+
+### Routes
+
+- `POST /api/v1/payments/connect/onboard` (artist only) → onboarding link.
+- `GET  /api/v1/payments/connect/status`  (artist only) → live status.
+- Onboarding link redirects: `${FRONTEND_URL}/artist/payouts/setup?refresh=1`
+  and `?completed=1` (frontend page not built yet — backend ready).
+
+### Webhook
+
+`account.updated` now syncs `payoutsEnabled`. (The existing four
+`payment_intent.*` / `charge.*` events from the security sweep remain.)
+
+### New error code
+
+- `PAYOUT_NOT_READY` — thrown by `releaseEscrow` when the artist hasn't
+  finished Connect onboarding. Caster-initiated release returns 409 so the
+  UI can prompt them to chase the artist; auto-release swallows it.
+
+### Assumptions / open items
+
+- **`country: 'GB'`** is hard-coded on account creation. We're UK-only for
+  MVP per the brief; revisit when expanding.
+- **`business_type: 'individual'`** is hard-coded. Stripe's Express flow
+  lets the artist correct this during onboarding if they're operating as a
+  company, but defaulting to individual matches the typical model/actor
+  freelancer profile.
+- **No retry queue.** If `releaseEscrow` succeeds at capture but `transfer`
+  fails (rare — Stripe transfers from the platform balance are very
+  reliable), the escrow stays in a half-completed state: captured on
+  Stripe but `escrowStatus` still `held` in DB. Webhook `transfer.failed`
+  reconciliation is not wired — admin will see this in the Stripe
+  dashboard and can manually retry. Bookmark for a hardening pass.
+- **No "set up payouts" frontend page yet.** Backend is plug-and-play; the
+  page lives under `/artist/payouts/setup` per the redirect URLs.
+- **`source_transaction` in `transfers.create`** requires the platform
+  charge to have settled — for instant transfers we'd want a separate
+  balance. For MVP this is fine because we capture immediately before
+  transferring; if Stripe ever requires the charge to be more "settled"
+  before allowing the linked transfer, the transfer will retry on the
+  next release attempt.
+
+## Notification + email event wiring
+
+End-to-end wiring of in-app notifications + emails at every relevant business
+event. Typecheck, lint, prettier, and 11/11 tests still green.
+
+### Helper
+
+- `NotificationService.notifyEvent({ userId, type, title, body, email?, relatedEntityType?, relatedEntityId? })`
+  — single fire-and-forget call that creates the in-app row AND fires the
+  email. Wrapped in `try/catch` per channel so a Resend hiccup never poisons
+  the originating business operation. Pass `email: false` for in-app only.
+- `EmailService.sendEvent({ to, subject, html })` — generic event template.
+  Body composes `<h1>title</h1><p>body</p>` plus an optional CTA link
+  derived from `email.ctaUrl` / `email.ctaLabel`.
+
+### Call sites wired
+
+- **BidService** — `bid_received` (caster on submit), `bid_shortlisted`
+  (artist on shortlist), `bid_rejected` (artist on reject),
+  `bid_accepted` (artist on accept).
+- **ContractService** — `contract_ready` (both on generate),
+  `contract_signed_by_other` (the non-signer on partial sign),
+  `contract_fully_signed` (both on full sign).
+- **PaymentService** — `payment_held` (both on webhook
+  `payment_intent.succeeded`), `payout_sent` (artist on release — combines
+  payment_released + payout_sent semantics into one user-facing event since
+  with Connect they're indistinguishable to the artist).
+- **BookingService** — `booking_cancelled_by_caster` /
+  `booking_cancelled_by_artist` (the OTHER party on cancel).
+- **DisputeService** — `dispute_opened` (opposing party on raise),
+  `dispute_resolved` (both on admin resolve).
+- **ReviewService** — `review_received` (reviewee on submit).
+- **MessageService** — `message_received` (recipient on send).
+  Sender→recipient resolution uses a new `resolveRecipientUserId(thread, senderUserId)`
+  helper (joins thread participants to user rows).
+
+### Not wired (deferred to follow-ups)
+
+- `artist_approved` / `artist_rejected` — admin approval flow uses
+  `AdminLog`; add to `ArtistService.approveApplication` / `rejectApplication`
+  in a follow-up alongside the artist-approved welcome email.
+- `bid_expired` — bid expiry happens in bulk during `acceptBid` /
+  `JobService.cancelJob`; notifying every expired-bid author would be a big
+  send. Probably handled by a digest in the future.
+- `job_matching_posted` / `job_expiring_soon` / `job_expired` — these need a
+  matching engine + cron, out of MVP.
+- `payment_failed` — webhook `payment_intent.payment_failed` currently
+  console.errors only; needs a caster-facing follow-up.
+
+## PDF contract generation
+
+`apps/api/src/templates/contract-pdf.ts` renders the binding contract using
+`@react-pdf/renderer` (no JSX — `React.createElement` directly so apps/api
+doesn't need a JSX runtime).
+
+- Layout: header → parties → job → payment terms → signatures (caster +
+  artist signature strings, dates) → footer.
+- Server-side render via `pdf(doc).toBuffer()` drained into a Node `Buffer`.
+- `ContractService.persistPdf(contractId)` is the new entry point: renders,
+  uploads to the `contracts` R2 bucket with key
+  `contracts/${bookingId}/${contractId}.pdf`, stores `pdfUrl = s3://<bucket>/<key>`
+  on the Contract row. Idempotent: returns existing `pdfUrl` if already set.
+- Triggered fire-and-forget inside `ContractService.sign` when both parties
+  signed; errors are logged so a slow/failed render doesn't block the
+  signing response. **Caveat:** if the render fails after fully_signed,
+  there's no automatic retry — admin (or a future cron) re-invokes
+  `persistPdf`. Bookmark for hardening.
+
+### Deps added
+
+- `react@^18` and `@types/react@^18` as `apps/api` devDeps so `@react-pdf/renderer`'s
+  peer is resolvable and `createElement` typechecks.
+
+### Open follow-ups
+
+- **Private contracts bucket needs a presigned-read endpoint** — `pdfUrl` is
+  stored as `s3://<bucket>/<key>` to make it obvious the bucket is private.
+  Add `GET /api/v1/contracts/:bookingId/pdf` that generates a short-lived
+  signed URL and 302s to it. (Backend is plug-and-play; frontend page not
+  built yet either.)
+- **`react@18` vs `react@19`** — the rest of the workspace is on React 19
+  (web app). We pinned the api template to 18 because `@react-pdf/renderer`
+  only declares peer compatibility through 18. When react-pdf supports 19,
+  align.
+
+## Money flows: split, cancellation fee, dispute payouts, strikes
+
+Closes the money story so dispute resolutions and late cancellations actually
+move Stripe funds. Typecheck, lint, prettier, and 11/11 tests still green.
+
+### `PaymentService.partialRelease(bookingId, capturePct, opts)`
+
+- `capturePct ∈ (0, 100)` — captures that fraction of the gross authorization
+  from Stripe (remainder auto-releases back to the caster's card), then
+  creates a Transfer of the commission-adjusted net to the artist's Connect
+  account. Idempotency key `partial-transfer-${paymentId}-${capturePct}`.
+- `escrowStatus → 'partially_refunded'`, `Booking.status → 'cancelled'`,
+  `stripeTransferId` persisted. When `opts.resolution === 'cancellation_fee'`,
+  also records `Payment.cancellationFeeAmount`.
+- Same Connect gate as `releaseEscrow` — throws `PAYOUT_NOT_READY` if the
+  artist hasn't completed onboarding.
+
+### `BookingService.cancel` — late-cancel fee + strikes
+
+- `under_48h` tier now calls `partialRelease(50, { resolution: 'cancellation_fee' })`
+  instead of full refund. Both artist-cancels and caster-cancels late get
+  the 50/50 split per PRD §10.6.
+- **Fallback** if the artist isn't Connect-ready: catches `PAYOUT_NOT_READY`,
+  falls back to `refundEscrow` (full refund) + persists
+  `Payment.cancellationFeeAmount` so admin can settle the fee manually.
+  Logged as `late-cancel fee fallback: artist not Connect-ready`.
+- **Strike system**: artist-initiated `under_48h` cancels now increment
+  `ArtistProfile.strikeCount` (`{ increment: 1 }`). 3-strike admin review
+  alert is still a future cron — counter is accurate, surface is not.
+
+### `DisputeService.adminResolve` — money actually moves
+
+Dispatch table after the resolution + admin-log transaction commits:
+
+| Resolution                  | PaymentService call               |
+|-----------------------------|------------------------------------|
+| `full_release_to_artist`    | `releaseEscrow({ actor: 'auto' })` |
+| `full_refund_to_caster`     | `refundEscrow(reason)`             |
+| `split`                     | `partialRelease(splitArtistPct, { resolution: 'split' })` |
+| `escalated`                 | (no money movement — frozen)       |
+
+Money movement runs **outside** the resolution transaction (Stripe calls are
+slow and shouldn't hold a DB transaction open). The payment helpers are all
+idempotent on `escrowStatus`, so admin can safely re-invoke `adminResolve`
+if a mid-flight Stripe call fails (the dispute row stays `resolved` but the
+payment helper picks up where it left off). Failures are logged + rethrown.
+
+If the booking never had escrow held (`payment` row absent), money movement
+is skipped entirely.
+
+### Open items still on the list
+
+- 3-strike auto admin-review alert (notify admin + auto-suspend per PRD §13.4)
+- Frivolous-dispute auto-alert (3 lost disputes → admin pinged, PRD §13.5)
+- Critical-field-change bidder notifications (caster edits shoot date →
+  notify all bidders, PRD §10.3)
+- Job auto-expiry reminders (14-day no-activity email, PRD §10.4)
+- Job invites flow (`JobInvite` model exists, no service/routes)
+- Bid edit while pending + reject-undo within 24h (PRD §10.5)
+- Contact-detail redaction in messages (PRD §10.10)
+- Admin force-release / refund / remove-job endpoints (PRD §6.4–6.5)
+- Daily-digest matching-job notifications (PRD §14 artist)
+
+## Job invites (direct invite flow)
+
+End-to-end caster→artist invite + invite-only visibility gating. Typecheck,
+lint, prettier, and 11/11 tests still green.
+
+### Schema
+
+No schema change — `JobInvite` model + `InviteStatus` enum + `JobVisibility`
+enum were already wired (just unused). The flow uses them as-is.
+
+### Validators
+
+- `packages/validators/src/invite.ts` exports `inviteArtistSchema`
+  (`artistId: uuid, message?: string`).
+
+### Service — `JobInviteService`
+
+- `invite(userId, jobId, input)` — caster creates an invite. Checks job is
+  active + not expired + not full + caster owns it. Artist must be
+  `approved`. Idempotent guard: rejects duplicate
+  `(jobId, artistId)` invites regardless of status. Fires
+  `invite_received` notification to the artist.
+- `listForArtist(userId, { status?, cursor?, limit? })` — paginated; same
+  cursor pattern as the rest of the codebase.
+- `getForArtist(userId, inviteId)` — bundled invite + full job detail.
+  This is how an artist views an `invite_only` job (those don't appear in
+  `JobService.listPublic`).
+- `accept(userId, inviteId)` / `decline(userId, inviteId)` → notifies caster
+  with `invite_accepted` / `invite_declined`.
+
+### Routes — new `inviteRoutes` mounted at `/api/v1/invites`
+
+- `POST /jobs/:jobId` (caster) — create invite.
+- `GET  /me/list` (artist) — list own invites; supports
+  `?status=pending|accepted|declined&cursor&limit`.
+- `GET  /:id` (artist) — invite + full job detail.
+- `POST /:id/accept` (artist) — accept.
+- `POST /:id/decline` (artist) — decline.
+
+### Invite-only visibility enforcement
+
+`BidService.submitBid` now also checks `job.visibility`. If `invite_only`,
+the artist must have a `status: 'accepted'` JobInvite for that job. Throws
+`FORBIDDEN` otherwise. Combined with the existing `JobService.getPublicDetail`
+filter (`visibility: 'public'`), invite-only jobs are now fully gated.
+
+### NotificationService additions
+
+`CastflowNotificationType` extended with `invite_received`,
+`invite_accepted`, `invite_declined`.
+
+### Workspace dependency churn (during this slice)
+
+To make PDF contracts work alongside the rest of the workspace:
+
+- Upgraded `@react-pdf/renderer` from `3.4.x` to `^4.5.1` — v4 supports
+  `react@19` peer, v3 capped at react@18.
+- Switched `apps/api` to react@19 + @types/react@19 (was 18) to match the
+  rest of the workspace (`apps/web` is on 19). Otherwise `bun test` pulled
+  in `react-dom@18.3.1` transitively and crashed with
+  `ReactSharedInternals.ReactCurrentDispatcher` undefined (renamed in 19).
+- Added `react-dom@^19` + `@types/react-dom@^19` as `apps/api` devDeps to
+  pin the resolver onto 19 explicitly (the radix/react-pdf peer ranges
+  otherwise let 18.x bleed back into the bun resolution cache).
+
+### Not in this slice (still open)
+
+- Reject-undo-within-24h on bids (PRD §10.5)
+- Bid edit while pending (PRD §10.5)
+- Critical-field-change bidder notifications (PRD §10.3)
+- 3-strike auto admin-review + frivolous-dispute auto-alert
+- Admin force-release / refund / remove-job (PRD §6.4–6.5)
+- Contact-detail redaction in messages
+- Job auto-expiry reminders + daily-digest matching emails
+- Welcome / artist_approved / artist_rejected emails
 
 ## Next up
 
-Foundation complete. Ready for feature development.
+Backend hardening (HANDOFF.md §5) continues:
 
-Suggested build order (each one is a complete vertical slice):
+1. ✅ Rate limiting + suspend-invalidates-session + upload key-ownership check
+2. ✅ Remaining §4.1 security gaps (high + medium + low)
+3. ✅ §4.2 optimizations
+4. ✅ Stripe Connect + artist payouts
+5. ✅ Notification + email event wiring
+6. ✅ PDF contract generation
+7. ✅ Dispute payout movement + cancellation-fee Stripe split + strike system
+8. ✅ Job invites + invite-only visibility
 
-1. Auth flows — register (artist + caster), login, email verify, social login
-2. Artist onboarding — personal info, stats, portfolio upload, ID doc, submit for review
+Remaining open items above. The biggest user-visible gaps are admin tools
+(force-release, force-refund, remove-job) and the bid edit / reject-undo
+flow. After that, frontend resumes.
+
+Then return to frontend.
+
+Feature 01 (Auth) complete. **Feature #2 (Artist Onboarding)** is the next
+frontend slice once the backend punch list lands — spec at
+`docs/features/02-artist-onboarding.md` (to be written first using
+`docs/features/README.md` as the template; copy `01-auth.md` as scaffold).
+
+### Feature build order
+
+See `docs/features/README.md` for the full table with status. Suggested order, each a complete vertical slice:
+
+1. ✅ **Auth flows** — register (artist + caster), login, email verify, social login. **Spec: `docs/features/01-auth.md`**
+2. **Artist onboarding** — personal info, stats, portfolio upload, ID doc, submit for review (← next)
 3. Admin: artist application queue — approve and reject with reason
 4. Caster: post a job — full 6-step wizard, both payment types
 5. Artist: job feed — browse, filter, view job detail
@@ -217,11 +776,21 @@ Suggested build order (each one is a complete vertical slice):
 14. Notifications — email triggers for all key events
 15. Admin: full dashboard — users, jobs, payments, disputes, analytics
 
-When starting each feature:
+### When starting each feature
 
-- Read CLAUDE.md and CONTEXT.md first
+- Read `CONTEXT.md` and the relevant `CLAUDE.md` files first
+- Then read `docs/features/NN-<name>.md` — if it doesn't exist yet, write it first using `docs/features/README.md` as the template (copy 01-auth.md as scaffold)
+- **TDD:** write failing tests in the order listed in §7 Test plan of the feature doc, then implement. Red → Green → Refactor.
 - Build the service method first, then the route, then the UI
 - Write to CONTEXT.md at the end of every session
+
+### Test infrastructure (added post-Phase 6)
+
+- **API:** `bun test` (native, no extra deps). Smoke covers `/health` + canonical 404. Run via `bun --filter @castflow/api test` or `bun run test` at root.
+- **Web:** Vitest 4 + React Testing Library + jsdom. Setup file `apps/web/vitest.setup.ts`. Run via `bun --filter web test`.
+- **E2E:** Playwright at the repo root (`tests/e2e/`). Smoke covers homepage, login, auth-guard redirect. Run via `bun run test:e2e` against locally-running stack (no auto webServer block yet — see caveats).
+- **Turbo:** `test` task wired into `turbo.json`; root `bun run test` runs API + web in parallel with cache.
+- Coverage target: 80% per file (per common rules), enforced by the feature acceptance checklists.
 
 Open follow-ups (carried over from Phase 5; not blockers for feature work):
 

@@ -1,5 +1,50 @@
 import { Hono } from 'hono'
+import { presignedUrlSchema, confirmUploadSchema } from '@castflow/validators'
+import { authenticate } from '../middleware/authenticate'
+import { rateLimitByUser } from '../middleware/rateLimit'
+import { UploadService } from '../services/UploadService'
+import { AppError } from '../errors'
 
-export const uploadRoutes = new Hono()
+type AppEnv = { Variables: { user: { id: string; role: string } } }
 
-// TODO: implement
+export const uploadRoutes = new Hono<AppEnv>()
+
+uploadRoutes.use('*', authenticate)
+
+// 30 presigned URLs / 10 min per user — generous for portfolio batches, blocks spam.
+const presignLimit = rateLimitByUser({
+  scope: 'uploads:presign',
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  message: 'Too many upload requests. Try again in a few minutes.',
+})
+
+uploadRoutes.post('/presigned-url', presignLimit, async (c) => {
+  const user = c.get('user')
+  const parsed = presignedUrlSchema.safeParse(await c.req.json())
+  if (!parsed.success) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Invalid input',
+      400,
+      parsed.error.flatten().fieldErrors as Record<string, string[]>
+    )
+  }
+  const result = await UploadService.getPresignedUrl(user.id, parsed.data)
+  return c.json({ success: true, data: result })
+})
+
+uploadRoutes.post('/confirm', async (c) => {
+  const user = c.get('user')
+  const parsed = confirmUploadSchema.safeParse(await c.req.json())
+  if (!parsed.success) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Invalid input',
+      400,
+      parsed.error.flatten().fieldErrors as Record<string, string[]>
+    )
+  }
+  const result = await UploadService.confirmUpload(user.id, parsed.data)
+  return c.json({ success: true, data: result })
+})

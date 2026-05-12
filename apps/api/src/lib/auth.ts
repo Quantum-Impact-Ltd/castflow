@@ -2,6 +2,8 @@ import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { prisma } from './prisma'
 import { env } from './env'
+import { EmailService } from '../services/EmailService'
+import { AppError } from '../errors'
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: 'postgresql' }),
@@ -13,6 +15,26 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      // Rewrite the reset link to point at the web app, which posts the token
+      // back to the API via /api/auth/reset-password.
+      const u = new URL(url)
+      const token = u.searchParams.get('token') ?? ''
+      const resetUrl = `${env.FRONTEND_URL}/reset-password/${encodeURIComponent(token)}`
+      await EmailService.sendPasswordReset({ to: user.email, resetUrl })
+    },
+  },
+
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url }) => {
+      // Magic link should land on the web app's verify-email page.
+      const u = new URL(url)
+      const token = u.searchParams.get('token') ?? ''
+      const verifyUrl = `${env.FRONTEND_URL}/verify-email/${encodeURIComponent(token)}`
+      await EmailService.sendVerificationEmail({ to: user.email, verifyUrl })
+    },
+    autoSignInAfterVerification: false,
+    sendOnSignUp: true,
   },
 
   socialProviders: {
@@ -57,6 +79,27 @@ export const auth = betterAuth({
         required: true,
         defaultValue: 'pending',
         input: false,
+      },
+    },
+  },
+
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user: { email: string }) => {
+          // Case-insensitive match — Better Auth lowercases, but direct DB
+          // seeds can land with mixed case. Don't let casing slip a ban.
+          const existing = await prisma.user.findFirst({
+            where: {
+              email: { equals: user.email, mode: 'insensitive' },
+              status: 'banned',
+            },
+          })
+          if (existing) {
+            throw new AppError('BANNED', 'This email is blocked', 403)
+          }
+          return { data: user }
+        },
       },
     },
   },
