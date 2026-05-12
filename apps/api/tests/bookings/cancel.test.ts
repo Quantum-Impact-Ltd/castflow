@@ -13,7 +13,7 @@ const HOUR_MS = 60 * 60 * 1000
 
 beforeAll(async () => {
   await cleanupTestData()
-})
+}, 60_000)
 beforeEach(() => {
   resetStripeMockCalls()
   resetStripeMockState()

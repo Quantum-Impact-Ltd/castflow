@@ -1175,13 +1175,35 @@ Suite now stands at **136 pass / 5 skip / 0 fail across 18 files (141 tests, ~40
 
 ### Open bugs surfaced by the test pass
 
-- **`Review.revieweeId` has dual FK constraints (SCHEMA BUG, BLOCKING)** — the model declares both `artistReviewee` and `casterReviewee` relations on the same `revieweeId` column. Postgres enforces BOTH `reviews_reviewee_artist_fkey` and `reviews_reviewee_caster_fkey` on every insert, requiring the value to exist in BOTH `artist_profiles` AND `caster_profiles`. Profile UUIDs do not collide across those tables, so EVERY `ReviewService.submit` call raises `P2003`. The service is unreachable in production. Confirmed against the live alwaysdata Postgres via `pg_get_constraintdef`. Tests in `reviews/review-flow.test.ts` document this with `describe.skip(...)` blocks; the pre-insert validation tests (window gating, role checks) still run because they throw before the failing INSERT. Fix options: (a) split `revieweeId` into nullable `artistRevieweeId` / `casterRevieweeId` columns and conditionally populate one; (b) drop one of the two relations from the schema and resolve at the service layer; (c) keep the column but add a `CHECK (reviewer_role IN ('caster','artist'))` partial-FK pattern using two `WHERE` clauses on each constraint (requires raw SQL since Prisma doesn't model partial FKs).
+- ~~**`Review.revieweeId` has dual FK constraints (SCHEMA BUG)**~~ — **FIXED.** Replaced the single `revieweeId String` column with `artistRevieweeId String?` + `casterRevieweeId String?`, each carrying a single-target FK to the relevant profile table. A `reviews_exactly_one_reviewee` CHECK constraint enforces exactly-one-non-null at the DB level (applied via `apps/api/prisma/post-push.sql`; `prisma db push` doesn't emit CHECK clauses). `ReviewService.submit` branches on `reviewerRole` to populate the right column, and a sibling `listForCaster()` joins the existing `listForArtist()`. All 5 previously-skipped review-flow tests now pass plus 4 new tests covering the split columns and `listForCaster`. Migration was safe because the `reviews` table was empty (every prior insert had been blocked by the dual-FK bug).
 
-### Next up (post-Tier D)
+### Local test database (Postgres in Docker)
 
-The backend is at "minimally trustworthy" coverage per HANDOFF.md §4. Remaining gaps:
+The integration suite previously ran against alwaysdata's managed Postgres over the public internet (~150-500ms per query × ~4000 queries per run = **~11 minutes for the full suite**). A `docker-compose.yml` at the repo root now provisions a local Postgres 16 container on port **5436**, and `apps/api/.env.test` overrides `DATABASE_URL` to point at it when `NODE_ENV=test`. Bun's env loading auto-layers `.env.test` on top of `.env` when `NODE_ENV=test` is set; everything else stays on the remote dev DB.
 
-- Decide on a fix for the dual-FK review schema bug above, migrate, re-enable the 5 skipped tests.
+Suite time after the switch: **~5-11 seconds for 145 tests** (~60-130× faster).
+
+Bootstrap workflow:
+
+```bash
+./scripts/test-db-setup.sh   # start container + push schema + apply CHECK
+cd apps/api && bun test       # ~10s
+```
+
+The setup script is idempotent — re-running it tops up the container and re-applies the post-push SQL safely. Tear-down with `docker compose down -v` wipes the volume.
+
+Caveats:
+
+- Prisma's CLI reads `.env` directly and ignores Bun's NODE_ENV-based env layering, so the setup script passes `DATABASE_URL=…` inline when invoking `prisma db push --accept-data-loss`. Anything else that shells out to Prisma against the test DB must do the same.
+- The host port is **5436** (not 5432) because dev environments commonly already have Postgres running on 5432-5435. Update both `docker-compose.yml` and `apps/api/.env.test` together if you change it.
+- The `notification listForUser` ordering test now adds a 5ms stagger between inserts because Postgres's `NOW()` resolves to milliseconds — on the local container's sub-ms writes, three back-to-back inserts can share a timestamp and break the order-by-desc assertion. Pattern: when an order-by-`createdAt` matters in a test, stagger inserts by `await new Promise((r) => setTimeout(r, 5))`.
+- Every `beforeAll(async () => { await cleanupTestData() })` now has an explicit `, 60_000` third arg. The previous default 5s hook timeout caused intermittent file-startup failures when an upstream file left orphan rows that took the next file's cleanup more than 5s to clear. Even on the local DB this is a cheap safety belt; on the remote DB it's required.
+- `apps/api/prisma/post-push.sql` is the single source of truth for DB-level invariants Prisma can't model. Currently contains the `reviews_exactly_one_reviewee` CHECK. Re-apply after every schema change touched by `prisma db push`.
+
+### Next up
+
+Backend is at "minimally trustworthy" coverage and the dual-FK bug is closed. Remaining gaps:
+
 - Rate-limit middleware tests (HANDOFF.md §4 Tier C item 14) — explicitly deferred there as low-value.
 - Property-based / fuzz tests, load/perf tests, frontend E2E — deferred per HANDOFF.md "Coverage to leave for later".
 - Frontend resumes: Feature #2 (Artist Onboarding) is the next slice per the feature build order above.

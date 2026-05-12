@@ -9,7 +9,7 @@ const TEST_TIMEOUT = 30_000
 
 beforeAll(async () => {
   await cleanupTestData()
-})
+}, 60_000)
 beforeEach(() => {
   EmailService.__clearTestInbox()
 })
@@ -211,7 +211,10 @@ describe('NotificationService listing + read state', () => {
     'listForUser returns rows ordered by createdAt desc; markRead sets readAt; markAllRead clears every unread',
     async () => {
       const { user } = await createTestArtist()
-      // Three notifications.
+      // Three notifications. Stagger by ~5ms so `createdAt` values differ
+      // — Postgres's NOW() resolution + the local container's sub-ms write
+      // latency would otherwise collapse identical timestamps and make the
+      // desc-order assertion non-deterministic.
       for (let i = 0; i < 3; i++) {
         await NotificationService.create({
           userId: user.id,
@@ -219,6 +222,7 @@ describe('NotificationService listing + read state', () => {
           title: `Item ${i}`,
           body: `body ${i}`,
         })
+        await new Promise((r) => setTimeout(r, 5))
       }
 
       const initial = await NotificationService.listForUser(user.id)

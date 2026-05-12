@@ -19,7 +19,7 @@ const TEST_TIMEOUT = 60_000
 
 beforeAll(async () => {
   await cleanupTestData()
-})
+}, 60_000)
 beforeEach(() => {
   resetStripeMockCalls()
   resetStripeMockState()

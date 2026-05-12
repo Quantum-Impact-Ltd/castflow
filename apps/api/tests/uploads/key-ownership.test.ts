@@ -9,7 +9,7 @@ const TEST_TIMEOUT = 30_000
 
 beforeAll(async () => {
   await cleanupTestData()
-})
+}, 60_000)
 afterAll(async () => {
   await cleanupTestData()
 }, 60_000)

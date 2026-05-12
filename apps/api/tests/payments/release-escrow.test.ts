@@ -14,7 +14,7 @@ const TEST_TIMEOUT = 30_000
 // alwaysdata Postgres exceeded Bun's hook timeout.
 beforeAll(async () => {
   await cleanupTestData()
-})
+}, 60_000)
 
 beforeEach(() => {
   resetStripeMockCalls()
