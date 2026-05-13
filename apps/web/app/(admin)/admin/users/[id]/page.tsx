@@ -1,7 +1,6 @@
-export default function AdminUserDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: AdminUserDetailPage</p>
-    </div>
-  )
+import { UserDetailClient } from './client'
+
+export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <UserDetailClient id={id} />
 }

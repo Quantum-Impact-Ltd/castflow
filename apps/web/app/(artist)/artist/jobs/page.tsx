@@ -1,7 +1,14 @@
+import { PageHeader } from '@/components/dashboard'
+import { JobFeed } from './job-feed'
+
 export default function ArtistJobsPage() {
   return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: ArtistJobsPage</p>
+    <div>
+      <PageHeader
+        title="Find Jobs"
+        description="Browse open castings and submit bids."
+      />
+      <JobFeed />
     </div>
   )
 }

@@ -1,7 +1,20 @@
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/dashboard'
+import { CasterJobsList } from './list'
+
 export default function CasterJobsPage() {
   return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterJobsPage</p>
+    <div className="space-y-6">
+      <PageHeader
+        title="My jobs"
+        actions={
+          <Button asChild>
+            <Link href="/caster/jobs/new/basics">Post new job</Link>
+          </Button>
+        }
+      />
+      <CasterJobsList />
     </div>
   )
 }

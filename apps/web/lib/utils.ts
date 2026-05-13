@@ -5,17 +5,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number): string {
+// API payloads carry Prisma Decimal as string and may omit nullable fields.
+// Coerce defensively so an unexpected null/undefined renders as £0.00 instead of "NaN".
+export function formatCurrency(amount: number | string | null | undefined): string {
+  const n = typeof amount === 'string' ? Number(amount) : (amount ?? 0)
+  const safe = Number.isFinite(n) ? n : 0
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
-  }).format(amount)
+  }).format(safe)
 }
 
-export function formatDate(date: string): string {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return '—'
+  const d = date instanceof Date ? date : new Date(date)
+  if (Number.isNaN(d.getTime())) return '—'
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  }).format(new Date(date))
+  }).format(d)
 }

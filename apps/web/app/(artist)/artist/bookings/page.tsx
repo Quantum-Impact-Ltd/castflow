@@ -1,7 +1,11 @@
+import { PageHeader } from '@/components/dashboard'
+import { ArtistBookingsList } from './list'
+
 export default function ArtistBookingsPage() {
   return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: ArtistBookingsPage</p>
+    <div>
+      <PageHeader title="Bookings" description="Confirmed shoots and their status." />
+      <ArtistBookingsList />
     </div>
   )
 }

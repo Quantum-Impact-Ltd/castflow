@@ -1,7 +1,10 @@
-export default function AdminApplicationDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: AdminApplicationDetailPage</p>
-    </div>
-  )
+import { ApplicationReviewClient } from './client'
+
+export default async function AdminApplicationDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <ApplicationReviewClient id={id} />
 }

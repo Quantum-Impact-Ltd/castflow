@@ -1,7 +1,10 @@
-export default function CasterBookingConfirmPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterBookingConfirmPage</p>
-    </div>
-  )
+import { ConfirmCompletionClient } from './client'
+
+export default async function CasterBookingConfirmPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <ConfirmCompletionClient bookingId={id} />
 }

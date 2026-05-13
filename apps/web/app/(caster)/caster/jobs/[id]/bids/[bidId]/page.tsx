@@ -1,7 +1,10 @@
-export default function CasterJobBidDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterJobBidDetailPage</p>
-    </div>
-  )
+import { CasterBidDetailClient } from './client'
+
+export default async function CasterBidDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string; bidId: string }>
+}) {
+  const { id, bidId } = await params
+  return <CasterBidDetailClient jobId={id} bidId={bidId} />
 }

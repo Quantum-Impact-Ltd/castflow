@@ -1,7 +1,5 @@
+import { AdminAnalyticsClient } from './client'
+
 export default function AdminAnalyticsPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: AdminAnalyticsPage</p>
-    </div>
-  )
+  return <AdminAnalyticsClient />
 }

@@ -1,7 +1,5 @@
+import { CasterSettingsClient } from './client'
+
 export default function CasterSettingsPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterSettingsPage</p>
-    </div>
-  )
+  return <CasterSettingsClient />
 }

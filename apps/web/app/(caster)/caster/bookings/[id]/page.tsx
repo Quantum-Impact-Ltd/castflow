@@ -1,7 +1,10 @@
-export default function CasterBookingDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterBookingDetailPage</p>
-    </div>
-  )
+import { CasterBookingDetailClient } from './client'
+
+export default async function CasterBookingDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <CasterBookingDetailClient id={id} />
 }

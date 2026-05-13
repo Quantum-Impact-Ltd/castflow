@@ -49,7 +49,7 @@ app.get('/health', (c) => c.json({ success: true, data: { status: 'ok', env: env
 // Throttle the auth surface before delegating to Better Auth's handler.
 // Login: 10 attempts / 15 min per IP. Password reset: 5 / hour per IP.
 app.use(
-  '/api/auth/sign-in/*',
+  '/api/auth/sign-in/**',
   rateLimit({
     scope: 'auth:sign-in',
     windowMs: 15 * 60 * 1000,
@@ -66,7 +66,11 @@ app.use(
     message: 'Too many password-reset requests. Try again later.',
   })
 )
-app.on(['GET', 'POST'], '/api/auth/**', (c) => auth.handler(c.req.raw))
+// `*` reliably captures the full Better Auth surface here. In this app shape,
+// `/**` appeared in the route table but fell through to Hono's 404 handler.
+app.on(['GET', 'POST'], '/api/auth/*', async (c) => {
+  return await auth.handler(c.req.raw)
+})
 
 // ── API v1 ─────────────────────────────────────────────────────────────────
 const api = app.basePath('/api/v1')

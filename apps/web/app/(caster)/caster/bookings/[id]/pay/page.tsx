@@ -1,7 +1,10 @@
-export default function CasterBookingPayPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterBookingPayPage</p>
-    </div>
-  )
+import { CasterPayClient } from './client'
+
+export default async function CasterBookingPayPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <CasterPayClient bookingId={id} />
 }

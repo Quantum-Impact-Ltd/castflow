@@ -1,7 +1,10 @@
-export default function ArtistDisputeDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: ArtistDisputeDetailPage</p>
-    </div>
-  )
+import { DisputeDetail } from './client'
+
+export default async function ArtistDisputeDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <DisputeDetail bookingId={id} />
 }

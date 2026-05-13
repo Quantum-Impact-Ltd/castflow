@@ -1,7 +1,5 @@
+import { MessagesInbox } from '@/components/messaging/inbox'
+
 export default function CasterMessagesPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterMessagesPage</p>
-    </div>
-  )
+  return <MessagesInbox basePath="/caster/messages" />
 }

@@ -1,7 +1,10 @@
-export default function CasterBookingDisputePage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterBookingDisputePage</p>
-    </div>
-  )
+import { DisputeForm } from '@/app/(artist)/artist/bookings/[id]/dispute/form'
+
+export default async function CasterBookingDisputePage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <DisputeForm bookingId={id} />
 }

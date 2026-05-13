@@ -1,7 +1,10 @@
-export default function ArtistBookingReviewPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: ArtistBookingReviewPage</p>
-    </div>
-  )
+import { ReviewForm } from './form'
+
+export default async function ArtistBookingReviewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <ReviewForm bookingId={id} />
 }

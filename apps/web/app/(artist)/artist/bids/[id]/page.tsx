@@ -1,7 +1,10 @@
-export default function ArtistBidDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: ArtistBidDetailPage</p>
-    </div>
-  )
+import { BidDetailClient } from './client'
+
+export default async function ArtistBidDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <BidDetailClient id={id} />
 }

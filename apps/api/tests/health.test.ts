@@ -25,3 +25,11 @@ describe('Unknown route', () => {
     expect(body.error.message).toBe('Route not found')
   })
 })
+
+describe('GET /api/auth/get-session', () => {
+  it('is forwarded to Better Auth instead of the app 404 handler', async () => {
+    const res = await app.request('/api/auth/get-session')
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('null')
+  })
+})

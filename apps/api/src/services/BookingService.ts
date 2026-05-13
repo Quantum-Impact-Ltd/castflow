@@ -65,7 +65,17 @@ export class BookingService {
           job: { select: { title: true, paymentType: true } },
           caster: { select: { companyName: true } },
           contract: { select: { status: true } },
-          payment: { select: { escrowStatus: true } },
+          payment: {
+            select: {
+              escrowStatus: true,
+              grossAmount: true,
+              platformCommissionAmount: true,
+              netArtistAmount: true,
+              autoReleaseAt: true,
+              releasedAt: true,
+              paidAt: true,
+            },
+          },
         },
       })
       const hasNext = rows.length > take

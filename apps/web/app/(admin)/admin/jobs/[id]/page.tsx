@@ -1,7 +1,6 @@
-export default function AdminJobDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: AdminJobDetailPage</p>
-    </div>
-  )
+import { AdminJobDetailClient } from './client'
+
+export default async function AdminJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <AdminJobDetailClient id={id} />
 }

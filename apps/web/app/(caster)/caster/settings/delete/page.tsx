@@ -1,7 +1,25 @@
+import { PageHeader } from '@/components/dashboard'
+import { Card, CardContent } from '@/components/ui/card'
+
 export default function CasterSettingsDeletePage() {
   return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterSettingsDeletePage</p>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <PageHeader title="Delete account" />
+      <Card>
+        <CardContent className="text-sm pt-6 space-y-3">
+          <p>
+            Account deletion is processed manually. Active bookings or held escrow block deletion
+            until they're resolved.
+          </p>
+          <p className="text-muted-foreground">
+            Email{' '}
+            <a className="underline" href="mailto:support@castflow.co.uk">
+              support@castflow.co.uk
+            </a>{' '}
+            from your account email to request deletion.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -1,7 +1,10 @@
-export default function ArtistMessageThreadPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: ArtistMessageThreadPage</p>
-    </div>
-  )
+import { MessageThread } from '@/components/messaging/thread'
+
+export default async function ArtistMessageThreadPage({
+  params,
+}: {
+  params: Promise<{ threadId: string }>
+}) {
+  const { threadId } = await params
+  return <MessageThread threadId={threadId} backHref="/artist/messages" />
 }

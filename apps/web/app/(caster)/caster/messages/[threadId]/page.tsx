@@ -1,7 +1,10 @@
-export default function CasterMessageThreadPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterMessageThreadPage</p>
-    </div>
-  )
+import { MessageThread } from '@/components/messaging/thread'
+
+export default async function CasterMessageThreadPage({
+  params,
+}: {
+  params: Promise<{ threadId: string }>
+}) {
+  const { threadId } = await params
+  return <MessageThread threadId={threadId} backHref="/caster/messages" />
 }

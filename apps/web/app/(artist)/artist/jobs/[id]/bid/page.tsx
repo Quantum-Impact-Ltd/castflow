@@ -1,7 +1,10 @@
-export default function ArtistJobBidPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: ArtistJobBidPage</p>
-    </div>
-  )
+import { BidForm } from './form'
+
+export default async function ArtistJobBidPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <BidForm jobId={id} />
 }

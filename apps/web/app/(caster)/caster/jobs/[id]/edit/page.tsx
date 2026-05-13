@@ -1,7 +1,6 @@
-export default function CasterJobEditPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterJobEditPage</p>
-    </div>
-  )
+import { CasterJobEditClient } from './client'
+
+export default async function CasterJobEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <CasterJobEditClient id={id} />
 }

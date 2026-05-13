@@ -1,7 +1,10 @@
-export default function ArtistBookingDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: ArtistBookingDetailPage</p>
-    </div>
-  )
+import { BookingDetailClient } from './client'
+
+export default async function ArtistBookingDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <BookingDetailClient id={id} />
 }

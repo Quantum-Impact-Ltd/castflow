@@ -1,7 +1,10 @@
-export default function AdminPaymentDetailPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: AdminPaymentDetailPage</p>
-    </div>
-  )
+import { redirect } from 'next/navigation'
+
+export default async function AdminPaymentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  redirect(`/admin/bookings/${id}`)
 }

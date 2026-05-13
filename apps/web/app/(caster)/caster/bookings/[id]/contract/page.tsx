@@ -1,7 +1,6 @@
-export default function CasterBookingContractPage() {
-  return (
-    <div className="p-8">
-      <p className="text-muted-foreground text-sm">TODO: CasterBookingContractPage</p>
-    </div>
-  )
+import { ContractClient } from '@/app/(artist)/artist/bookings/[id]/contract/client'
+
+export default async function CasterContractPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return <ContractClient bookingId={id} signerRole="caster" />
 }
