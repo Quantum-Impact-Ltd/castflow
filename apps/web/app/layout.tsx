@@ -1,24 +1,41 @@
 import type { Metadata } from 'next'
-import { Inter, EB_Garamond, Public_Sans } from 'next/font/google'
+import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
 import { Providers } from '@/providers'
 import './globals.css'
-import { cn } from "@/lib/utils";
 
-const publicSansHeading = Public_Sans({subsets:['latin'],variable:'--font-heading'});
+const geistSans = Geist({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+})
 
-const ebGaramond = EB_Garamond({subsets:['latin'],variable:'--font-serif'});
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+  display: 'swap',
+})
 
-const inter = Inter({ subsets: ['latin'] })
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-serif',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'CastFlow — UK Casting Marketplace',
-  description: 'Find and book professional models and actors for your shoot.',
+  description:
+    'Cast verified UK models and actors in days. Contracts, escrow payments, and reviews built in.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={cn("font-serif", ebGaramond.variable, publicSansHeading.variable)}>
-      <body className={inter.className}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
+    >
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>
