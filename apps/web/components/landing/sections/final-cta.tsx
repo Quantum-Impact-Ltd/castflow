@@ -2,19 +2,22 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Reveal } from '../reveal'
+import { AnimatedGridPattern } from '@/components/ui/animated-grid-pattern'
+import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
+import { cn } from '@/lib/utils'
 
 export function FinalCtaSection() {
   return (
     <section className="relative w-full overflow-hidden bg-background py-28 lg:py-44">
-      {/* Subtle dot-grid texture, very low contrast */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-50"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 1px 1px, rgba(13, 27, 38, 0.06) 1px, transparent 0)',
-          backgroundSize: '24px 24px',
-        }}
+      <AnimatedGridPattern
+        numSquares={32}
+        maxOpacity={0.08}
+        duration={5}
+        repeatDelay={1}
+        className={cn(
+          'pointer-events-none [mask-image:radial-gradient(700px_circle_at_center,white,transparent)]',
+          'inset-x-0 inset-y-[-30%] h-[160%] skew-y-6',
+        )}
       />
 
       <div className="relative mx-auto w-full max-w-4xl px-6 text-center lg:px-8">
@@ -30,16 +33,13 @@ export function FinalCtaSection() {
             Browse talent free. No card required to sign up.
           </p>
           <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="h-12 rounded-full px-7 text-base"
+            <ShimmerButtonLink
+              href="/register?role=caster"
+              className="h-12 px-7 text-base font-medium"
             >
-              <Link href="/register?role=caster">
-                Get started
-                <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
-              </Link>
-            </Button>
+              Get started
+              <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
+            </ShimmerButtonLink>
             <Button
               asChild
               size="lg"

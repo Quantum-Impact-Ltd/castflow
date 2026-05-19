@@ -44,6 +44,181 @@ type PublicJob = Pick<
 
 export type { PublicJob }
 
+export interface CasterMeta {
+  verified: boolean
+  shootsPosted: number
+  rating: number
+  ratingCount: number
+  memberSince: string
+}
+
+export interface ShootDetailExtras {
+  /** Locked detail — only revealed after the artist signs in + bid is accepted. */
+  shootLocationDetail: string
+  callTime: string
+  wardrobe: string
+  perks: string[]
+  cancellationPolicy: string
+  similarShootIds: string[]
+  casterMeta: CasterMeta
+}
+
+const SHOOT_DETAIL_EXTRAS: Record<string, ShootDetailExtras> = {
+  'shoot-001': {
+    shootLocationDetail: 'Studio at 14 Cremer Street, London E2 8HD',
+    callTime: '08:00 hair & makeup · 09:30 first frame',
+    wardrobe: 'Provided on set. Bring nude underwear + skin-tone strapless bra.',
+    perks: ['Hair & makeup provided', 'Catering on set', 'Travel reimbursed within M25'],
+    cancellationPolicy: '48hr standard · 50% fee if cancelled inside 48h of call time',
+    similarShootIds: ['shoot-004', 'shoot-008', 'shoot-006'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 47,
+      rating: 4.9,
+      ratingCount: 38,
+      memberSince: '2024',
+    },
+  },
+  'shoot-002': {
+    shootLocationDetail: 'Remote · home studio recording',
+    callTime: 'Flexible — submit dry run within 5 working days',
+    wardrobe: 'N/A — voiceover',
+    perks: ['Remote', 'Two revision rounds included', 'Direct line to creative director'],
+    cancellationPolicy: '24hr standard',
+    similarShootIds: ['shoot-005'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 12,
+      rating: 4.7,
+      ratingCount: 9,
+      memberSince: '2025',
+    },
+  },
+  'shoot-003': {
+    shootLocationDetail: 'Studio TBC, central Manchester (within 1 mile of Piccadilly)',
+    callTime: '07:00 call · 08:30 first frame',
+    wardrobe: 'Stylist provided. Bring black socks + nude underwear.',
+    perks: ['Catering', 'Stylist on set', 'Buyout included'],
+    cancellationPolicy: '72hr standard · TVC standard ESA scale fees',
+    similarShootIds: ['shoot-009'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 124,
+      rating: 4.8,
+      ratingCount: 96,
+      memberSince: '2023',
+    },
+  },
+  'shoot-004': {
+    shootLocationDetail: 'Wapping Wharf warehouse, Bristol BS1 6WP',
+    callTime: '09:30 H&MU · 11:00 first frame',
+    wardrobe: 'All provided',
+    perks: ['Catering', 'Local travel covered'],
+    cancellationPolicy: '48hr standard',
+    similarShootIds: ['shoot-001', 'shoot-008'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 31,
+      rating: 4.85,
+      ratingCount: 27,
+      memberSince: '2024',
+    },
+  },
+  'shoot-005': {
+    shootLocationDetail: 'Remote · ACX-grade recording required',
+    callTime: 'Booking dates by mutual agreement',
+    wardrobe: 'N/A',
+    perks: ['Royalty share on bestseller tiers', 'Flexible recording windows'],
+    cancellationPolicy: '7 day notice on scheduled sessions',
+    similarShootIds: ['shoot-002'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 8,
+      rating: 4.9,
+      ratingCount: 6,
+      memberSince: '2025',
+    },
+  },
+  'shoot-006': {
+    shootLocationDetail: 'Studio 22, Bermondsey Pickle Factory, London SE1',
+    callTime: '10:30 nail prep · 11:00 first frame',
+    wardrobe: 'N/A · neutral manicure provided',
+    perks: ['Manicure included', 'Catering on set'],
+    cancellationPolicy: '48hr standard',
+    similarShootIds: ['shoot-001', 'shoot-004'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 19,
+      rating: 4.75,
+      ratingCount: 14,
+      memberSince: '2024',
+    },
+  },
+  'shoot-007': {
+    shootLocationDetail: 'Newhailes Estate, Musselburgh EH21',
+    callTime: '05:30 unit base · 06:30 costume',
+    wardrobe: 'Full period costume + makeup provided',
+    perks: ['Costume & makeup', 'Catering all three days', 'Daily mileage'],
+    cancellationPolicy: '72hr standard',
+    similarShootIds: ['shoot-003', 'shoot-009'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 73,
+      rating: 4.6,
+      ratingCount: 51,
+      memberSince: '2023',
+    },
+  },
+  'shoot-008': {
+    shootLocationDetail: 'Botany Bay, Broadstairs CT10',
+    callTime: '06:45 H&MU · 08:00 first frame (golden hour)',
+    wardrobe: 'All provided · bring nude underwear',
+    perks: ['Travel from London covered', 'Catering on set'],
+    cancellationPolicy: '48hr standard · weather hold day included',
+    similarShootIds: ['shoot-001', 'shoot-004'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 22,
+      rating: 4.8,
+      ratingCount: 18,
+      memberSince: '2024',
+    },
+  },
+  'shoot-009': {
+    shootLocationDetail: 'Various — North London, exact addresses on call sheet',
+    callTime: 'Daily call sheets confirmed 48h ahead',
+    wardrobe: 'Costume provided · sizing call required',
+    perks: [
+      'Festival submission credit',
+      'Showreel footage delivered',
+      'Per diem covered',
+    ],
+    cancellationPolicy: '72hr standard',
+    similarShootIds: ['shoot-003'],
+    casterMeta: {
+      verified: true,
+      shootsPosted: 14,
+      rating: 4.95,
+      ratingCount: 11,
+      memberSince: '2024',
+    },
+  },
+}
+
+export function getMockShoot(id: string): (PublicJob & ShootDetailExtras) | null {
+  const job = MOCK_SHOOTS.find((s) => s.id === id)
+  if (!job) return null
+  const extras = SHOOT_DETAIL_EXTRAS[id]
+  if (!extras) return null
+  return { ...job, ...extras }
+}
+
+export function getSimilarShoots(ids: readonly string[]): PublicJob[] {
+  return ids
+    .map((id) => MOCK_SHOOTS.find((s) => s.id === id))
+    .filter((s): s is PublicJob => Boolean(s))
+}
+
 export const MOCK_SHOOTS: PublicJob[] = [
   {
     id: 'shoot-001',

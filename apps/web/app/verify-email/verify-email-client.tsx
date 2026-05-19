@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { useResendVerification } from '@/lib/hooks/use-auth'
 import { toast } from 'sonner'
+import { Send } from 'lucide-react'
+import { AuthField, AuthInput } from '@/components/auth/auth-shell'
+import { useResendVerification } from '@/lib/hooks/use-auth'
 
 export function VerifyEmailClient() {
   const params = useSearchParams()
@@ -18,28 +19,36 @@ export function VerifyEmailClient() {
       return
     }
     mutation.mutate(email, {
-      onSuccess: () => toast.success('Verification email re-sent. Check your inbox.'),
+      onSuccess: () =>
+        toast.success('Verification email re-sent. Check your inbox.'),
     })
   }
 
   return (
     <div className="space-y-4">
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="your@email.com"
-        className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm"
-      />
-      <Button
+      <p className="text-center font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-white/55">
+        Didn&apos;t get it?
+      </p>
+      <AuthField label="Your email" htmlFor="resend-email">
+        <AuthInput
+          id="resend-email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+        />
+      </AuthField>
+      <button
         type="button"
         onClick={handleResend}
         disabled={mutation.isPending}
-        variant="outline"
-        className="w-full"
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] text-sm font-medium text-white transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
       >
+        <Send className="h-4 w-4" aria-hidden />
         {mutation.isPending ? 'Sending…' : 'Resend verification email'}
-      </Button>
+      </button>
     </div>
   )
 }

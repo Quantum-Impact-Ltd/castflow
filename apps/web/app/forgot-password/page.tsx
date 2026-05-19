@@ -1,22 +1,39 @@
 import Link from 'next/link'
+import { AuthShell } from '@/components/auth/auth-shell'
 import { ForgotPasswordForm } from './forgot-form'
+
+export const metadata = {
+  title: 'Reset password — CastFlow',
+  description: 'Request a password-reset link.',
+}
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="mx-auto max-w-md px-4 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">Reset your password</h1>
-      <p className="text-muted-foreground mt-2 text-sm">
-        Enter your email and we&apos;ll send a reset link if an account exists.
-      </p>
-      <div className="mt-6">
-        <ForgotPasswordForm />
-      </div>
-      <p className="text-muted-foreground mt-6 text-center text-sm">
-        Remembered it?{' '}
-        <Link href="/login" className="text-primary underline-offset-4 hover:underline">
-          Log in
-        </Link>
-      </p>
-    </div>
+    <AuthShell
+      eyebrow="Reset password"
+      heading={
+        <>
+          Forgot your{' '}
+          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
+            password?
+          </span>
+        </>
+      }
+      subhead="Enter your email and we'll send a reset link if an account exists."
+      width="sm"
+      footer={
+        <>
+          Remembered it?{' '}
+          <Link
+            href="/login"
+            className="font-medium text-white underline-offset-4 hover:underline"
+          >
+            Log in
+          </Link>
+        </>
+      }
+    >
+      <ForgotPasswordForm />
+    </AuthShell>
   )
 }

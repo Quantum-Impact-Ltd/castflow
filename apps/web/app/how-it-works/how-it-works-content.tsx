@@ -220,7 +220,7 @@ function HeroSection() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-full">
-              <Link href="/artists">Browse talent</Link>
+              <Link href="/talent">Browse talent</Link>
             </Button>
           </div>
         </Reveal>

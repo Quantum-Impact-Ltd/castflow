@@ -6,6 +6,7 @@ import { Footer } from '@/components/landing/footer'
 import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
 import { BorderBeam } from '@/components/ui/border-beam'
+import { NumberTicker } from '@/components/ui/number-ticker'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
@@ -127,6 +128,67 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
 ]
 
+function TierCard({ tier }: { tier: Tier }) {
+  return (
+    <div
+      className={cn(
+        'relative flex h-full flex-col rounded-2xl border bg-background p-10 transition-all',
+        tier.popular
+          ? 'border-primary shadow-md lg:scale-[1.03]'
+          : 'border-border hover:shadow-sm',
+      )}
+    >
+      {tier.popular && (
+        <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center rounded-full bg-primary px-3 py-1 font-mono text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground">
+          Most popular
+        </span>
+      )}
+
+      <div>
+        <h2 className="text-2xl font-medium tracking-[-0.015em] text-foreground">
+          {tier.name}
+        </h2>
+        <p className="mt-2 text-sm text-foreground/70">{tier.sub}</p>
+      </div>
+
+      <div className="mt-8">
+        <p className="flex items-baseline gap-1">
+          <span className="font-mono text-5xl font-medium tracking-[-0.03em] text-foreground">
+            {tier.monthly}
+          </span>
+          <span className="text-sm text-foreground/60">/ month</span>
+        </p>
+        <p className="mt-2 font-mono text-sm text-foreground/70">
+          + {tier.commission}
+        </p>
+      </div>
+
+      <ul className="mt-8 flex flex-1 flex-col gap-3 border-t border-border/60 pt-6">
+        {tier.features.map((feature) => (
+          <li
+            key={feature}
+            className="flex items-start gap-2 text-sm text-foreground"
+          >
+            <Check
+              className="mt-0.5 h-4 w-4 flex-none text-primary"
+              aria-hidden
+            />
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+
+      <Button
+        asChild
+        className="mt-10 h-11 w-full rounded-full"
+        variant={tier.popular ? 'default' : 'outline'}
+      >
+        <Link href={`/register?role=caster&plan=${tier.slug}`}>{tier.cta}</Link>
+      </Button>
+    </div>
+  )
+}
+
 function YesNo({ value }: { value: string | boolean }) {
   if (value === true)
     return (
@@ -175,59 +237,7 @@ export default function PricingPage() {
             <div className="grid gap-6 lg:grid-cols-3 lg:items-stretch">
               {TIERS.map((tier, i) => (
                 <Reveal key={tier.slug} delay={i * 80}>
-                  <div
-                    className={cn(
-                      'relative flex h-full flex-col rounded-2xl border bg-background p-10 transition-all',
-                      tier.popular
-                        ? 'border-primary shadow-md lg:scale-[1.03]'
-                        : 'border-border hover:shadow-sm'
-                    )}
-                  >
-                    {tier.popular && (
-                      <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center rounded-full bg-primary px-3 py-1 font-mono text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground">
-                        Most popular
-                      </span>
-                    )}
-
-                    <div>
-                      <h2 className="text-2xl font-medium tracking-[-0.015em] text-foreground">
-                        {tier.name}
-                      </h2>
-                      <p className="mt-2 text-sm text-foreground/70">{tier.sub}</p>
-                    </div>
-
-                    <div className="mt-8">
-                      <p className="flex items-baseline gap-1">
-                        <span className="font-mono text-5xl font-medium tracking-[-0.03em] text-foreground">
-                          {tier.monthly}
-                        </span>
-                        <span className="text-sm text-foreground/60">/ month</span>
-                      </p>
-                      <p className="mt-2 font-mono text-sm text-foreground/70">
-                        + {tier.commission}
-                      </p>
-                    </div>
-
-                    <ul className="mt-8 flex flex-1 flex-col gap-3 border-t border-border/60 pt-6">
-                      {tier.features.map((feature) => (
-                        <li
-                          key={feature}
-                          className="flex items-start gap-2 text-sm text-foreground"
-                        >
-                          <Check className="mt-0.5 h-4 w-4 flex-none text-primary" aria-hidden />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Button
-                      asChild
-                      className="mt-10 h-11 w-full rounded-full"
-                      variant={tier.popular ? 'default' : 'outline'}
-                    >
-                      <Link href={`/register?role=caster&plan=${tier.slug}`}>{tier.cta}</Link>
-                    </Button>
-                  </div>
+                  <TierCard tier={tier} />
                 </Reveal>
               ))}
             </div>
@@ -268,20 +278,23 @@ export default function PricingPage() {
                 <BreakdownCard
                   step="1 · Caster pays"
                   label="Agreed rate"
-                  amount="£1,000"
+                  prefix="£"
+                  value={1000}
                   note="Captured into escrow at booking confirmation."
                 />
                 <BreakdownCard
                   step="2 · Platform commission"
                   label="At payout (Studio plan, 8%)"
-                  amount="−£80"
+                  prefix="−£"
+                  value={80}
                   amountClassName="text-foreground/70"
                   note="Deducted from artist's side — never added to the caster's bill."
                 />
                 <BreakdownCard
                   step="3 · Artist takes home"
                   label="Net to bank"
-                  amount="£920"
+                  prefix="£"
+                  value={920}
                   highlight
                   note="Released after shoot confirmation. Auto-released after 48h."
                 />
@@ -445,14 +458,16 @@ export default function PricingPage() {
 function BreakdownCard({
   step,
   label,
-  amount,
+  prefix,
+  value,
   note,
   highlight = false,
   amountClassName,
 }: {
   step: string
   label: string
-  amount: string
+  prefix: string
+  value: number
   note: string
   highlight?: boolean
   amountClassName?: string
@@ -470,12 +485,16 @@ function BreakdownCard({
       <p className="mt-3 text-sm text-foreground/70">{label}</p>
       <p
         className={cn(
-          'mt-4 font-mono text-5xl font-medium tracking-[-0.03em]',
+          'mt-4 inline-flex items-baseline font-mono text-5xl font-medium tracking-[-0.03em]',
           highlight ? 'text-primary' : 'text-foreground',
           amountClassName
         )}
       >
-        {amount}
+        <span>{prefix}</span>
+        <NumberTicker
+          value={value}
+          className={cn(highlight ? 'text-primary' : 'text-foreground', amountClassName)}
+        />
       </p>
       <p className="mt-4 text-sm leading-relaxed text-foreground/70">{note}</p>
     </div>

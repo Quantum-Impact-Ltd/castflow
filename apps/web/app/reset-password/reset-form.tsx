@@ -6,10 +6,13 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { resetPasswordSchema, type ResetPasswordInput } from '@castflow/validators'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ArrowRight } from 'lucide-react'
+import {
+  resetPasswordSchema,
+  type ResetPasswordInput,
+} from '@castflow/validators'
+import { AuthField, AuthInput } from '@/components/auth/auth-shell'
+import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useResetPassword } from '@/lib/hooks/use-auth'
 
 const formSchema = resetPasswordSchema
@@ -33,7 +36,10 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   const onSubmit = form.handleSubmit((values) => {
     setServerError(null)
-    const payload: ResetPasswordInput = { token: values.token, password: values.password }
+    const payload: ResetPasswordInput = {
+      token: values.token,
+      password: values.password,
+    }
     mutation.mutate(payload, {
       onSuccess: () => {
         toast.success('Password updated. You can now log in.')
@@ -55,51 +61,67 @@ export function ResetPasswordForm({ token }: { token: string }) {
       onSubmit={(e) => {
         void onSubmit(e)
       }}
-      className="space-y-4"
+      className="space-y-5"
       noValidate
     >
       <input type="hidden" {...form.register('token')} />
 
-      <div className="space-y-1.5">
-        <Label htmlFor="password">New password</Label>
-        <Input
+      <AuthField
+        label="New password"
+        htmlFor="password"
+        error={form.formState.errors.password?.message}
+        hint={
+          <span className="text-[10px] uppercase tracking-[0.16em] text-white/40">
+            8+ chars · 1 num · 1 sym
+          </span>
+        }
+      >
+        <AuthInput
           id="password"
           type="password"
           autoComplete="new-password"
+          placeholder="••••••••"
+          aria-invalid={!!form.formState.errors.password}
           {...form.register('password')}
         />
-        {form.formState.errors.password && (
-          <p className="text-destructive text-xs">{form.formState.errors.password.message}</p>
-        )}
-        <p className="text-muted-foreground text-xs">
-          At least 8 chars, one number, one special character.
-        </p>
-      </div>
+      </AuthField>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="confirmPassword">Confirm new password</Label>
-        <Input
+      <AuthField
+        label="Confirm new password"
+        htmlFor="confirmPassword"
+        error={form.formState.errors.confirmPassword?.message}
+      >
+        <AuthInput
           id="confirmPassword"
           type="password"
           autoComplete="new-password"
+          placeholder="••••••••"
+          aria-invalid={!!form.formState.errors.confirmPassword}
           {...form.register('confirmPassword')}
         />
-        {form.formState.errors.confirmPassword && (
-          <p className="text-destructive text-xs">
-            {form.formState.errors.confirmPassword.message}
-          </p>
-        )}
-      </div>
+      </AuthField>
 
-      {serverError && (
-        <p role="alert" className="text-destructive text-sm">
+      {serverError ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-rose-400/30 bg-rose-400/[0.08] px-3 py-2 text-sm text-rose-200"
+        >
           {serverError}
         </p>
-      )}
+      ) : null}
 
-      <Button type="submit" disabled={mutation.isPending} className="w-full">
+      <ShimmerButton
+        type="submit"
+        disabled={mutation.isPending}
+        background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
+        shimmerColor="#ffffff"
+        className="h-12 w-full px-6 text-sm font-semibold"
+      >
         {mutation.isPending ? 'Updating…' : 'Set new password'}
-      </Button>
+        {!mutation.isPending ? (
+          <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
+        ) : null}
+      </ShimmerButton>
     </form>
   )
 }

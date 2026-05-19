@@ -1,7 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
+import { BorderBeam } from '@/components/ui/border-beam'
+import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
 
 const easeOutExpo = '[animation-timing-function:cubic-bezier(0.16,1,0.3,1)]'
 const easeOutQuart = '[animation-timing-function:cubic-bezier(0.22,1,0.36,1)]'
@@ -21,6 +24,17 @@ export function Hero() {
         {/* TYPE COLUMN — sits on tinted page surface, generous left padding, anchors to top-left */}
         <div className="flex flex-col justify-between px-6 pt-12 pb-14 sm:px-10 lg:px-16 lg:pt-24 lg:pb-20 xl:pl-24 xl:pr-20">
           <div className="max-w-[34rem]">
+            <div
+              className={`mb-8 inline-flex items-center gap-2 rounded-full border border-border/60 bg-[var(--surface-50)] px-4 py-1.5 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-[700ms] ${easeOutQuart} ${motionGuard}`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
+              <AnimatedShinyText
+                shimmerWidth={120}
+                className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]"
+              >
+                Live · UK casting marketplace
+              </AnimatedShinyText>
+            </div>
             <h1
               className="font-medium tracking-[-0.035em] text-foreground"
               style={{
@@ -55,12 +69,13 @@ export function Hero() {
             <div
               className={`mt-10 flex flex-wrap items-center gap-3 animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-[700ms] [animation-delay:640ms] ${easeOutQuart} ${motionGuard}`}
             >
-              <Button asChild size="lg" className="h-12 rounded-full px-7 text-base">
-                <Link href="/register?role=caster">
-                  Post your first shoot
-                  <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
+              <ShimmerButtonLink
+                href="/register?role=caster"
+                className="h-12 px-7 text-base font-medium"
+              >
+                Post your first shoot
+                <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
+              </ShimmerButtonLink>
               <Button
                 asChild
                 size="lg"
@@ -88,6 +103,13 @@ export function Hero() {
         <div
           className={`relative order-first min-h-[60vw] sm:min-h-[55vw] lg:order-last lg:min-h-[min(46rem,80vh)] animate-in fade-in fill-mode-both duration-[1200ms] [animation-delay:0ms] ${easeOutExpo} ${motionGuard}`}
         >
+          <BorderBeam
+            size={180}
+            duration={14}
+            colorFrom="#85bcda"
+            colorTo="#2a6b96"
+            borderWidth={2}
+          />
           <Image
             src={HERO_PHOTO}
             alt="Studio camera and lighting rig on a working set"

@@ -91,7 +91,7 @@ export function ShootsContent() {
     <>
       <Hero count={MOCK_SHOOTS.length} featured={featured} />
 
-      <section className="sticky top-16 z-30 border-y border-border/60 bg-background/85 backdrop-blur-md">
+      <section className="border-y border-border/60 bg-background">
         <div className="mx-auto w-full max-w-[90rem] px-6 py-4 lg:px-8">
           <FilterBar
             query={query}
@@ -118,7 +118,7 @@ export function ShootsContent() {
               {SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase()}
             </p>
             <Link
-              href="/login?role=artist"
+              href="/login?redirect=/shoots"
               className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
             >
               Sign in to bid

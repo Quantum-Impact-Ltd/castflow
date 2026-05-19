@@ -2,18 +2,47 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Reveal } from '../reveal'
 import { PortraitBlock } from '../portrait-block'
+import { AnimatedGridPattern } from '@/components/ui/animated-grid-pattern'
+import { GlareHover } from '@/components/ui/glare-hover'
+import { cn } from '@/lib/utils'
 
 const PORTRAIT_ROW = [
-  { name: 'Aisha Yates', meta: 'Model · Leeds' },
-  { name: 'Jonah Carrick', meta: 'Actor · London' },
-  { name: 'Priya Sharma', meta: 'Model · London' },
-  { name: 'Marlowe Quinn', meta: 'Actor · Bristol' },
+  {
+    name: 'Aisha Yates',
+    meta: 'Model · Leeds',
+    src: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    name: 'Jonah Carrick',
+    meta: 'Actor · London',
+    src: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    name: 'Priya Sharma',
+    meta: 'Model · London',
+    src: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    name: 'Marlowe Quinn',
+    meta: 'Actor · Bristol',
+    src: 'https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=900&q=80',
+  },
 ]
 
 export function ArtistBandSection() {
   return (
     <section className="relative w-full overflow-hidden bg-[var(--ink-900)] py-28 text-white lg:py-44">
-      <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
+      <AnimatedGridPattern
+        numSquares={30}
+        maxOpacity={0.06}
+        duration={6}
+        repeatDelay={1.2}
+        className={cn(
+          'pointer-events-none [mask-image:radial-gradient(1000px_circle_at_top_right,white,transparent)]',
+          'inset-x-0 inset-y-[-30%] h-[160%] -skew-y-12 fill-[var(--brand-300)]/40 stroke-[var(--brand-300)]/40',
+        )}
+      />
+      <div className="relative mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
             <div className="lg:col-span-8">
@@ -48,14 +77,21 @@ export function ArtistBandSection() {
         <Reveal delay={120}>
           <div className="mt-20 grid grid-cols-2 gap-4 sm:gap-5 lg:mt-28 lg:grid-cols-4">
             {PORTRAIT_ROW.map((artist) => (
-              <PortraitBlock
+              <GlareHover
                 key={artist.name}
-                name={artist.name}
-                meta={artist.meta}
-                variant="dark"
-                size="md"
-                className="aspect-[4/5] w-full"
-              />
+                color="#85bcda"
+                opacity={0.25}
+                className="aspect-[4/5] w-full rounded-xl"
+              >
+                <PortraitBlock
+                  name={artist.name}
+                  meta={artist.meta}
+                  src={artist.src}
+                  variant="dark"
+                  size="md"
+                  className="aspect-[4/5] w-full"
+                />
+              </GlareHover>
             ))}
           </div>
         </Reveal>

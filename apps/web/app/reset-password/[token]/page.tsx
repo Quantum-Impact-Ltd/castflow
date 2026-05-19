@@ -1,4 +1,10 @@
+import Link from 'next/link'
+import { AuthShell } from '@/components/auth/auth-shell'
 import { ResetPasswordForm } from '../reset-form'
+
+export const metadata = {
+  title: 'Choose a new password — CastFlow',
+}
 
 interface PageProps {
   params: Promise<{ token: string }>
@@ -7,14 +13,31 @@ interface PageProps {
 export default async function ResetPasswordTokenPage({ params }: PageProps) {
   const { token } = await params
   return (
-    <div className="mx-auto max-w-md px-4 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">Choose a new password</h1>
-      <p className="text-muted-foreground mt-2 text-sm">
-        Pick a strong password you don&apos;t use elsewhere.
-      </p>
-      <div className="mt-6">
-        <ResetPasswordForm token={token} />
-      </div>
-    </div>
+    <AuthShell
+      eyebrow="Almost there"
+      heading={
+        <>
+          Choose a new{' '}
+          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
+            password.
+          </span>
+        </>
+      }
+      subhead="Pick a strong one you don't use elsewhere."
+      width="sm"
+      footer={
+        <>
+          Changed your mind?{' '}
+          <Link
+            href="/login"
+            className="font-medium text-white underline-offset-4 hover:underline"
+          >
+            Back to log in
+          </Link>
+        </>
+      }
+    >
+      <ResetPasswordForm token={token} />
+    </AuthShell>
   )
 }

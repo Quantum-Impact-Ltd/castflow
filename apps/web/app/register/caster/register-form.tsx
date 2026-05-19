@@ -7,18 +7,18 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { registerCasterSchema, type RegisterCasterInput } from '@castflow/validators'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ArrowRight, ChevronDown } from 'lucide-react'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  registerCasterSchema,
+  type RegisterCasterInput,
+} from '@castflow/validators'
+import {
+  AuthField,
+  AuthInput,
+} from '@/components/auth/auth-shell'
+import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useRegisterCaster } from '@/lib/hooks/use-auth'
+import { cn } from '@/lib/utils'
 import type { ApiError } from '@/lib/fetcher'
 
 const formSchema = registerCasterSchema
@@ -30,7 +30,10 @@ const formSchema = registerCasterSchema
 
 type FormValues = z.infer<typeof formSchema>
 
-const COMPANY_TYPES: ReadonlyArray<{ value: RegisterCasterInput['companyType']; label: string }> = [
+const COMPANY_TYPES: ReadonlyArray<{
+  value: RegisterCasterInput['companyType']
+  label: string
+}> = [
   { value: 'brand', label: 'Brand' },
   { value: 'agency', label: 'Agency' },
   { value: 'production_house', label: 'Production House' },
@@ -67,7 +70,10 @@ export function RegisterCasterForm() {
         const apiErr = err as ApiError
         if (apiErr.fields) {
           for (const [field, msgs] of Object.entries(apiErr.fields)) {
-            form.setError(field as keyof FormValues, { type: 'server', message: msgs[0] })
+            form.setError(field as keyof FormValues, {
+              type: 'server',
+              message: msgs[0],
+            })
           }
         } else {
           setServerError(apiErr.message)
@@ -81,105 +87,157 @@ export function RegisterCasterForm() {
       onSubmit={(e) => {
         void onSubmit(e)
       }}
-      className="space-y-4"
+      className="space-y-5"
       noValidate
     >
-      <div className="space-y-1.5">
-        <Label htmlFor="companyName">Company name</Label>
-        <Input id="companyName" autoComplete="organization" {...form.register('companyName')} />
-        {form.formState.errors.companyName && (
-          <p className="text-destructive text-xs">{form.formState.errors.companyName.message}</p>
-        )}
-      </div>
+      <AuthField
+        label="Company name"
+        htmlFor="companyName"
+        error={form.formState.errors.companyName?.message}
+      >
+        <AuthInput
+          id="companyName"
+          autoComplete="organization"
+          placeholder="Saunders & Co"
+          aria-invalid={!!form.formState.errors.companyName}
+          {...form.register('companyName')}
+        />
+      </AuthField>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="companyType">Company type</Label>
-        <Select
-          value={form.watch('companyType')}
-          onValueChange={(v) =>
-            form.setValue('companyType', v as RegisterCasterInput['companyType'])
+      <AuthField
+        label="Company type"
+        htmlFor="companyType"
+        error={form.formState.errors.companyType?.message}
+      >
+        <div className="relative">
+          <select
+            id="companyType"
+            {...form.register('companyType')}
+            className={cn(
+              'h-11 w-full appearance-none rounded-xl border border-white/12 bg-white/[0.04] px-4 pr-10 text-sm text-white',
+              'transition-colors outline-none',
+              'focus-visible:border-[#f9a26c] focus-visible:ring-2 focus-visible:ring-[#f9a26c]/30',
+            )}
+          >
+            {COMPANY_TYPES.map((t) => (
+              <option
+                key={t.value}
+                value={t.value}
+                className="bg-[#1c2540] text-white"
+              >
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50"
+            aria-hidden
+          />
+        </div>
+      </AuthField>
+
+      <AuthField
+        label="Contact name"
+        htmlFor="contactName"
+        error={form.formState.errors.contactName?.message}
+      >
+        <AuthInput
+          id="contactName"
+          autoComplete="name"
+          placeholder="Your full name"
+          aria-invalid={!!form.formState.errors.contactName}
+          {...form.register('contactName')}
+        />
+      </AuthField>
+
+      <AuthField
+        label="Email"
+        htmlFor="email"
+        error={form.formState.errors.email?.message}
+      >
+        <AuthInput
+          id="email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="you@studio.co.uk"
+          aria-invalid={!!form.formState.errors.email}
+          {...form.register('email')}
+        />
+      </AuthField>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <AuthField
+          label="Password"
+          htmlFor="password"
+          error={form.formState.errors.password?.message}
+          hint={
+            <span className="text-[10px] uppercase tracking-[0.16em] text-white/40">
+              8+ · 1 num · 1 sym
+            </span>
           }
         >
-          <SelectTrigger id="companyType">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {COMPANY_TYPES.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
-                {t.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {form.formState.errors.companyType && (
-          <p className="text-destructive text-xs">{form.formState.errors.companyType.message}</p>
-        )}
+          <AuthInput
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            aria-invalid={!!form.formState.errors.password}
+            {...form.register('password')}
+          />
+        </AuthField>
+
+        <AuthField
+          label="Confirm"
+          htmlFor="confirmPassword"
+          error={form.formState.errors.confirmPassword?.message}
+        >
+          <AuthInput
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            aria-invalid={!!form.formState.errors.confirmPassword}
+            {...form.register('confirmPassword')}
+          />
+        </AuthField>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="contactName">Contact name</Label>
-        <Input id="contactName" autoComplete="name" {...form.register('contactName')} />
-        {form.formState.errors.contactName && (
-          <p className="text-destructive text-xs">{form.formState.errors.contactName.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" autoComplete="email" {...form.register('email')} />
-        {form.formState.errors.email && (
-          <p className="text-destructive text-xs">{form.formState.errors.email.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="new-password"
-          {...form.register('password')}
-        />
-        {form.formState.errors.password && (
-          <p className="text-destructive text-xs">{form.formState.errors.password.message}</p>
-        )}
-        <p className="text-muted-foreground text-xs">
-          At least 8 chars, one number, one special character.
-        </p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="confirmPassword">Confirm password</Label>
-        <Input
-          id="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          {...form.register('confirmPassword')}
-        />
-        {form.formState.errors.confirmPassword && (
-          <p className="text-destructive text-xs">
-            {form.formState.errors.confirmPassword.message}
-          </p>
-        )}
-      </div>
-
-      {serverError && (
-        <p role="alert" className="text-destructive text-sm">
+      {serverError ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-rose-400/30 bg-rose-400/[0.08] px-3 py-2 text-sm text-rose-200"
+        >
           {serverError}
         </p>
-      )}
+      ) : null}
 
-      <Button type="submit" disabled={mutation.isPending} className="w-full">
+      <ShimmerButton
+        type="submit"
+        disabled={mutation.isPending}
+        background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
+        shimmerColor="#ffffff"
+        className="h-12 w-full px-6 text-sm font-semibold"
+      >
         {mutation.isPending ? 'Creating account…' : 'Create caster account'}
-      </Button>
+        {!mutation.isPending ? (
+          <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
+        ) : null}
+      </ShimmerButton>
 
-      <p className="text-muted-foreground text-center text-xs">
+      <p className="text-center text-xs text-white/50">
         By registering you agree to our{' '}
-        <Link href="/terms" className="underline-offset-4 hover:underline">
+        <Link
+          href="/terms"
+          className="text-white/75 underline-offset-4 hover:text-white hover:underline"
+        >
           Terms
         </Link>{' '}
         and{' '}
-        <Link href="/privacy" className="underline-offset-4 hover:underline">
+        <Link
+          href="/privacy"
+          className="text-white/75 underline-offset-4 hover:text-white hover:underline"
+        >
           Privacy Policy
         </Link>
         .

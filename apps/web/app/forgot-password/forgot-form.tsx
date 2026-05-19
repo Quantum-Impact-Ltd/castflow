@@ -3,10 +3,13 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { forgotPasswordSchema, type ForgotPasswordInput } from '@castflow/validators'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ArrowRight, MailCheck } from 'lucide-react'
+import {
+  forgotPasswordSchema,
+  type ForgotPasswordInput,
+} from '@castflow/validators'
+import { AuthField, AuthInput } from '@/components/auth/auth-shell'
+import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useForgotPassword } from '@/lib/hooks/use-auth'
 
 export function ForgotPasswordForm() {
@@ -27,10 +30,16 @@ export function ForgotPasswordForm() {
 
   if (submitted) {
     return (
-      <div className="rounded-md border p-4 text-sm">
-        <p>
-          If an account exists for that email, we&apos;ve sent a password-reset link. Check your
-          inbox.
+      <div className="flex flex-col items-center gap-4 py-2 text-center">
+        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#f9a26c]/15 text-[#f9a26c]">
+          <MailCheck className="h-5 w-5" aria-hidden />
+        </span>
+        <p className="text-sm leading-relaxed text-white/85">
+          If an account exists for that email, we&apos;ve sent a password-reset
+          link. Check your inbox.
+        </p>
+        <p className="text-xs text-white/45">
+          Didn&apos;t arrive? Check spam, or wait a minute and try again.
         </p>
       </div>
     )
@@ -41,20 +50,37 @@ export function ForgotPasswordForm() {
       onSubmit={(e) => {
         void onSubmit(e)
       }}
-      className="space-y-4"
+      className="space-y-5"
       noValidate
     >
-      <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" autoComplete="email" {...form.register('email')} />
-        {form.formState.errors.email && (
-          <p className="text-destructive text-xs">{form.formState.errors.email.message}</p>
-        )}
-      </div>
+      <AuthField
+        label="Email"
+        htmlFor="email"
+        error={form.formState.errors.email?.message}
+      >
+        <AuthInput
+          id="email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="you@example.com"
+          aria-invalid={!!form.formState.errors.email}
+          {...form.register('email')}
+        />
+      </AuthField>
 
-      <Button type="submit" disabled={mutation.isPending} className="w-full">
+      <ShimmerButton
+        type="submit"
+        disabled={mutation.isPending}
+        background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
+        shimmerColor="#ffffff"
+        className="h-12 w-full px-6 text-sm font-semibold"
+      >
         {mutation.isPending ? 'Sending…' : 'Send reset link'}
-      </Button>
+        {!mutation.isPending ? (
+          <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
+        ) : null}
+      </ShimmerButton>
     </form>
   )
 }
