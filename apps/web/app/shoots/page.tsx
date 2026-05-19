@@ -1,20 +1,20 @@
 import type { Metadata } from 'next'
 import { Nav } from '@/components/landing/nav'
 import { Footer } from '@/components/landing/footer'
-import { ContactContent } from './contact-content'
+import { ShootsContent } from './shoots-content'
 
 export const metadata: Metadata = {
-  title: 'Contact — CastFlow',
+  title: 'Live shoots — CastFlow',
   description:
-    'Talk to the CastFlow team. Sales, support, safety reports, and press enquiries — every message gets a human reply within 24 hours.',
+    'Browse live casting briefs from verified UK casters and brands. Filter by city, type, and rate. Sign in to bid.',
 }
 
-export default function ContactPage() {
+export default function ShootsPage() {
   return (
     <>
       <Nav />
       <main className="bg-background">
-        <ContactContent />
+        <ShootsContent />
       </main>
       <Footer />
     </>

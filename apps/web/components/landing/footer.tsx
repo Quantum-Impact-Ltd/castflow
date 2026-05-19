@@ -17,6 +17,7 @@ const FOOTER_GROUPS = [
       { href: '/how-it-works', label: 'How it works' },
       { href: '/casters', label: 'For casters' },
       { href: '/artists', label: 'For artists' },
+      { href: '/talent', label: 'Browse talent' },
       { href: '/shoots', label: 'Live shoots' },
     ],
   },
