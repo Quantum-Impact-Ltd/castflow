@@ -17,8 +17,13 @@ import { PasswordStrengthMeter } from '@/components/auth/password-strength-meter
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useResetPassword } from '@/lib/hooks/use-auth'
 
-const formSchema = resetPasswordSchema
-  .extend({ confirmPassword: z.string().min(1) })
+// Token comes from the page prop (URL param), not the form — keeping it out
+// of form state means we don't need a hidden input wired into RHF. (Audit L5.)
+const formSchema = z
+  .object({
+    password: resetPasswordSchema.shape.password,
+    confirmPassword: z.string().min(1),
+  })
   .refine((v) => v.password === v.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
@@ -33,13 +38,13 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { token, password: '', confirmPassword: '' },
+    defaultValues: { password: '', confirmPassword: '' },
   })
 
   const onSubmit = form.handleSubmit((values) => {
     setServerError(null)
     const payload: ResetPasswordInput = {
-      token: values.token,
+      token,
       password: values.password,
     }
     mutation.mutate(payload, {
@@ -66,8 +71,6 @@ export function ResetPasswordForm({ token }: { token: string }) {
       className="space-y-5"
       noValidate
     >
-      <input type="hidden" {...form.register('token')} />
-
       <AuthField
         label="New password"
         htmlFor="password"
