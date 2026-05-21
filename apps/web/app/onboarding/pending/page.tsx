@@ -3,7 +3,13 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Clock, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  RefreshCw,
+} from 'lucide-react'
 import { useMyArtistProfile } from '@/lib/hooks/use-artist'
 
 export default function OnboardingPendingPage() {
@@ -17,12 +23,10 @@ export default function OnboardingPendingPage() {
     }
   }, [profile?.approvalStatus, router])
 
-  // If rejected: send back to onboarding so they can edit and resubmit
-  useEffect(() => {
-    if (profile?.approvalStatus === 'rejected') {
-      router.replace('/onboarding/artist')
-    }
-  }, [profile?.approvalStatus, router])
+  // Rejected: do NOT silently bounce to the stepper. Render an inline
+  // rejected state with the admin's notes + an explicit CTA to edit and
+  // resubmit. The previous silent redirect meant artists had no idea why
+  // they were rejected and resubmitted unchanged. (Audit H15.)
 
   return (
     <div className="relative isolate grid min-h-screen w-full place-items-center overflow-hidden bg-[var(--ink-900)] px-4 text-white">
@@ -41,6 +45,42 @@ export default function OnboardingPendingPage() {
             <div className="mx-auto h-14 w-14 animate-pulse rounded-full bg-white/10" />
             <div className="mx-auto h-4 w-48 animate-pulse rounded bg-white/10" />
           </div>
+        ) : profile?.approvalStatus === 'rejected' ? (
+          <>
+            <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-rose-400/30 bg-rose-400/[0.08] backdrop-blur-xl">
+              <AlertTriangle className="h-6 w-6 text-rose-300" />
+            </div>
+            <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
+              Changes requested
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Your profile needs a few tweaks
+            </h1>
+            {profile.approvalNotes ? (
+              <div className="mt-5 rounded-2xl border border-rose-400/25 bg-rose-400/[0.06] p-4 text-left">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-rose-200/85">
+                  Admin notes
+                </p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-white/85">
+                  {profile.approvalNotes}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm leading-relaxed text-white/65">
+                The admin didn&apos;t leave specific notes. Review your profile,
+                tighten anything that feels weak, then resubmit.
+              </p>
+            )}
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <Link
+                href="/onboarding/artist"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#f9a26c] px-5 py-2.5 text-sm font-semibold text-[var(--ink-900)] transition hover:bg-[#fab17f]"
+              >
+                Edit profile & resubmit
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </>
         ) : profile?.approvalStatus === 'approved' ? (
           <>
             <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] backdrop-blur-xl">

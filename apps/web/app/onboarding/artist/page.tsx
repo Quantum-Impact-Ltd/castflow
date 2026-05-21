@@ -13,6 +13,7 @@ import { StepIdentity } from '@/components/onboarding/steps/step-identity'
 import { StepReview } from '@/components/onboarding/steps/step-review'
 import { useMyArtistProfile } from '@/lib/hooks/use-artist'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AlertTriangle } from 'lucide-react'
 import type { MyArtistProfile } from '@/lib/api/artists'
 
 type StepKey =
@@ -313,6 +314,33 @@ export default function ArtistOnboardingPage() {
       subtitle={copy.subtitle}
       tips={<StepTips stepKey={currentStep.key} />}
     >
+      {/* Rejection banner. Surfaces admin notes so the artist knows what
+          to fix before resubmitting — avoids resubmit-and-get-rejected
+          loops. (Audit H15.) */}
+      {profile.approvalStatus === 'rejected' && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-400/30 bg-rose-400/[0.06] p-4 backdrop-blur-xl">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+          <div className="space-y-1 text-sm">
+            <p className="font-medium text-white">
+              Your last application needs changes
+            </p>
+            {profile.approvalNotes ? (
+              <p className="whitespace-pre-wrap leading-relaxed text-white/75">
+                {profile.approvalNotes}
+              </p>
+            ) : (
+              <p className="leading-relaxed text-white/65">
+                The admin didn&apos;t leave specific notes. Tighten anything
+                that feels weak and resubmit.
+              </p>
+            )}
+            <p className="pt-1 text-xs text-white/55">
+              Once you&apos;ve fixed this, head to the Review step and resubmit.
+            </p>
+          </div>
+        </div>
+      )}
+
       {currentStep.key === 'craft' && (
         <StepCraft currentType={profile.artistType} onNext={goNext} />
       )}
