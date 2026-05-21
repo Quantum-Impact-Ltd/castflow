@@ -16,6 +16,7 @@ import {
   AuthField,
   AuthInput,
 } from '@/components/auth/auth-form-fields'
+import { PasswordInput } from '@/components/auth/password-input'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useRegisterArtist } from '@/lib/hooks/use-auth'
 import {
@@ -186,9 +187,8 @@ export function RegisterArtistForm() {
           </span>
         }
       >
-        <AuthInput
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="new-password"
           placeholder="••••••••"
           aria-invalid={!!form.formState.errors.password}
@@ -201,9 +201,8 @@ export function RegisterArtistForm() {
         htmlFor="confirmPassword"
         error={form.formState.errors.confirmPassword?.message}
       >
-        <AuthInput
+        <PasswordInput
           id="confirmPassword"
-          type="password"
           autoComplete="new-password"
           placeholder="••••••••"
           aria-invalid={!!form.formState.errors.confirmPassword}

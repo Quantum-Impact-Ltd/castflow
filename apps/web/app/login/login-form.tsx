@@ -12,6 +12,7 @@ import {
   AuthField,
   AuthInput,
 } from '@/components/auth/auth-form-fields'
+import { PasswordInput } from '@/components/auth/password-input'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useLogin } from '@/lib/hooks/use-auth'
 import { postLoginPath } from '@/lib/auth-redirect'
@@ -111,9 +112,8 @@ export function LoginForm() {
             </Link>
           }
         >
-          <AuthInput
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             placeholder="••••••••"
             autoFocus={!!prefilledEmail}
