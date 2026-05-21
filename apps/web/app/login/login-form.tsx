@@ -28,9 +28,19 @@ export function LoginForm() {
       ? rawRedirect
       : null
 
+  // Prefill email when arriving from the register flow's duplicate-email
+  // redirect (or any deep link of the form /login?email=…). We hard-cap
+  // length and require '@' to avoid letting an attacker craft a /login link
+  // that injects giant or junk strings into the field.
+  const rawEmail = searchParams.get('email') ?? ''
+  const prefilledEmail =
+    rawEmail.length > 0 && rawEmail.length <= 254 && rawEmail.includes('@')
+      ? rawEmail
+      : ''
+
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: prefilledEmail, password: '' },
   })
 
   const onSubmit = form.handleSubmit((values) => {
@@ -85,7 +95,7 @@ export function LoginForm() {
             autoComplete="email"
             inputMode="email"
             placeholder="you@studio.co.uk"
-            autoFocus
+            autoFocus={!prefilledEmail}
             aria-invalid={!!form.formState.errors.email}
             {...form.register('email')}
           />
@@ -109,6 +119,7 @@ export function LoginForm() {
             type="password"
             autoComplete="current-password"
             placeholder="••••••••"
+            autoFocus={!!prefilledEmail}
             aria-invalid={!!form.formState.errors.password}
             {...form.register('password')}
           />
