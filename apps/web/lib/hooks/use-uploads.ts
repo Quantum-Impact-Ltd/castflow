@@ -16,13 +16,20 @@ interface UploadInput {
   type: UploadType
   caption?: string
   isPrimary?: boolean
+  /** Forwarded to the underlying XHR PUT so callers can render a progress
+   *  bar per file in flight. (Audit M16.) */
+  onProgress?: (percent: number) => void
 }
 
 export function useUploadFile() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ file, type, caption, isPrimary }: UploadInput) =>
-      uploadFile(file, type, { caption, isPrimary }),
+    mutationFn: ({ file, type, caption, isPrimary, onProgress }: UploadInput) =>
+      uploadFile(file, type, {
+        ...(caption !== undefined ? { caption } : {}),
+        ...(isPrimary !== undefined ? { isPrimary } : {}),
+        ...(onProgress ? { onProgress } : {}),
+      }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: myProfileKey }),
     onError: (err) => toast.error(errorMessage(err)),
   })

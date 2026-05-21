@@ -62,6 +62,22 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
 
   // Track which item IDs are currently being deleted so each card shows its own spinner
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
+  // Per-file upload progress for placeholder cards (Audit M16). Keyed by a
+  // synthetic upload-id so multiple files dropped in one batch each get
+  // their own row + bar without colliding on filename clashes.
+  const [pendingUploads, setPendingUploads] = useState<
+    Array<{ id: string; name: string; progress: number }>
+  >([])
+
+  const updatePending = (id: string, progress: number) => {
+    setPendingUploads((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, progress } : p)),
+    )
+  }
+
+  const removePending = (id: string) => {
+    setPendingUploads((prev) => prev.filter((p) => p.id !== id))
+  }
 
   const onDrop = (files: File[]) => {
     for (const file of files) {
@@ -73,11 +89,24 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
         toast.error(`${file.name} — too large (max ${MAX_PHOTO_MB} MB)`)
         continue
       }
+      const uploadId = `${file.name}-${file.size}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      setPendingUploads((prev) => [
+        ...prev,
+        { id: uploadId, name: file.name, progress: 0 },
+      ])
       upload.mutate(
-        { file, type: 'portfolio_photo' },
         {
-          onSuccess: () => toast.success(`${file.name} uploaded`),
-        }
+          file,
+          type: 'portfolio_photo',
+          onProgress: (pct) => updatePending(uploadId, pct),
+        },
+        {
+          onSuccess: () => {
+            toast.success(`${file.name} uploaded`)
+            removePending(uploadId)
+          },
+          onError: () => removePending(uploadId),
+        },
       )
     }
   }
@@ -122,8 +151,11 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
         <p className="mt-1 text-xs text-white/50">
           JPG, PNG or WebP · up to {MAX_PHOTO_MB} MB · multiple at once
         </p>
-        {upload.isPending && (
-          <p className="mt-2 text-xs text-[#f9a26c]">Uploading…</p>
+        {pendingUploads.length > 0 && (
+          <p className="mt-2 text-xs text-[#f9a26c]">
+            Uploading {pendingUploads.length} file
+            {pendingUploads.length === 1 ? '' : 's'}…
+          </p>
         )}
       </div>
 
@@ -141,13 +173,16 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
         </span>
       </div>
 
-      {items.length === 0 ? (
+      {items.length === 0 && pendingUploads.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/12 bg-white/[0.02] p-10 text-center">
           <ImageIcon className="h-6 w-6 text-white/40" />
           <p className="text-sm text-white/55">No photos yet</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {pendingUploads.map((p) => (
+            <UploadProgressCard key={p.id} name={p.name} progress={p.progress} />
+          ))}
           {items.map((item) => (
             <PortfolioCard
               key={item.id}
@@ -234,6 +269,30 @@ function PortfolioCard({
           <span className="text-xs text-white">Deleting…</span>
         </div>
       )}
+    </div>
+  )
+}
+
+function UploadProgressCard({ name, progress }: { name: string; progress: number }) {
+  return (
+    <div
+      className="group relative flex aspect-square flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-4"
+      role="status"
+      aria-label={`Uploading ${name}: ${progress}%`}
+    >
+      <UploadCloud className="h-6 w-6 text-white/55" aria-hidden />
+      <p className="line-clamp-2 text-center text-[11px] text-white/65">{name}</p>
+      <div className="w-full">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-[#f9a26c] transition-[width] duration-200"
+            style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
+          />
+        </div>
+        <p className="mt-1.5 text-center font-mono text-[10px] font-semibold tracking-wider text-white/75">
+          {progress}%
+        </p>
+      </div>
     </div>
   )
 }
