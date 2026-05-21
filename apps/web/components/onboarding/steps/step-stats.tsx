@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUpdateModelStats, useUpdateActorStats } from '@/lib/hooks/use-artist'
+import { useBeforeUnloadWarning } from '@/lib/hooks/use-before-unload-warning'
 import { cn } from '@/lib/utils'
 import { StepNav } from '../step-nav'
 import type { MyArtistProfile } from '@/lib/api/artists'
@@ -97,6 +98,8 @@ function ModelStatsForm({ profile, onBack, onNext }: StepStatsProps) {
   })
 
   const skinTone = form.watch('skinTone')
+
+  useBeforeUnloadWarning(form.formState.isDirty && !mutation.isPending)
 
   const onSubmit: SubmitHandler<ModelStatsInput> = (values) => {
     mutation.mutate(values, {
@@ -246,6 +249,8 @@ function ActorStatsForm({ profile, onBack, onNext }: StepStatsProps) {
       ageRangeMax: existing.ageRangeMax ?? ('' as unknown as number),
     },
   })
+
+  useBeforeUnloadWarning(form.formState.isDirty && !mutation.isPending)
 
   const onSubmit: SubmitHandler<ActorStatsFormInput> = (values) => {
     // Zod default fills in equityMember on parse — narrowing happens at the

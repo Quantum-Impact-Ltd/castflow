@@ -11,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useUpdateExperience } from '@/lib/hooks/use-artist'
+import { useBeforeUnloadWarning } from '@/lib/hooks/use-before-unload-warning'
 import { cn } from '@/lib/utils'
 import { StepNav } from '../step-nav'
 import type { MyArtistProfile } from '@/lib/api/artists'
@@ -64,6 +65,8 @@ export function StepExperience({ profile, onBack, onNext }: StepExperienceProps)
   })
 
   const selectedLevel = form.watch('experienceLevel')
+
+  useBeforeUnloadWarning(form.formState.isDirty && !mutation.isPending)
 
   const onSubmit: SubmitHandler<ArtistExperienceInput> = (values) => {
     mutation.mutate(values, {

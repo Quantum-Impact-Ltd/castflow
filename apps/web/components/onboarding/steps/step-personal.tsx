@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUpdatePersonal } from '@/lib/hooks/use-artist'
+import { useBeforeUnloadWarning } from '@/lib/hooks/use-before-unload-warning'
 import { StepNav } from '../step-nav'
 import type { MyArtistProfile } from '@/lib/api/artists'
 
@@ -53,6 +54,10 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
   })
 
   const bio = form.watch('bio') ?? ''
+
+  // Prompt before navigating away (close tab, back button, external link)
+  // when there are unsaved field edits. (Audit M19.)
+  useBeforeUnloadWarning(form.formState.isDirty && !mutation.isPending)
 
   const onSubmit = form.handleSubmit((values) => {
     mutation.mutate(values, {

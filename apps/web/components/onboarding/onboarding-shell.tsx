@@ -39,7 +39,11 @@ export function OnboardingShell({
   footer,
   savedAt,
   exitHref = '/',
-  exitLabel = 'Save & exit',
+  // Default to plain "Exit" — we don't autosave on click. Pages with
+  // dirty form state register `useBeforeUnloadWarning` so the browser
+  // shows the native "Leave site? Changes you made may not be saved"
+  // prompt before navigating away. (Audit M19.)
+  exitLabel = 'Exit',
   children,
 }: OnboardingShellProps) {
   return (

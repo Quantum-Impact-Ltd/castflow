@@ -9,6 +9,7 @@ import type { CasterProfile } from '@castflow/types'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useUpdateMyCaster } from '@/lib/hooks/use-caster'
+import { useBeforeUnloadWarning } from '@/lib/hooks/use-before-unload-warning'
 import { StepNav } from '../step-nav'
 
 interface StepCasterCompanyProps {
@@ -33,6 +34,8 @@ export function StepCasterCompany({ profile, onSkip, onNext }: StepCasterCompany
       website: profile.website ?? '',
     },
   })
+
+  useBeforeUnloadWarning(form.formState.isDirty && !mutation.isPending)
 
   const onSubmit: SubmitHandler<FormInput> = (values) => {
     mutation.mutate(
