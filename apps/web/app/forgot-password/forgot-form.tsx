@@ -64,6 +64,7 @@ export function ForgotPasswordForm() {
           autoComplete="email"
           inputMode="email"
           placeholder="you@example.com"
+          autoFocus
           aria-invalid={!!form.formState.errors.email}
           {...form.register('email')}
         />
