@@ -195,7 +195,7 @@ export function RegisterCasterForm() {
           error={form.formState.errors.password?.message}
           hint={
             <span className="text-[10px] uppercase tracking-[0.16em] text-white/40">
-              8+ · 1 num · 1 sym
+              8+ chars · 1 num · 1 sym
             </span>
           }
         >
