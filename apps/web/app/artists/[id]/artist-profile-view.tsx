@@ -168,7 +168,7 @@ export function ArtistProfileView({ id }: Props) {
                   <a
                     href={`https://instagram.com/${profile.instagramHandle.replace(/^@/, '')}`}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
                   >
                     @{profile.instagramHandle.replace(/^@/, '')}

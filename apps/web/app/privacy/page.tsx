@@ -268,7 +268,7 @@ const SECTIONS: LegalSection[] = [
           If you&apos;re unhappy with how we&apos;ve handled your data, you
           have the right to complain to the{' '}
           <strong>Information Commissioner&apos;s Office (ICO)</strong> at{' '}
-          <a href="https://ico.org.uk" target="_blank" rel="noreferrer">
+          <a href="https://ico.org.uk" target="_blank" rel="noopener noreferrer">
             ico.org.uk
           </a>
           .
