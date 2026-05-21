@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -12,9 +12,32 @@ import {
 } from 'lucide-react'
 import { useMyArtistProfile } from '@/lib/hooks/use-artist'
 
+const REFETCH_COOLDOWN_SECONDS = 30
+
 export default function OnboardingPendingPage() {
   const router = useRouter()
   const { data: profile, isLoading, refetch, isFetching } = useMyArtistProfile()
+
+  // Per-page cooldown gate on the "Check status" button so the user can't
+  // spam refetch and hammer the API. Tracks an epoch timestamp instead of a
+  // boolean so we can render the remaining seconds. (Audit M22.)
+  const [cooldownUntil, setCooldownUntil] = useState(0)
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (cooldownUntil <= now) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [cooldownUntil, now])
+
+  const remaining = Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
+  const onCooldown = remaining > 0
+
+  const handleRefetch = () => {
+    if (onCooldown || isFetching) return
+    setCooldownUntil(Date.now() + REFETCH_COOLDOWN_SECONDS * 1000)
+    void refetch()
+  }
 
   // Auto-redirect if approved
   useEffect(() => {
@@ -128,12 +151,16 @@ export default function OnboardingPendingPage() {
             <div className="mt-8 flex flex-col items-center gap-3">
               <button
                 type="button"
-                onClick={() => void refetch()}
-                disabled={isFetching}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:cursor-wait disabled:opacity-60"
+                onClick={handleRefetch}
+                disabled={isFetching || onCooldown}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-                {isFetching ? 'Checking…' : 'Check application status'}
+                {isFetching
+                  ? 'Checking…'
+                  : onCooldown
+                    ? `Check again in ${remaining}s`
+                    : 'Check application status'}
               </button>
 
               <Link
