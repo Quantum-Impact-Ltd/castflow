@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { safeLog } from './lib/log'
 import { createBunWebSocket } from 'hono/bun'
 import { env } from './lib/env'
 import { auth } from './lib/auth'
@@ -33,7 +34,9 @@ const { upgradeWebSocket, websocket } = createBunWebSocket()
 export const app = new Hono()
 
 // ── Middleware ─────────────────────────────────────────────────────────────
-app.use('*', logger())
+// Custom print fn scrubs auth tokens from query strings and path segments
+// before logs ship to stdout / log storage. (Audit H2.)
+app.use('*', logger(safeLog))
 app.use(
   '*',
   cors({
