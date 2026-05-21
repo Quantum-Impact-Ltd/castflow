@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, MapPin, Star } from 'lucide-react'
 import { Reveal } from '../reveal'
@@ -153,12 +154,13 @@ function FeaturedArtistCard({
           size === 'xl' && 'h-full',
         )}
       >
-        <img
+        <Image
           src={artist.src}
           alt={artist.name}
-          loading="lazy"
+          fill
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
           className={cn(
-            'absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]',
+            'object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]',
             !artist.available && 'grayscale-[40%]',
           )}
         />

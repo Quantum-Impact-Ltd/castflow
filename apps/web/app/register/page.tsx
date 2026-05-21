@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Camera, Sparkles, ArrowRight } from 'lucide-react'
@@ -117,11 +118,12 @@ function RoleTile({
       {/* Photo strip */}
       <div className="grid grid-cols-[140px_1fr] sm:grid-cols-[180px_1fr]">
         <div className="relative h-full min-h-[140px] overflow-hidden">
-          <img
+          <Image
             src={imageUrl}
             alt={imageAlt}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-            loading="lazy"
+            fill
+            sizes="(min-width: 640px) 180px, 140px"
+            className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           />
           <div
             aria-hidden

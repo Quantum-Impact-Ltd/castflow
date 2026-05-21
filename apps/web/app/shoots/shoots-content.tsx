@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, CalendarDays, MapPin, Users, Search, SlidersHorizontal } from 'lucide-react'
 import { Reveal } from '@/components/landing/reveal'
@@ -204,11 +205,13 @@ function Hero({ count, featured }: { count: number; featured: PublicJob }) {
                 colorTo="hsl(var(--primary))"
               />
               <div className="relative aspect-[4/5] overflow-hidden">
-                <img
+                <Image
                   src={featured.imageUrl}
                   alt={featured.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                  priority
                 />
                 <div
                   className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"
@@ -421,11 +424,12 @@ function ShootCard({ shoot }: { shoot: PublicJob }) {
   return (
     <Link href={`/shoots/${shoot.id}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-[var(--surface-50)]">
-        <img
+        <Image
           src={shoot.imageUrl}
           alt={shoot.title}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          fill
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
         <div
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"

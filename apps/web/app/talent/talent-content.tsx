@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, BadgeCheck, MapPin, Search, SlidersHorizontal, Star } from 'lucide-react'
 import { Reveal } from '@/components/landing/reveal'
@@ -215,11 +216,13 @@ function Hero({ count, featured }: { count: number; featured: PublicArtistProfil
               />
               <div className="relative aspect-[4/5] overflow-hidden">
                 {heroImg && (
-                  <img
+                  <Image
                     src={heroImg}
-                    alt={featured.firstName}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                    alt={`${featured.firstName} portfolio cover`}
+                    fill
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                    priority
                   />
                 )}
                 <div
@@ -444,12 +447,13 @@ function ArtistCard({ artist }: { artist: PublicArtistProfile }) {
         className="aspect-[4/5] w-full rounded-2xl bg-[var(--surface-50)]"
       >
         {hero && (
-          <img
+          <Image
             src={hero}
-            alt={artist.firstName}
-            loading="lazy"
+            alt={`${artist.firstName} portfolio cover`}
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
             className={cn(
-              'absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]',
+              'object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]',
               !isAvailable && 'grayscale-[40%]'
             )}
           />

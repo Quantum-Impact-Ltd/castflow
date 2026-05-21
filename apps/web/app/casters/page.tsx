@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -272,9 +273,11 @@ export default function CastersPage() {
                     escrow flow alone saved us three rounds of finance emails.&rdquo;
                   </blockquote>
                   <div className="mt-8 flex items-center gap-4">
-                    <img
+                    <Image
                       src="https://picsum.photos/seed/quote-1/80/80"
                       alt=""
+                      width={48}
+                      height={48}
                       className="h-12 w-12 rounded-full object-cover"
                     />
                     <div>
