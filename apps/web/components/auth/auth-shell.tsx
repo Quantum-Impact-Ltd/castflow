@@ -88,6 +88,9 @@ interface AuthShellProps {
   backHref?: string
   backLabel?: string
   width?: 'sm' | 'md' | 'lg'
+  /** Optional slot rendered between the eyebrow chip and the heading — used
+   *  by the registration pages to show a 3-step progress indicator. */
+  topAccessory?: ReactNode
 }
 
 const WIDTH_MAP: Record<NonNullable<AuthShellProps['width']>, string> = {
@@ -105,6 +108,7 @@ export function AuthShell({
   backHref = '/',
   backLabel = 'Back to CastFlow',
   width = 'md',
+  topAccessory,
 }: AuthShellProps) {
   return (
     <div className="relative isolate min-h-screen w-full overflow-hidden bg-[var(--ink-900)] text-white">
@@ -161,19 +165,23 @@ export function AuthShell({
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-24 lg:py-28">
         <div className={cn('w-full', WIDTH_MAP[width])}>
           {eyebrow ? (
-            <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.03] px-3.5 py-1.5 backdrop-blur">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#f9a26c] opacity-60" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#f9a26c]" />
-              </span>
-              <AnimatedShinyText
-                shimmerWidth={130}
-                className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-white/85"
-              >
-                {eyebrow}
-              </AnimatedShinyText>
+            <div className="mb-6 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.03] px-3.5 py-1.5 backdrop-blur">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#f9a26c] opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#f9a26c]" />
+                </span>
+                <AnimatedShinyText
+                  shimmerWidth={130}
+                  className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-white/85"
+                >
+                  {eyebrow}
+                </AnimatedShinyText>
+              </div>
             </div>
           ) : null}
+
+          {topAccessory ? <div className="mb-6">{topAccessory}</div> : null}
 
           <h1 className="text-balance text-center text-4xl font-semibold leading-[1.05] tracking-[-0.02em] sm:text-5xl">
             {heading}

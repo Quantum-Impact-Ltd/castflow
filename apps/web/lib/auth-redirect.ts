@@ -10,5 +10,8 @@ export function postLoginPath(user: SessionUserLike): string {
   if (user.role === 'caster') return '/caster/dashboard'
   // artist
   if (user.approvalStatus === 'approved') return '/artist/dashboard'
-  return '/onboarding/pending'
+  // Send unapproved artists to the onboarding stepper. The stepper page itself
+  // forwards to /onboarding/pending if the profile has already been submitted
+  // for review — that branching needs the profile row, not just the session.
+  return '/onboarding/artist'
 }

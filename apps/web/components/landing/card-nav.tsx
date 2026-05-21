@@ -21,7 +21,10 @@ export interface CardNavItem {
 
 export interface CardNavAction {
   label: string
-  href: string
+  /** Render as a Link if set; ignored when `onClick` is provided. */
+  href?: string
+  /** Render as a button if set — used for actions like logout that can't be a link. */
+  onClick?: () => void
 }
 
 export interface CardNavProps {
@@ -210,27 +213,58 @@ export function CardNav({
 
           <div className="card-nav-actions">
             {secondary ? (
-              <Link
-                href={secondary.href}
-                className="card-nav-secondary"
-                style={{ color: menuColor ?? '#0d1b26' }}
-                onClick={closeMenu}
-              >
-                {secondary.label}
-              </Link>
+              secondary.onClick ? (
+                <button
+                  type="button"
+                  className="card-nav-secondary"
+                  style={{ color: menuColor ?? '#0d1b26', background: 'none', border: 0 }}
+                  onClick={() => {
+                    closeMenu()
+                    secondary.onClick?.()
+                  }}
+                >
+                  {secondary.label}
+                </button>
+              ) : (
+                <Link
+                  href={secondary.href ?? '#'}
+                  className="card-nav-secondary"
+                  style={{ color: menuColor ?? '#0d1b26' }}
+                  onClick={closeMenu}
+                >
+                  {secondary.label}
+                </Link>
+              )
             ) : null}
             {cta ? (
-              <Link
-                href={cta.href}
-                className="card-nav-cta-button"
-                style={{
-                  ...(buttonBgColor ? { backgroundColor: buttonBgColor } : {}),
-                  ...(buttonTextColor ? { color: buttonTextColor } : {}),
-                }}
-                onClick={closeMenu}
-              >
-                {cta.label}
-              </Link>
+              cta.onClick ? (
+                <button
+                  type="button"
+                  className="card-nav-cta-button"
+                  style={{
+                    ...(buttonBgColor ? { backgroundColor: buttonBgColor } : {}),
+                    ...(buttonTextColor ? { color: buttonTextColor } : {}),
+                  }}
+                  onClick={() => {
+                    closeMenu()
+                    cta.onClick?.()
+                  }}
+                >
+                  {cta.label}
+                </button>
+              ) : (
+                <Link
+                  href={cta.href ?? '#'}
+                  className="card-nav-cta-button"
+                  style={{
+                    ...(buttonBgColor ? { backgroundColor: buttonBgColor } : {}),
+                    ...(buttonTextColor ? { color: buttonTextColor } : {}),
+                  }}
+                  onClick={closeMenu}
+                >
+                  {cta.label}
+                </Link>
+              )
             ) : null}
           </div>
         </div>

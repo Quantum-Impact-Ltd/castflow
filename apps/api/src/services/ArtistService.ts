@@ -3,6 +3,8 @@ import type {
   ModelStatsInput,
   ActorStatsInput,
   ArtistExperienceInput,
+  UpdateArtistTypeInput,
+  ReplaceSkillsInput,
 } from '@castflow/validators'
 import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
@@ -31,15 +33,27 @@ export class ArtistService {
 
   static async updatePersonalInfo(userId: string, input: ArtistPersonalInfoInput) {
     const profile = await getProfileByUser(userId)
-    return prisma.artistProfile.update({
-      where: { id: profile.id },
-      data: {
-        dob: new Date(input.dob),
-        gender: input.gender,
-        pronouns: input.pronouns ?? null,
-        city: input.city,
-        bio: input.bio ?? null,
-      },
+    // ArtistProfile owns the canonical first/last name displayed across the
+    // platform; we also keep Better Auth's `user.name` in sync so anywhere
+    // that reads from the session sees the same name.
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.artistProfile.update({
+        where: { id: profile.id },
+        data: {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          dob: new Date(input.dob),
+          gender: input.gender,
+          pronouns: input.pronouns ?? null,
+          city: input.city,
+          bio: input.bio ?? null,
+        },
+      })
+      await tx.user.update({
+        where: { id: userId },
+        data: { name: `${input.firstName} ${input.lastName}` },
+      })
+      return updated
     })
   }
 
@@ -86,6 +100,66 @@ export class ArtistService {
       where: { artistProfileId: profile.id },
       create: { artistProfileId: profile.id, ...data },
       update: data,
+    })
+  }
+
+  /**
+   * Change the artist's craft (model ↔ actor). Only allowed pre-submission —
+   * once the application is submitted for review, the type is locked because
+   * admins evaluate against type-specific criteria. Switching type wipes the
+   * other side's stats and skills (we keep the data isolated so a model
+   * switching to actor doesn't surface stale model measurements).
+   */
+  static async updateArtistType(userId: string, input: UpdateArtistTypeInput) {
+    const profile = await getProfileByUser(userId)
+    if (profile.submittedAt || profile.approvalStatus === 'approved') {
+      throw new AppError(
+        'INVALID_STATE',
+        'Cannot change craft after submitting for review',
+        400
+      )
+    }
+    if (profile.artistType === input.artistType) return profile
+
+    return prisma.$transaction(async (tx) => {
+      if (input.artistType === 'model') {
+        await tx.actorStats.deleteMany({ where: { artistProfileId: profile.id } })
+        await tx.artistSkill.deleteMany({ where: { artistProfileId: profile.id } })
+      } else {
+        await tx.modelStats.deleteMany({ where: { artistProfileId: profile.id } })
+      }
+      return tx.artistProfile.update({
+        where: { id: profile.id },
+        data: { artistType: input.artistType },
+      })
+    })
+  }
+
+  /**
+   * Replace the artist's full skill list. Used by the actor onboarding step —
+   * the UI builds the entire array client-side and PUTs it in one shot, which
+   * is simpler than juggling individual add/remove endpoints during onboarding.
+   */
+  static async replaceSkills(userId: string, input: ReplaceSkillsInput) {
+    const profile = await getProfileByUser(userId)
+    if (profile.artistType !== 'actor') {
+      throw new AppError('INVALID_STATE', 'Skills only apply to actor profiles', 400)
+    }
+    return prisma.$transaction(async (tx) => {
+      await tx.artistSkill.deleteMany({ where: { artistProfileId: profile.id } })
+      if (input.skills.length > 0) {
+        await tx.artistSkill.createMany({
+          data: input.skills.map((s) => ({
+            artistProfileId: profile.id,
+            skillType: s.skillType,
+            skillValue: s.skillValue,
+          })),
+        })
+      }
+      return tx.artistSkill.findMany({
+        where: { artistProfileId: profile.id },
+        orderBy: { skillType: 'asc' },
+      })
     })
   }
 

@@ -126,6 +126,7 @@ export interface CasterProfile {
   ratingAvg: number | null
   ratingCount: number
   jobsPosted: number
+  onboardingCompletedAt: string | null
   createdAt: string
   updatedAt: string
 }

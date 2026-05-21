@@ -5,6 +5,8 @@ import {
   modelStatsSchema,
   actorStatsSchema,
   artistExperienceSchema,
+  updateArtistTypeSchema,
+  replaceSkillsSchema,
 } from '@castflow/validators'
 import { authenticate } from '../middleware/authenticate'
 import { requireRole } from '../middleware/requireRole'
@@ -41,6 +43,20 @@ artistRoutes.get('/me', authenticate, requireRole('artist'), async (c) => {
   const user = c.get('user')
   const profile = await ArtistService.getMyProfile(user.id)
   return c.json({ success: true, data: profile })
+})
+
+artistRoutes.patch('/me/type', authenticate, requireRole('artist'), async (c) => {
+  const user = c.get('user')
+  const input = await parseBody(c, updateArtistTypeSchema)
+  const profile = await ArtistService.updateArtistType(user.id, input)
+  return c.json({ success: true, data: profile })
+})
+
+artistRoutes.put('/me/skills', authenticate, requireRole('artist'), async (c) => {
+  const user = c.get('user')
+  const input = await parseBody(c, replaceSkillsSchema)
+  const skills = await ArtistService.replaceSkills(user.id, input)
+  return c.json({ success: true, data: skills })
 })
 
 artistRoutes.patch('/me/personal', authenticate, requireRole('artist'), async (c) => {

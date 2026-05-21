@@ -11,7 +11,10 @@ export const registerArtistSchema = z.object({
   password: passwordSchema,
   firstName: z.string().min(1).max(50).trim(),
   lastName: z.string().min(1).max(50).trim(),
-  artistType: z.enum(['model', 'actor']),
+  // Artist craft (model vs actor) is chosen at onboarding step 1, not at
+  // registration. We keep it optional here for backwards-compat with any
+  // older clients; the API defaults to 'model' when omitted.
+  artistType: z.enum(['model', 'actor']).optional(),
 })
 
 export const registerCasterSchema = z.object({

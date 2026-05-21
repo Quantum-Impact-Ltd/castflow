@@ -7,9 +7,11 @@ export const presignedUrlSchema = z.object({
 })
 
 export const confirmUploadSchema = z.object({
-  url: z.string().url(),
+  url: z.string().url().optional(),
   type: z.enum(['portfolio_photo', 'portfolio_video', 'id_document', 'demo_reel']),
   key: z.string().min(1),
+  caption: z.string().max(200).optional(),
+  isPrimary: z.boolean().optional(),
 })
 
 export const UPLOAD_LIMITS = {

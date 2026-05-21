@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth/auth-shell'
+import { RegisterProgress } from '@/components/auth/register-progress'
+import { redirectIfAuthenticated } from '@/lib/auth-server'
 import { RegisterArtistForm } from './register-form'
 
 export const metadata = {
@@ -7,10 +9,12 @@ export const metadata = {
   description: 'Apply to join CastFlow as a verified UK artist.',
 }
 
-export default function RegisterArtistPage() {
+export default async function RegisterArtistPage() {
+  await redirectIfAuthenticated()
   return (
     <AuthShell
       eyebrow="For models & actors"
+      topAccessory={<RegisterProgress current={1} />}
       heading={
         <>
           Apply as an{' '}
@@ -19,7 +23,7 @@ export default function RegisterArtistPage() {
           </span>
         </>
       }
-      subhead="Create your account. You'll complete your profile after verifying your email."
+      subhead="Create your account. You'll build your portfolio in the next step."
       backHref="/register"
       backLabel="Pick a different role"
       footer={

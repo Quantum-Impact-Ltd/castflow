@@ -48,3 +48,19 @@ uploadRoutes.post('/confirm', async (c) => {
   const result = await UploadService.confirmUpload(user.id, parsed.data)
   return c.json({ success: true, data: result })
 })
+
+uploadRoutes.delete('/portfolio/:id', async (c) => {
+  const user = c.get('user')
+  const id = c.req.param('id')
+  if (!id) throw new AppError('VALIDATION_ERROR', 'Missing portfolio item id', 400)
+  const result = await UploadService.deletePortfolioItem(user.id, id)
+  return c.json({ success: true, data: result })
+})
+
+uploadRoutes.patch('/portfolio/:id/primary', async (c) => {
+  const user = c.get('user')
+  const id = c.req.param('id')
+  if (!id) throw new AppError('VALIDATION_ERROR', 'Missing portfolio item id', 400)
+  const result = await UploadService.setPrimaryPortfolioItem(user.id, id)
+  return c.json({ success: true, data: result })
+})

@@ -14,7 +14,12 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    // Production always enforces verification. In dev/staging the flag lets
+    // you bypass it when Resend isn't configured — see AuthService for the
+    // matching `emailVerified=true` write at registration time.
+    requireEmailVerification: !(
+      env.DEV_AUTO_VERIFY_EMAIL === true && env.NODE_ENV !== 'production'
+    ),
     sendResetPassword: async ({ user, url }) => {
       // Rewrite the reset link to point at the web app, which posts the token
       // back to the API via /api/auth/reset-password.

@@ -8,6 +8,8 @@ function ageCheck(dob: string) {
 }
 
 export const artistPersonalInfoSchema = z.object({
+  firstName: z.string().min(1, 'First name is required').max(50).trim(),
+  lastName: z.string().min(1, 'Last name is required').max(50).trim(),
   dob: z.string().refine(ageCheck, 'You must be 18 or older to register on CastFlow'),
   gender: z.string().min(1, 'Gender is required'),
   pronouns: z.string().max(50).optional(),
@@ -61,6 +63,14 @@ export const artistSkillSchema = z.object({
   skillValue: z.string().min(1).max(100).trim(),
 })
 
+export const updateArtistTypeSchema = z.object({
+  artistType: z.enum(['model', 'actor']),
+})
+
+export const replaceSkillsSchema = z.object({
+  skills: z.array(artistSkillSchema).max(50),
+})
+
 export const updateAvailabilitySchema = z.object({
   availabilityStatus: z.enum(['available', 'unavailable']),
 })
@@ -70,3 +80,5 @@ export type ModelStatsInput = z.infer<typeof modelStatsSchema>
 export type ActorStatsInput = z.infer<typeof actorStatsSchema>
 export type ArtistExperienceInput = z.infer<typeof artistExperienceSchema>
 export type ArtistSkillInput = z.infer<typeof artistSkillSchema>
+export type UpdateArtistTypeInput = z.infer<typeof updateArtistTypeSchema>
+export type ReplaceSkillsInput = z.infer<typeof replaceSkillsSchema>

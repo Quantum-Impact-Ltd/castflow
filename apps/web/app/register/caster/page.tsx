@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth/auth-shell'
+import { RegisterProgress } from '@/components/auth/register-progress'
+import { redirectIfAuthenticated } from '@/lib/auth-server'
 import { RegisterCasterForm } from './register-form'
 
 export const metadata = {
@@ -7,10 +9,12 @@ export const metadata = {
   description: 'Post shoots, book verified UK talent. Start with a free trial.',
 }
 
-export default function RegisterCasterPage() {
+export default async function RegisterCasterPage() {
+  await redirectIfAuthenticated()
   return (
     <AuthShell
       eyebrow="For brands & agencies"
+      topAccessory={<RegisterProgress current={1} />}
       heading={
         <>
           Open your{' '}
@@ -19,7 +23,7 @@ export default function RegisterCasterPage() {
           </span>
         </>
       }
-      subhead="You'll be able to post jobs as soon as you verify your email."
+      subhead="Account first. We'll do a quick welcome tour right after you verify your email."
       width="lg"
       backHref="/register"
       backLabel="Pick a different role"

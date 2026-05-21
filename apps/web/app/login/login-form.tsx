@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,12 +10,10 @@ import { loginSchema, type LoginInput } from '@castflow/validators'
 import { AuthDivider, AuthField, AuthInput } from '@/components/auth/auth-shell'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useLogin } from '@/lib/hooks/use-auth'
-import { getSession } from '@/lib/api/auth'
 import { postLoginPath } from '@/lib/auth-redirect'
 import { authClient } from '@/lib/auth-client'
 
 export function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const mutation = useLogin()
   const [serverError, setServerError] = useState<string | null>(null)
@@ -34,18 +32,12 @@ export function LoginForm() {
   const onSubmit = form.handleSubmit((values) => {
     setServerError(null)
     mutation.mutate(values, {
-      onSuccess: () => {
-        void getSession().then((session) => {
-          if (safeRedirect) {
-            router.push(safeRedirect)
-            return
-          }
-          if (session?.user) {
-            router.push(postLoginPath(session.user))
-          } else {
-            router.push('/')
-          }
-        })
+      onSuccess: (data) => {
+        const target = safeRedirect ?? postLoginPath(data.user)
+        // Hard navigation so server-rendered layouts (route guards) re-evaluate
+        // session immediately. router.push keeps stale RSC cache and the user
+        // can briefly see the wrong shell.
+        window.location.href = target
       },
       onError: (err) => {
         const e = err as Error & { code?: string; status?: number }
@@ -89,6 +81,7 @@ export function LoginForm() {
             autoComplete="email"
             inputMode="email"
             placeholder="you@studio.co.uk"
+            autoFocus
             aria-invalid={!!form.formState.errors.email}
             {...form.register('email')}
           />

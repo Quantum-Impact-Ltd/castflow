@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth/auth-shell'
+import { redirectIfAuthenticated } from '@/lib/auth-server'
 import { LoginForm } from './login-form'
 
 export const metadata = {
@@ -8,7 +9,8 @@ export const metadata = {
   description: 'Sign in to your CastFlow account.',
 }
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  await redirectIfAuthenticated()
   return (
     <AuthShell
       eyebrow="Welcome back"

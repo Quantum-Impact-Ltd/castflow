@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { queryKeys } from '@/lib/query-keys'
-import { getMyCaster, updateMyCaster, type UpdateCasterInput } from '@/lib/api/caster'
+import { getMyCaster, updateMyCaster, completeOnboarding, type UpdateCasterInput } from '@/lib/api/caster'
 import { errorMessage } from './util'
 
 export function useMyCaster() {
@@ -22,5 +22,13 @@ export function useUpdateMyCaster() {
       toast.success('Profile updated')
     },
     onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+export function useCompleteOnboarding() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => completeOnboarding(),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.caster.profile() }),
   })
 }

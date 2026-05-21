@@ -3,6 +3,8 @@ import type {
   ModelStatsInput,
   ActorStatsInput,
   ArtistExperienceInput,
+  UpdateArtistTypeInput,
+  ReplaceSkillsInput,
 } from '@castflow/validators'
 import { fetcher } from '@/lib/fetcher'
 
@@ -36,6 +38,22 @@ interface Init {
 
 export function getMyProfile(init?: Init): Promise<MyArtistProfile> {
   return fetcher<MyArtistProfile>('/artists/me', { method: 'GET', ...init })
+}
+
+export function updateArtistType(input: UpdateArtistTypeInput, init?: Init) {
+  return fetcher<MyArtistProfile>('/artists/me/type', {
+    method: 'PATCH',
+    body: input,
+    ...init,
+  })
+}
+
+export function replaceSkills(input: ReplaceSkillsInput, init?: Init) {
+  return fetcher<Array<Record<string, unknown>>>('/artists/me/skills', {
+    method: 'PUT',
+    body: input,
+    ...init,
+  })
 }
 
 export function updatePersonal(input: ArtistPersonalInfoInput, init?: Init) {

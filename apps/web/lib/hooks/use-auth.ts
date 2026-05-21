@@ -19,8 +19,6 @@ import {
   resendVerification,
 } from '@/lib/api/auth'
 
-const sessionKey = ['session'] as const
-
 function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message
   return 'Something went wrong'
@@ -45,7 +43,10 @@ export function useLogin() {
   return useMutation({
     mutationFn: (input: LoginInput) => login(input),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: sessionKey })
+      // Wipe any cached data from a previous session on this browser before
+      // the new user's queries populate the cache. Belt-and-braces against
+      // showing stale per-user data when switching accounts.
+      qc.clear()
     },
     onError: (err) => toast.error(errorMessage(err)),
   })
@@ -56,7 +57,9 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => logout(),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: sessionKey })
+      // Same reasoning as useLogin — drop all cached per-user data immediately
+      // rather than relying on individual invalidations.
+      qc.clear()
     },
     onError: (err) => toast.error(errorMessage(err)),
   })

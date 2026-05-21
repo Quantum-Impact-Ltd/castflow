@@ -17,3 +17,7 @@ export function getMyCaster(init?: Init) {
 export function updateMyCaster(input: UpdateCasterInput) {
   return fetcher<CasterProfile>('/casters/me', { method: 'PATCH', body: input })
 }
+
+export function completeOnboarding() {
+  return fetcher<CasterProfile>('/casters/me/complete-onboarding', { method: 'POST' })
+}

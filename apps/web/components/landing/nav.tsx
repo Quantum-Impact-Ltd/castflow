@@ -1,6 +1,9 @@
 'use client'
 
-import { CardNav, type CardNavItem } from './card-nav'
+import { CardNav, type CardNavAction, type CardNavItem } from './card-nav'
+import { useAuthSession } from '@/providers/session-provider'
+import { useLogout } from '@/lib/hooks/use-auth'
+import { postLoginPath } from '@/lib/auth-redirect'
 
 const ITEMS: CardNavItem[] = [
   {
@@ -37,6 +40,35 @@ const ITEMS: CardNavItem[] = [
 ]
 
 export function Nav() {
+  // useAuthSession is populated immediately from the server-rendered session,
+  // so first paint already shows the correct CTA for logged-in users.
+  const { session } = useAuthSession()
+  const logoutMutation = useLogout()
+
+  let secondary: CardNavAction = { label: 'Log in', href: '/login' }
+  let cta: CardNavAction = { label: 'Get started', href: '/register' }
+
+  if (session?.user) {
+    const user = session.user
+    const dashboardHref = postLoginPath({
+      role: user.role,
+      approvalStatus: user.approvalStatus ?? null,
+    })
+    secondary = {
+      label: 'Log out',
+      onClick: () => {
+        logoutMutation.mutate(undefined, {
+          onSuccess: () => {
+            // Hard navigation to root so Server Components re-fetch session.
+            // router.push alone keeps stale RSC payloads cached.
+            window.location.href = '/'
+          },
+        })
+      },
+    }
+    cta = { label: 'Dashboard', href: dashboardHref }
+  }
+
   return (
     <CardNav
       logo={
@@ -49,8 +81,8 @@ export function Nav() {
         </span>
       }
       items={ITEMS}
-      secondary={{ label: 'Log in', href: '/login' }}
-      cta={{ label: 'Get started', href: '/register' }}
+      secondary={secondary}
+      cta={cta}
       baseColor="#ffffff"
       menuColor="#0d1b26"
       buttonBgColor="#0d1b26"

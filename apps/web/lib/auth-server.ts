@@ -4,11 +4,16 @@
 // proxy `auth.api.getSession({ headers })` to the API's `/api/auth/get-session`
 // endpoint, forwarding the incoming request's cookies.
 
+import { headers as nextHeaders } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { postLoginPath } from './auth-redirect'
+
 type SessionUser = {
   id: string
   email: string
   role: 'artist' | 'caster' | 'admin'
   approvalStatus?: 'pending' | 'approved' | 'rejected'
+  status?: 'pending' | 'active' | 'suspended' | 'banned'
   [key: string]: unknown
 }
 
@@ -30,4 +35,21 @@ async function getSession(opts: { headers: Headers }): Promise<SessionResult> {
 
 export const auth = {
   api: { getSession },
+}
+
+/**
+ * Server-side guard for auth pages (/login, /register, /register/[role]).
+ * If the visitor already has a valid session, send them straight to their
+ * correct dashboard so they don't accidentally create a second account or
+ * sit on a login form they don't need. Safe to call from any Server
+ * Component / page module.
+ */
+export async function redirectIfAuthenticated(): Promise<void> {
+  const session = await auth.api.getSession({ headers: await nextHeaders() }).catch(() => null)
+  if (!session?.user) return
+  const target = postLoginPath({
+    role: session.user.role,
+    approvalStatus: session.user.approvalStatus ?? null,
+  })
+  redirect(target)
 }

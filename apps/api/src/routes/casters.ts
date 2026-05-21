@@ -23,6 +23,18 @@ casterRoutes.get('/me', authenticate, requireRole('caster'), async (c) => {
   return c.json({ success: true, data: profile })
 })
 
+casterRoutes.post('/me/complete-onboarding', authenticate, requireRole('caster'), async (c) => {
+  const user = c.get('user')
+  const profile = await prisma.casterProfile.findUnique({ where: { userId: user.id } })
+  if (!profile) throw new AppError('NOT_FOUND', 'Caster profile not found', 404)
+  if (profile.onboardingCompletedAt) return c.json({ success: true, data: profile })
+  const updated = await prisma.casterProfile.update({
+    where: { id: profile.id },
+    data: { onboardingCompletedAt: new Date() },
+  })
+  return c.json({ success: true, data: updated })
+})
+
 casterRoutes.patch('/me', authenticate, requireRole('caster'), async (c) => {
   const user = c.get('user')
   const parsed = updateProfileSchema.safeParse(await c.req.json())

@@ -2,6 +2,8 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Mail } from 'lucide-react'
 import { AuthShell } from '@/components/auth/auth-shell'
+import { RegisterProgress } from '@/components/auth/register-progress'
+import { redirectIfAuthenticated } from '@/lib/auth-server'
 import { VerifyEmailClient } from './verify-email-client'
 
 export const metadata = {
@@ -9,10 +11,14 @@ export const metadata = {
   description: 'We sent a verification link to your email.',
 }
 
-export default function VerifyEmailPage() {
+export default async function VerifyEmailPage() {
+  // If the user is already authenticated (incl. dev-bypass auto-verified),
+  // skip the "check your inbox" screen and send them to their dashboard.
+  await redirectIfAuthenticated()
   return (
     <AuthShell
       eyebrow="One more step"
+      topAccessory={<RegisterProgress current={2} />}
       heading={
         <>
           Check your{' '}

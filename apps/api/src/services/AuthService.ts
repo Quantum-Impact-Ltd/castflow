@@ -1,11 +1,39 @@
 import type { RegisterArtistInput, RegisterCasterInput } from '@castflow/validators'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { auth } from '../lib/auth'
+import { env } from '../lib/env'
 import { AppError } from '../errors'
+
+/**
+ * Dev convenience: when DEV_AUTO_VERIFY_EMAIL=true on a non-production
+ * environment, mark a freshly-created user as email-verified so they can
+ * log in immediately without a working Resend setup. Production always
+ * ignores the flag — verification is required for live signups.
+ */
+function isDevAutoVerifyEnabled(): boolean {
+  return env.DEV_AUTO_VERIFY_EMAIL === true && env.NODE_ENV !== 'production'
+}
+
+async function maybeAutoVerifyEmail(
+  tx: Prisma.TransactionClient,
+  userId: string
+): Promise<void> {
+  if (!isDevAutoVerifyEnabled()) return
+  await tx.user.update({
+    where: { id: userId },
+    data: { emailVerified: true },
+  })
+}
 
 export interface RegistrationResult {
   user: { id: string; email: string }
-  verificationEmailSent: true
+  /** True when a verification email was sent — false in dev-bypass mode. */
+  verificationEmailSent: boolean
+  /** True when the account is already verified (dev bypass). The frontend
+   *  uses this to decide whether to send the user to /verify-email or
+   *  straight to /login. */
+  emailVerified: boolean
 }
 
 function mapBetterAuthError(err: unknown): never {
@@ -102,7 +130,9 @@ export class AuthService {
         const profile = await tx.artistProfile.create({
           data: {
             userId: user.id,
-            artistType: input.artistType,
+            // Default to 'model' if registration doesn't include a type — the
+            // artist confirms or switches in onboarding step 1.
+            artistType: input.artistType ?? 'model',
             firstName: input.firstName,
             lastName: input.lastName,
           },
@@ -118,6 +148,7 @@ export class AuthService {
             status: 'active',
           },
         })
+        await maybeAutoVerifyEmail(tx, user.id)
       })
     } catch (err) {
       // Best-effort rollback. If this delete also fails we have an orphaned
@@ -135,7 +166,12 @@ export class AuthService {
       throw new AppError('INTERNAL_ERROR', 'Could not complete registration', 500)
     }
 
-    return { user, verificationEmailSent: true }
+    const autoVerified = isDevAutoVerifyEnabled()
+    return {
+      user,
+      verificationEmailSent: !autoVerified,
+      emailVerified: autoVerified,
+    }
   }
 
   static async registerCaster(input: RegisterCasterInput): Promise<RegistrationResult> {
@@ -168,6 +204,7 @@ export class AuthService {
             status: 'active',
           },
         })
+        await maybeAutoVerifyEmail(tx, user.id)
       })
     } catch (err) {
       // Best-effort rollback. If this delete also fails we have an orphaned
@@ -185,6 +222,11 @@ export class AuthService {
       throw new AppError('INTERNAL_ERROR', 'Could not complete registration', 500)
     }
 
-    return { user, verificationEmailSent: true }
+    const autoVerified = isDevAutoVerifyEnabled()
+    return {
+      user,
+      verificationEmailSent: !autoVerified,
+      emailVerified: autoVerified,
+    }
   }
 }

@@ -1,9 +1,8 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Bell, LogOut, Menu, User as UserIcon } from 'lucide-react'
-import { authClient } from '@/lib/auth-client'
+import { useLogout } from '@/lib/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
@@ -26,12 +25,17 @@ interface TopbarProps {
 }
 
 export function Topbar({ items, brand, brandHref, user, notificationsHref }: TopbarProps) {
-  const router = useRouter()
+  const logout = useLogout()
 
-  async function handleSignOut() {
-    await authClient.signOut()
-    router.push('/login')
-    router.refresh()
+  function handleSignOut() {
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        // Hard reload to / so server-side layouts re-evaluate session and
+        // any stale RSC payloads are flushed. The useLogout hook already
+        // cleared the in-memory TanStack Query cache.
+        window.location.href = '/'
+      },
+    })
   }
 
   return (

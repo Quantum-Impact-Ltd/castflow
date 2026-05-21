@@ -18,7 +18,6 @@ import {
 } from '@/components/auth/auth-shell'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useRegisterArtist } from '@/lib/hooks/use-auth'
-import { cn } from '@/lib/utils'
 import type { ApiError } from '@/lib/fetcher'
 
 const formSchema = registerArtistSchema
@@ -43,18 +42,23 @@ export function RegisterArtistForm() {
       confirmPassword: '',
       firstName: '',
       lastName: '',
-      artistType: 'model',
     },
   })
-
-  const artistType = form.watch('artistType')
 
   const onSubmit = form.handleSubmit((values) => {
     setServerError(null)
     const { confirmPassword: _confirm, ...payload } = values
     void _confirm
     mutation.mutate(payload as RegisterArtistInput, {
-      onSuccess: () => {
+      onSuccess: (result) => {
+        // Dev bypass: account is already verified, send straight to login so
+        // they can sign in without checking email. Production keeps the
+        // "check your inbox" flow.
+        if (result.emailVerified) {
+          toast.success('Account created — log in to continue')
+          router.push(`/login?email=${encodeURIComponent(payload.email)}`)
+          return
+        }
         toast.success('Account created — check your email to verify')
         router.push(`/verify-email?email=${encodeURIComponent(payload.email)}`)
       },
@@ -82,33 +86,6 @@ export function RegisterArtistForm() {
       className="space-y-5"
       noValidate
     >
-      <fieldset className="space-y-2">
-        <legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">
-          I&apos;m a…
-        </legend>
-        <div className="grid grid-cols-2 gap-3">
-          {(['model', 'actor'] as const).map((type) => (
-            <label
-              key={type}
-              className={cn(
-                'flex cursor-pointer items-center justify-center rounded-xl border px-3 py-3 text-sm font-medium capitalize transition-colors',
-                artistType === type
-                  ? 'border-[#f9a26c] bg-[#f9a26c]/10 text-[#f9a26c]'
-                  : 'border-white/12 bg-white/[0.04] text-white/65 hover:border-white/30 hover:text-white',
-              )}
-            >
-              <input
-                type="radio"
-                value={type}
-                {...form.register('artistType')}
-                className="sr-only"
-              />
-              {type}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
       <div className="grid gap-4 sm:grid-cols-2">
         <AuthField
           label="First name"
@@ -119,6 +96,7 @@ export function RegisterArtistForm() {
             id="firstName"
             autoComplete="given-name"
             placeholder="Maya"
+            autoFocus
             aria-invalid={!!form.formState.errors.firstName}
             {...form.register('firstName')}
           />

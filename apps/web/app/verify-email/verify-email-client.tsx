@@ -26,6 +26,16 @@ export function VerifyEmailClient() {
 
   return (
     <div className="space-y-4">
+      {initialEmail && (
+        <p className="text-center text-xs text-white/55">
+          Sent to{' '}
+          <span className="font-medium text-white/85">{initialEmail}</span>
+          {' — '}
+          <a href="/register" className="text-[#f9a26c] underline-offset-4 hover:underline">
+            Wrong email?
+          </a>
+        </p>
+      )}
       <p className="text-center font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-white/55">
         Didn&apos;t get it?
       </p>

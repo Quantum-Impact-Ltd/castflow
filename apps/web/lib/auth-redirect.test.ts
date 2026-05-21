@@ -10,13 +10,15 @@ describe('postLoginPath', () => {
     expect(postLoginPath({ role: 'caster' })).toBe('/caster/dashboard')
   })
 
-  it('W3: artist with pending approval → /onboarding/pending', () => {
-    expect(postLoginPath({ role: 'artist', approvalStatus: 'pending' })).toBe('/onboarding/pending')
+  it('W3: artist with pending approval → /onboarding/artist (stepper handles submitted vs in-progress)', () => {
+    expect(postLoginPath({ role: 'artist', approvalStatus: 'pending' })).toBe(
+      '/onboarding/artist'
+    )
   })
 
-  it('W4: artist with rejected approval → /onboarding/pending', () => {
+  it('W4: artist with rejected approval → /onboarding/artist (so they can edit and resubmit)', () => {
     expect(postLoginPath({ role: 'artist', approvalStatus: 'rejected' })).toBe(
-      '/onboarding/pending'
+      '/onboarding/artist'
     )
   })
 
@@ -24,7 +26,7 @@ describe('postLoginPath', () => {
     expect(postLoginPath({ role: 'artist', approvalStatus: 'approved' })).toBe('/artist/dashboard')
   })
 
-  it('artist with missing approvalStatus falls back to onboarding', () => {
-    expect(postLoginPath({ role: 'artist' })).toBe('/onboarding/pending')
+  it('artist with missing approvalStatus falls back to onboarding stepper', () => {
+    expect(postLoginPath({ role: 'artist' })).toBe('/onboarding/artist')
   })
 })

@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Camera, Sparkles, ArrowRight } from 'lucide-react'
 import { AuthShell } from '@/components/auth/auth-shell'
+import { RegisterProgress } from '@/components/auth/register-progress'
+import { redirectIfAuthenticated } from '@/lib/auth-server'
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -28,6 +30,8 @@ export const metadata = {
 }
 
 export default async function RegisterPage({ searchParams }: PageProps) {
+  await redirectIfAuthenticated()
+
   const params = await searchParams
   const role = params['role']
   const roleValue = Array.isArray(role) ? role[0] : role
@@ -41,6 +45,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
   return (
     <AuthShell
       eyebrow="Join CastFlow"
+      topAccessory={<RegisterProgress current={0} />}
       heading={
         <>
           Pick the side you&apos;re{' '}
@@ -49,7 +54,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           </span>
         </>
       }
-      subhead="Two account types. Pick the one that fits — you can always change later."
+      subhead="Two roles. Your choice is permanent — it shapes the whole platform from here."
       width="lg"
       footer={
         <>

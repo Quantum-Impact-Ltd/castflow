@@ -51,3 +51,15 @@ export async function uploadFile(
   await confirmUpload({ type, key, ...opts })
   return { publicUrl, key }
 }
+
+export function deletePortfolioItem(id: string) {
+  return fetcher<{ deleted: true; id: string }>(`/uploads/portfolio/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function setPrimaryPortfolioItem(id: string) {
+  return fetcher<{ id: string; isPrimary: true }>(`/uploads/portfolio/${id}/primary`, {
+    method: 'PATCH',
+  })
+}

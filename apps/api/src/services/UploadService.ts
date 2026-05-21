@@ -80,22 +80,37 @@ export class UploadService {
       throw new AppError('FORBIDDEN', 'Upload key does not belong to this user', 403)
     }
 
+    // Public URL is derivable from the key for public buckets; the client may
+    // pass it for convenience but we re-derive to avoid trusting client input.
+    const publicUrl = `${env.R2_PUBLIC_URL.replace(/\/$/, '')}/${input.key}`
+
     if (input.type === 'portfolio_photo' || input.type === 'portfolio_video') {
       const profile = await prisma.artistProfile.findUnique({
         where: { userId },
-        select: { id: true, portfolioItems: { select: { id: true } } },
+        select: { id: true, portfolioItems: { select: { id: true, isPrimary: true } } },
       })
       if (!profile) throw new AppError('NOT_FOUND', 'Artist profile not found', 404)
 
-      const item = await prisma.portfolioItem.create({
-        data: {
-          artistProfileId: profile.id,
-          type: input.type === 'portfolio_photo' ? 'photo' : 'video',
-          url: input.url,
-          displayOrder: profile.portfolioItems.length,
-          isPrimary: profile.portfolioItems.length === 0,
-          isApproved: false,
-        },
+      const setAsPrimary = input.isPrimary ?? profile.portfolioItems.length === 0
+
+      const item = await prisma.$transaction(async (tx) => {
+        if (setAsPrimary) {
+          await tx.portfolioItem.updateMany({
+            where: { artistProfileId: profile.id, isPrimary: true },
+            data: { isPrimary: false },
+          })
+        }
+        return tx.portfolioItem.create({
+          data: {
+            artistProfileId: profile.id,
+            type: input.type === 'portfolio_photo' ? 'photo' : 'video',
+            url: publicUrl,
+            caption: input.caption ?? null,
+            displayOrder: profile.portfolioItems.length,
+            isPrimary: setAsPrimary,
+            isApproved: false,
+          },
+        })
       })
       return { kind: 'portfolio_item' as const, item }
     }
@@ -113,6 +128,63 @@ export class UploadService {
       return { kind: 'id_document' as const, key: input.key }
     }
 
-    return { kind: 'noop' as const, url: input.url }
+    return { kind: 'noop' as const, url: input.url ?? publicUrl }
+  }
+
+  /**
+   * Delete a portfolio item. Only the artist who owns the item can delete it.
+   * If the deleted item was primary, promote the next one (lowest displayOrder)
+   * to primary so the profile always has a primary while items exist.
+   */
+  static async deletePortfolioItem(userId: string, itemId: string) {
+    const item = await prisma.portfolioItem.findUnique({
+      where: { id: itemId },
+      select: {
+        id: true,
+        isPrimary: true,
+        artistProfile: { select: { userId: true, id: true } },
+      },
+    })
+    if (!item) throw new AppError('NOT_FOUND', 'Portfolio item not found', 404)
+    if (item.artistProfile.userId !== userId) {
+      throw new AppError('FORBIDDEN', 'You do not own this portfolio item', 403)
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.portfolioItem.delete({ where: { id: itemId } })
+      if (item.isPrimary) {
+        const next = await tx.portfolioItem.findFirst({
+          where: { artistProfileId: item.artistProfile.id },
+          orderBy: { displayOrder: 'asc' },
+          select: { id: true },
+        })
+        if (next) {
+          await tx.portfolioItem.update({
+            where: { id: next.id },
+            data: { isPrimary: true },
+          })
+        }
+      }
+    })
+    return { deleted: true as const, id: itemId }
+  }
+
+  static async setPrimaryPortfolioItem(userId: string, itemId: string) {
+    const item = await prisma.portfolioItem.findUnique({
+      where: { id: itemId },
+      select: { id: true, artistProfile: { select: { userId: true, id: true } } },
+    })
+    if (!item) throw new AppError('NOT_FOUND', 'Portfolio item not found', 404)
+    if (item.artistProfile.userId !== userId) {
+      throw new AppError('FORBIDDEN', 'You do not own this portfolio item', 403)
+    }
+    await prisma.$transaction(async (tx) => {
+      await tx.portfolioItem.updateMany({
+        where: { artistProfileId: item.artistProfile.id, isPrimary: true },
+        data: { isPrimary: false },
+      })
+      await tx.portfolioItem.update({ where: { id: itemId }, data: { isPrimary: true } })
+    })
+    return { id: itemId, isPrimary: true }
   }
 }

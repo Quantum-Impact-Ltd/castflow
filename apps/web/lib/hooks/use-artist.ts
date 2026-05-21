@@ -7,9 +7,13 @@ import type {
   ModelStatsInput,
   ActorStatsInput,
   ArtistExperienceInput,
+  UpdateArtistTypeInput,
+  ReplaceSkillsInput,
 } from '@castflow/validators'
 import {
   getMyProfile,
+  updateArtistType,
+  replaceSkills,
   updatePersonal,
   updateModelStats,
   updateActorStats,
@@ -27,6 +31,24 @@ export function useMyArtistProfile() {
   return useQuery({
     queryKey: myProfileKey,
     queryFn: ({ signal }) => getMyProfile({ signal }),
+  })
+}
+
+export function useUpdateArtistType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: UpdateArtistTypeInput) => updateArtistType(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: myProfileKey }),
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+export function useReplaceSkills() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ReplaceSkillsInput) => replaceSkills(input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: myProfileKey }),
+    onError: (err) => toast.error(errorMessage(err)),
   })
 }
 

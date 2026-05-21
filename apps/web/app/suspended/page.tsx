@@ -1,0 +1,59 @@
+import Link from 'next/link'
+import { ShieldAlert, Mail } from 'lucide-react'
+
+export const metadata = {
+  title: 'Account suspended — CastFlow',
+  description: 'Your CastFlow account has been suspended.',
+}
+
+export default function SuspendedPage() {
+  return (
+    <div className="relative isolate grid min-h-screen w-full place-items-center overflow-hidden bg-[var(--ink-900)] px-4 text-white">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-rose-500 opacity-[0.10] blur-[140px]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[#2a6b96] opacity-[0.16] blur-[140px]"
+      />
+
+      <div className="relative z-10 mx-auto max-w-md text-center">
+        <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-rose-400/30 bg-rose-400/[0.10] backdrop-blur-xl">
+          <ShieldAlert className="h-6 w-6 text-rose-300" />
+        </div>
+        <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
+          Access restricted
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          Your account is on hold
+        </h1>
+        <p className="mt-4 text-sm leading-relaxed text-white/65">
+          We&apos;ve temporarily suspended this account. This usually happens when
+          activity on the platform triggers a manual review by our Trust &amp; Safety
+          team.
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-white/65">
+          If you think this is a mistake — or you&apos;d like to appeal — reach out and
+          we&apos;ll get back to you within two working days.
+        </p>
+
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <a
+            href="mailto:trust@castflow.co.uk?subject=Account%20appeal"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-br from-[#f9a26c] to-[#e67e3e] px-5 text-sm font-semibold text-[var(--ink-900)] shadow-[0_10px_30px_-12px_rgba(249,162,108,0.55)] transition hover:from-[#fab17f] hover:to-[#e88a4b]"
+          >
+            <Mail className="h-4 w-4" />
+            Contact Trust &amp; Safety
+          </a>
+          <Link
+            href="/"
+            className="text-xs text-white/45 transition hover:text-white"
+          >
+            Back to homepage
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}

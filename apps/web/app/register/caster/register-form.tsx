@@ -62,7 +62,12 @@ export function RegisterCasterForm() {
     const { confirmPassword: _c, ...payload } = values
     void _c
     mutation.mutate(payload as RegisterCasterInput, {
-      onSuccess: () => {
+      onSuccess: (result) => {
+        if (result.emailVerified) {
+          toast.success('Account created — log in to continue')
+          router.push(`/login?email=${encodeURIComponent(payload.email)}`)
+          return
+        }
         toast.success('Account created — check your email to verify')
         router.push(`/verify-email?email=${encodeURIComponent(payload.email)}`)
       },
@@ -99,6 +104,7 @@ export function RegisterCasterForm() {
           id="companyName"
           autoComplete="organization"
           placeholder="Saunders & Co"
+          autoFocus
           aria-invalid={!!form.formState.errors.companyName}
           {...form.register('companyName')}
         />
