@@ -104,7 +104,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | L4  | [x]    | Apple Sign-In missing despite backend support                             | `login-form.tsx:138-144`              |
 | L5  | [x]    | Reset-password keeps token in hidden form input unnecessarily             | `reset-form.tsx:67`                   |
 | L6  | [x]    | `EMAIL_NOT_VERIFIED` mapped via HTTP 403, not canonical code              | `login-form.tsx:44`                   |
-| L7  | [ ]    | Three Google fonts loaded — review if Geist Mono earns weight             | `layout.tsx:9-27`                     |
+| L7  | [x]    | Three Google fonts loaded — review if Geist Mono earns weight             | `layout.tsx:9-27`                     |
 | L8  | [ ]    | Inline brand hex strings instead of `--brand-*` tokens                    | multiple                              |
 | L9  | [ ]    | Two-bar hamburger in nav (visually unusual)                               | `card-nav.tsx:201-202`                |
 | L10 | [ ]    | `/verify-email/confirmed` may be orphaned                                 | `app/verify-email/confirmed/page.tsx` |
@@ -218,3 +218,4 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | 2026-05-21 | L4 | `d81ab15` | Apple sign-in button on `/login`, gated on `NEXT_PUBLIC_APPLE_ENABLED=true` so backend creds (`APPLE_CLIENT_ID` / `APPLE_CLIENT_SECRET` in `socialProviders.apple`) can be rolled out before exposing the UI. Inline `AppleGlyph` SVG. Wired through the same `authClient.signIn.social` path with `safeRedirect` callback. |
 | 2026-05-21 | L5 | `165fdcb` | Reset-password form no longer wires the token through RHF. The token comes from the URL prop and never changes during the form's lifetime — registering it as a hidden input added a DOM artefact (probed by some browser extensions) for zero benefit. `onSubmit` reads it from the prop directly; `formSchema` only extends with `confirmPassword`. |
 | 2026-05-21 | L6 | `4098cf5` | Login error mapper now matches on `code === 'EMAIL_NOT_VERIFIED'` only, not on bare `status === 403`. A banned/suspended account also returns 403, and showing 'Please verify your email' there was misleading. Better Auth always sets the canonical code on the unverified path, so the code-only check is sufficient. |
+| 2026-05-21 | L7 | (review only) | Reviewed Geist Mono usage: `font-mono text-[10px] uppercase tracking-[0.22em]` is the site-wide eyebrow microcopy pattern, appearing on virtually every page (talent, shoots, casters, artists, trust, pricing, contact, how-it-works, verify-email, register, suspended, and every onboarding step). It earns its weight. Keeping the three-font load (Geist sans + Geist mono + Instrument Serif). No code change. |
