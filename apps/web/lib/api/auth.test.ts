@@ -40,6 +40,7 @@ describe('lib/api/auth', () => {
       password: 'Strong1!',
       firstName: 'Jane',
       lastName: 'Doe',
+      dob: '1995-06-15',
       artistType: 'model',
     })
     expect(calls.length).toBe(1)
@@ -70,6 +71,7 @@ describe('lib/api/auth', () => {
         password: 'Strong1!',
         firstName: 'Jane',
         lastName: 'Doe',
+        dob: '1995-06-15',
         artistType: 'model',
       },
       { signal: controller.signal }

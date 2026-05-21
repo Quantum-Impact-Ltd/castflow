@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isOldEnoughToRegister } from './artist'
 
 const passwordSchema = z
   .string()
@@ -11,6 +12,12 @@ export const registerArtistSchema = z.object({
   password: passwordSchema,
   firstName: z.string().min(1).max(50).trim(),
   lastName: z.string().min(1).max(50).trim(),
+  // 18+ rule enforced at the earliest possible point so under-18s can't
+  // create an account they'll only fail later in onboarding.
+  dob: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine(isOldEnoughToRegister, 'You must be 18 or older to register on CastFlow'),
   // Artist craft (model vs actor) is chosen at onboarding step 1, not at
   // registration. We keep it optional here for backwards-compat with any
   // older clients; the API defaults to 'model' when omitted.

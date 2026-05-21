@@ -1,11 +1,25 @@
 import { z } from 'zod'
 
-const MIN_AGE = 18
+/**
+ * Minimum age for any artist on the platform. Hard rule — never lower this
+ * (see CLAUDE.md non-negotiable business rules).
+ */
+export const MIN_ARTIST_AGE = 18
 
-function ageCheck(dob: string) {
-  const age = (Date.now() - new Date(dob).getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-  return age >= MIN_AGE
+/**
+ * Returns true when `dob` (ISO date string, e.g. '1995-06-15') puts the
+ * person at least MIN_ARTIST_AGE years old today. Used by both the
+ * artistPersonalInfoSchema (onboarding) and registerArtistSchema (signup)
+ * so the 18+ check fires at the earliest possible point.
+ */
+export function isOldEnoughToRegister(dob: string): boolean {
+  const parsed = new Date(dob)
+  if (Number.isNaN(parsed.getTime())) return false
+  const age = (Date.now() - parsed.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+  return age >= MIN_ARTIST_AGE
 }
+
+const ageCheck = isOldEnoughToRegister
 
 export const artistPersonalInfoSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50).trim(),

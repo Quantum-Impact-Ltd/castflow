@@ -48,8 +48,18 @@ export function RegisterArtistForm() {
       confirmPassword: '',
       firstName: '',
       lastName: '',
+      dob: '',
     },
   })
+
+  // 18 years ago today — sets the latest selectable date on the picker so
+  // the picker UI itself reflects the 18+ rule. The zod schema is still the
+  // source of truth.
+  const dobMax = (() => {
+    const d = new Date()
+    d.setFullYear(d.getFullYear() - 18)
+    return d.toISOString().slice(0, 10)
+  })()
 
   const onSubmit = form.handleSubmit((values) => {
     setServerError(null)
@@ -129,6 +139,26 @@ export function RegisterArtistForm() {
           />
         </AuthField>
       </div>
+
+      <AuthField
+        label="Date of birth"
+        htmlFor="dob"
+        error={form.formState.errors.dob?.message}
+        hint={
+          <span className="text-[10px] uppercase tracking-[0.16em] text-white/40">
+            18+ only
+          </span>
+        }
+      >
+        <AuthInput
+          id="dob"
+          type="date"
+          autoComplete="bday"
+          max={dobMax}
+          aria-invalid={!!form.formState.errors.dob}
+          {...form.register('dob')}
+        />
+      </AuthField>
 
       <AuthField
         label="Email"

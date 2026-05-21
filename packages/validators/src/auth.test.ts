@@ -12,6 +12,7 @@ const validArtist = {
   password: 'Strong1!',
   firstName: 'Jane',
   lastName: 'Doe',
+  dob: '1995-06-15',
   artistType: 'model' as const,
 }
 
@@ -83,6 +84,29 @@ describe('registerArtistSchema', () => {
   it('V7: accepts valid input', () => {
     const result = registerArtistSchema.safeParse(validArtist)
     expect(result.success).toBe(true)
+  })
+
+  it('V7b: rejects DOB under 18 (M5 — hard rule, no exceptions)', () => {
+    const tooYoung = new Date()
+    tooYoung.setFullYear(tooYoung.getFullYear() - 17)
+    const result = registerArtistSchema.safeParse({
+      ...validArtist,
+      dob: tooYoung.toISOString().slice(0, 10),
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.dob).toBeDefined()
+    }
+  })
+
+  it('V7c: rejects empty/invalid DOB string', () => {
+    const empty = registerArtistSchema.safeParse({ ...validArtist, dob: '' })
+    expect(empty.success).toBe(false)
+    const garbage = registerArtistSchema.safeParse({
+      ...validArtist,
+      dob: 'not-a-date',
+    })
+    expect(garbage.success).toBe(false)
   })
 })
 

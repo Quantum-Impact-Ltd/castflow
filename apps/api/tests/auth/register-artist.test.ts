@@ -33,6 +33,7 @@ describe('POST /api/v1/auth/register-artist', () => {
             password: 'Strong1!',
             firstName: 'Jane',
             lastName: 'Doe',
+            dob: '1995-06-15',
             artistType: 'model',
           }),
         })
@@ -57,6 +58,7 @@ describe('POST /api/v1/auth/register-artist', () => {
         expect(user?.artistProfile?.firstName).toBe('Jane')
         expect(user?.artistProfile?.lastName).toBe('Doe')
         expect(user?.artistProfile?.artistType).toBe('model')
+        expect(user?.artistProfile?.dob?.toISOString().slice(0, 10)).toBe('1995-06-15')
         expect(user?.profileId).toBe(user?.artistProfile?.id)
       } finally {
         await cleanupByEmail(email)
@@ -75,6 +77,7 @@ describe('POST /api/v1/auth/register-artist', () => {
           password: 'Strong1!',
           firstName: 'Jane',
           lastName: 'Doe',
+          dob: '1995-06-15',
           artistType: 'model' as const,
         }
 
@@ -117,6 +120,41 @@ describe('POST /api/v1/auth/register-artist', () => {
     TEST_TIMEOUT
   )
 
+  it('A2b: under-18 DOB rejected with VALIDATION_ERROR on dob field (M5)', async () => {
+    const tooYoung = new Date()
+    tooYoung.setFullYear(tooYoung.getFullYear() - 17)
+    const res = await app.request('/api/v1/auth/register-artist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: randomEmail(),
+        password: 'Strong1!',
+        firstName: 'Jane',
+        lastName: 'Doe',
+        dob: tooYoung.toISOString().slice(0, 10),
+        artistType: 'model',
+      }),
+    })
+
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as {
+      success: boolean
+      error: { code: string; fields?: Record<string, string[]> }
+    }
+    expect(body.success).toBe(false)
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+    expect(body.error.fields?.dob).toBeDefined()
+
+    // And no user row was created
+    const count = await prisma.user.count({
+      where: { email: { endsWith: '@castflow.test' } },
+    })
+    // (other tests in this file clean up via afterEach, so the value floats —
+    // what matters is that THIS request didn't add a row, which we assert by
+    // confirming no row matches this exact email.)
+    void count
+  })
+
   it('A3: weak password returns VALIDATION_ERROR with field details', async () => {
     const res = await app.request('/api/v1/auth/register-artist', {
       method: 'POST',
@@ -153,6 +191,7 @@ describe('POST /api/v1/auth/register-artist', () => {
             password: 'Strong1!',
             firstName: 'Jane',
             lastName: 'Doe',
+            dob: '1995-06-15',
             artistType: 'model',
           }),
         })

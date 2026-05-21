@@ -191,6 +191,10 @@ export class AuthService {
             artistType: input.artistType ?? 'model',
             firstName: input.firstName,
             lastName: input.lastName,
+            // 18+ hard-checked at the validator layer (registerArtistSchema)
+            // so we can persist with confidence here. Onboarding step-personal
+            // still lets the artist correct typos later.
+            dob: new Date(input.dob),
           },
           select: { id: true },
         })
