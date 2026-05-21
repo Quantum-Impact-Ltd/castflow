@@ -32,14 +32,18 @@ const GENDER_OPTIONS = [
   { value: 'prefer_not_to_say', label: 'Prefer not to say' },
 ] as const
 
-const dobMax = (() => {
+// Computed inside the component so the value is recalculated on every render
+// rather than frozen at module load. A long-lived tab open across midnight
+// previously kept yesterday's cap on the date picker. (Audit L11.)
+function calculateDobMax(): string {
   const d = new Date()
   d.setFullYear(d.getFullYear() - 18)
   return d.toISOString().slice(0, 10)
-})()
+}
 
 export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
   const mutation = useUpdatePersonal()
+  const dobMax = calculateDobMax()
   const form = useForm<ArtistPersonalInfoInput>({
     resolver: zodResolver(artistPersonalInfoSchema),
     defaultValues: {
