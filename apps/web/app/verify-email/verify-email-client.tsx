@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Send } from 'lucide-react'
 import { z } from 'zod'
-import { AuthField, AuthInput } from '@/components/auth/auth-shell'
+import { AuthField, AuthInput } from '@/components/auth/auth-form-fields'
 import { useResendVerification } from '@/lib/hooks/use-auth'
 
 const emailSchema = z.string().trim().email()

@@ -7,7 +7,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowRight } from 'lucide-react'
 import { loginSchema, type LoginInput } from '@castflow/validators'
-import { AuthDivider, AuthField, AuthInput } from '@/components/auth/auth-shell'
+import {
+  AuthDivider,
+  AuthField,
+  AuthInput,
+} from '@/components/auth/auth-form-fields'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useLogin } from '@/lib/hooks/use-auth'
 import { postLoginPath } from '@/lib/auth-redirect'

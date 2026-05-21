@@ -11,7 +11,7 @@ import {
   resetPasswordSchema,
   type ResetPasswordInput,
 } from '@castflow/validators'
-import { AuthField, AuthInput } from '@/components/auth/auth-shell'
+import { AuthField, AuthInput } from '@/components/auth/auth-form-fields'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useResetPassword } from '@/lib/hooks/use-auth'
 

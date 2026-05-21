@@ -15,7 +15,7 @@ import {
 import {
   AuthField,
   AuthInput,
-} from '@/components/auth/auth-shell'
+} from '@/components/auth/auth-form-fields'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useRegisterArtist } from '@/lib/hooks/use-auth'
 import {
