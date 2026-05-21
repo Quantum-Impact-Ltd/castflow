@@ -67,8 +67,14 @@ async function betterAuthRequest<T>(path: string, opts: BetterAuthRequestOpts = 
   return payload as T
 }
 
+interface CaptchaArg {
+  /** Cloudflare Turnstile token. Required in environments where the
+   *  backend has TURNSTILE_SECRET_KEY set. (Audit H5.) */
+  captchaToken?: string
+}
+
 export function registerArtist(
-  input: RegisterArtistInput,
+  input: RegisterArtistInput & CaptchaArg,
   init?: FetcherInit
 ): Promise<RegistrationResult> {
   return fetcher<RegistrationResult>('/auth/register-artist', {
@@ -79,7 +85,7 @@ export function registerArtist(
 }
 
 export function registerCaster(
-  input: RegisterCasterInput,
+  input: RegisterCasterInput & CaptchaArg,
   init?: FetcherInit
 ): Promise<RegistrationResult> {
   return fetcher<RegistrationResult>('/auth/register-caster', {

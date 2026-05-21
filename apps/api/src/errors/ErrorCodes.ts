@@ -43,6 +43,8 @@ export const ErrorCodes = {
 
   // Throttling
   RATE_LIMITED: 'RATE_LIMITED',
+  CAPTCHA_REQUIRED: 'CAPTCHA_REQUIRED',
+  CAPTCHA_FAILED: 'CAPTCHA_FAILED',
 
   // Payouts / Stripe Connect
   PAYOUT_NOT_READY: 'PAYOUT_NOT_READY',

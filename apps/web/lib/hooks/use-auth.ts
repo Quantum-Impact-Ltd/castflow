@@ -26,14 +26,16 @@ function errorMessage(err: unknown): string {
 
 export function useRegisterArtist() {
   return useMutation({
-    mutationFn: (input: RegisterArtistInput) => registerArtist(input),
+    mutationFn: (input: RegisterArtistInput & { captchaToken?: string }) =>
+      registerArtist(input),
     onError: (err) => toast.error(errorMessage(err)),
   })
 }
 
 export function useRegisterCaster() {
   return useMutation({
-    mutationFn: (input: RegisterCasterInput) => registerCaster(input),
+    mutationFn: (input: RegisterCasterInput & { captchaToken?: string }) =>
+      registerCaster(input),
     onError: (err) => toast.error(errorMessage(err)),
   })
 }

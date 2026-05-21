@@ -18,6 +18,10 @@ import {
 } from '@/components/auth/auth-shell'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useRegisterCaster } from '@/lib/hooks/use-auth'
+import {
+  TurnstileWidget,
+  isTurnstileEnabled,
+} from '@/components/auth/turnstile-widget'
 import { cn } from '@/lib/utils'
 import type { ApiError } from '@/lib/fetcher'
 
@@ -44,6 +48,8 @@ export function RegisterCasterForm() {
   const router = useRouter()
   const mutation = useRegisterCaster()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const captchaEnabled = isTurnstileEnabled()
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -59,9 +65,17 @@ export function RegisterCasterForm() {
 
   const onSubmit = form.handleSubmit((values) => {
     setServerError(null)
-    const { confirmPassword: _c, ...payload } = values
+    if (captchaEnabled && !captchaToken) {
+      setServerError('Please complete the captcha to continue.')
+      return
+    }
+    const { confirmPassword: _c, ...rest } = values
     void _c
-    mutation.mutate(payload as RegisterCasterInput, {
+    const payload: RegisterCasterInput & { captchaToken?: string } = {
+      ...(rest as RegisterCasterInput),
+      ...(captchaToken ? { captchaToken } : {}),
+    }
+    mutation.mutate(payload, {
       onSuccess: (result) => {
         if (result.emailVerified) {
           toast.success('Account created — log in to continue')
@@ -218,9 +232,16 @@ export function RegisterCasterForm() {
         </p>
       ) : null}
 
+      {captchaEnabled && (
+        <TurnstileWidget
+          onVerify={setCaptchaToken}
+          onExpire={() => setCaptchaToken(null)}
+        />
+      )}
+
       <ShimmerButton
         type="submit"
-        disabled={mutation.isPending}
+        disabled={mutation.isPending || (captchaEnabled && !captchaToken)}
         background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
         shimmerColor="#ffffff"
         className="h-12 w-full px-6 text-sm font-semibold"

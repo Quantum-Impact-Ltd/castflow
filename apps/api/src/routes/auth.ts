@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { registerArtistSchema, registerCasterSchema } from '@castflow/validators'
 import { AuthService } from '../services/AuthService'
 import { rateLimit } from '../middleware/rateLimit'
+import { requireCaptcha } from '../middleware/captcha'
 import { AppError } from '../errors'
 
 export const authRoutes = new Hono()
@@ -14,7 +15,7 @@ const registerLimit = rateLimit({
   message: 'Too many registration attempts. Try again later.',
 })
 
-authRoutes.post('/register-artist', registerLimit, async (c) => {
+authRoutes.post('/register-artist', registerLimit, requireCaptcha, async (c) => {
   const parsed = registerArtistSchema.safeParse(await c.req.json())
   if (!parsed.success) {
     throw new AppError(
@@ -28,7 +29,7 @@ authRoutes.post('/register-artist', registerLimit, async (c) => {
   return c.json({ success: true, data: result })
 })
 
-authRoutes.post('/register-caster', registerLimit, async (c) => {
+authRoutes.post('/register-caster', registerLimit, requireCaptcha, async (c) => {
   const parsed = registerCasterSchema.safeParse(await c.req.json())
   if (!parsed.success) {
     throw new AppError(

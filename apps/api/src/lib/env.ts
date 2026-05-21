@@ -36,6 +36,12 @@ const envSchema = z.object({
   APPLE_CLIENT_ID: z.string().optional(),
   APPLE_CLIENT_SECRET: z.string().optional(),
 
+  // Cloudflare Turnstile secret for CAPTCHA verification on register
+  // endpoints. Optional — when unset the captcha middleware is a no-op
+  // (dev convenience). Wire the matching NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  // on the frontend; the widget only renders when both are present.
+  TURNSTILE_SECRET_KEY: z.string().optional(),
+
   // Dev-only: auto-verify newly registered users so they can log in without
   // a working Resend setup. Ignored when NODE_ENV === 'production' so it
   // can't leak into a live deployment by accident.

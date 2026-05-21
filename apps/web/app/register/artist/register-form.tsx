@@ -18,6 +18,10 @@ import {
 } from '@/components/auth/auth-shell'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useRegisterArtist } from '@/lib/hooks/use-auth'
+import {
+  TurnstileWidget,
+  isTurnstileEnabled,
+} from '@/components/auth/turnstile-widget'
 import type { ApiError } from '@/lib/fetcher'
 
 const formSchema = registerArtistSchema
@@ -33,6 +37,8 @@ export function RegisterArtistForm() {
   const router = useRouter()
   const mutation = useRegisterArtist()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const captchaEnabled = isTurnstileEnabled()
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -47,9 +53,17 @@ export function RegisterArtistForm() {
 
   const onSubmit = form.handleSubmit((values) => {
     setServerError(null)
-    const { confirmPassword: _confirm, ...payload } = values
+    if (captchaEnabled && !captchaToken) {
+      setServerError('Please complete the captcha to continue.')
+      return
+    }
+    const { confirmPassword: _confirm, ...rest } = values
     void _confirm
-    mutation.mutate(payload as RegisterArtistInput, {
+    const payload: RegisterArtistInput & { captchaToken?: string } = {
+      ...(rest as RegisterArtistInput),
+      ...(captchaToken ? { captchaToken } : {}),
+    }
+    mutation.mutate(payload, {
       onSuccess: (result) => {
         // Dev bypass: account is already verified, send straight to login so
         // they can sign in without checking email. Production keeps the
@@ -176,9 +190,16 @@ export function RegisterArtistForm() {
         </p>
       ) : null}
 
+      {captchaEnabled && (
+        <TurnstileWidget
+          onVerify={setCaptchaToken}
+          onExpire={() => setCaptchaToken(null)}
+        />
+      )}
+
       <ShimmerButton
         type="submit"
-        disabled={mutation.isPending}
+        disabled={mutation.isPending || (captchaEnabled && !captchaToken)}
         background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
         shimmerColor="#ffffff"
         className="h-12 w-full px-6 text-sm font-semibold"
