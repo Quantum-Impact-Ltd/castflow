@@ -13,6 +13,7 @@ import {
 } from '@castflow/validators'
 import { AuthField, AuthInput } from '@/components/auth/auth-form-fields'
 import { PasswordInput } from '@/components/auth/password-input'
+import { PasswordStrengthMeter } from '@/components/auth/password-strength-meter'
 import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useResetPassword } from '@/lib/hooks/use-auth'
 
@@ -84,6 +85,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           aria-invalid={!!form.formState.errors.password}
           {...form.register('password')}
         />
+        <PasswordStrengthMeter password={form.watch('password')} />
       </AuthField>
 
       <AuthField
