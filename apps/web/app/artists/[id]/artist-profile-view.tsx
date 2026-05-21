@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Lock, MapPin, Star, Sparkles, ChevronLeft } from 'lucide-react'
@@ -255,6 +255,16 @@ function Stat({
 
 function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
   const [active, setActive] = useState<PortfolioItem | null>(null)
+  // Track which thumbnail triggered the lightbox so we can return focus to it
+  // when the user dismisses (a11y — see M10).
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+
+  const closeLightbox = () => {
+    setActive(null)
+    // Defer the focus restore one tick so the lightbox's unmount + any
+    // focus-trap cleanup completes first.
+    requestAnimationFrame(() => triggerRef.current?.focus())
+  }
 
   if (items.length === 0) {
     return (
@@ -271,7 +281,10 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
           <button
             key={item.id}
             type="button"
-            onClick={() => setActive(item)}
+            onClick={(e) => {
+              triggerRef.current = e.currentTarget
+              setActive(item)
+            }}
             className={cn(
               'group relative aspect-[3/4] overflow-hidden rounded-xl border border-border/60 bg-[var(--surface-50)]',
               'transition-all duration-300 hover:border-foreground/30',
@@ -303,7 +316,7 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
         ))}
       </div>
 
-      {active && <Lightbox item={active} onClose={() => setActive(null)} />}
+      {active && <Lightbox item={active} onClose={closeLightbox} />}
     </>
   )
 }
@@ -315,18 +328,65 @@ function Lightbox({
   item: PortfolioItem
   onClose: () => void
 }) {
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  // ESC to close, Tab to cycle focus within the dialog. Initial focus lands
+  // on the close button. Return-focus to the trigger is handled by the
+  // parent's onClose so the close path is identical for ESC, ✕, and overlay
+  // click. (M10 — modal a11y.)
+  useEffect(() => {
+    closeBtnRef.current?.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+
+      // Lightweight focus trap: query the focusable elements inside the
+      // dialog at the moment Tab is pressed. The set is tiny (close button,
+      // optional video controls) so we don't bother memoising.
+      const root = dialogRef.current
+      if (!root) return
+      const focusables = root.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, video[controls], [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]!
+      const last = focusables[focusables.length - 1]!
+      const activeEl = document.activeElement as HTMLElement | null
+
+      if (e.shiftKey && activeEl === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && activeEl === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal
+      aria-label={item.caption ?? 'Portfolio item'}
       onClick={onClose}
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-6 backdrop-blur-md animate-in fade-in duration-200"
     >
       <button
+        ref={closeBtnRef}
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute right-6 top-6 text-white/80 transition-colors hover:text-white"
+        className="absolute right-6 top-6 text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-md"
       >
         ✕
       </button>
