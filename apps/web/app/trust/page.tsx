@@ -57,8 +57,10 @@ const PILLARS: Pillar[] = [
 
 interface PrivacyStage {
   stage: string
-  caster: string[]
-  artist: string[]
+  /** What the caster sees about the artist at this stage. */
+  casterSees: string[]
+  /** What the artist sees about the caster at this stage. */
+  artistSees: string[]
   tone: 'public' | 'shortlist' | 'booking' | 'signed'
 }
 
@@ -66,26 +68,26 @@ const PRIVACY_STAGES: PrivacyStage[] = [
   {
     stage: 'Public profile',
     tone: 'public',
-    caster: ['Company name', 'Industry'],
-    artist: ['First name', 'Profile portfolio', 'City', 'Stats & skills'],
+    casterSees: ['First name', 'Profile portfolio', 'City', 'Stats & skills'],
+    artistSees: ['Company name', 'Industry'],
   },
   {
     stage: 'Shortlisted',
     tone: 'shortlist',
-    caster: ['Company name', 'Job title only'],
-    artist: ['First name', 'Direct messaging unlocked'],
+    casterSees: ['First name', 'Direct messaging unlocked'],
+    artistSees: ['Company name', 'Job title only'],
   },
   {
     stage: 'Booking confirmed',
     tone: 'booking',
-    caster: ['Full company contact', 'Producer name & phone'],
-    artist: ['Full legal name', 'Phone for shoot logistics'],
+    casterSees: ['Full legal name', 'Phone for shoot logistics'],
+    artistSees: ['Full company contact', 'Producer name & phone'],
   },
   {
     stage: 'Contract fully signed',
     tone: 'signed',
-    caster: ['All of the above'],
-    artist: ['All of the above', 'Exact shoot location revealed'],
+    casterSees: ['All of the above'],
+    artistSees: ['All of the above', 'Exact shoot location revealed'],
   },
 ]
 
@@ -369,8 +371,8 @@ function PrivacyStageCard({ index, stage }: { index: number; stage: PrivacyStage
         {stage.stage}
       </h3>
       <div className="mt-6 space-y-4 text-sm">
-        <PrivacyList label="Caster sees" items={stage.artist} />
-        <PrivacyList label="Artist sees" items={stage.caster} />
+        <PrivacyList label="Caster sees" items={stage.casterSees} />
+        <PrivacyList label="Artist sees" items={stage.artistSees} />
       </div>
     </div>
   )
