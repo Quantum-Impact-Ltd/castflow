@@ -108,11 +108,16 @@ function buildSections(profile: MyArtistProfile): Section[] {
     })
 
     const skillCount = profile.skills.length
+    // Skills are optional in the artist onboarding gate (see
+    // apps/web/app/onboarding/artist/page.tsx::resolveFirstIncompleteStep —
+    // the case explicitly `continue`s without ever returning), so the review
+    // step must not flag 0 skills as `missing` or it would block submit on a
+    // field that isn't actually required. (Audit L13.)
     sections.push({
       key: 'skills',
       title: 'Skills',
-      tone: skillCount > 0 ? 'ok' : 'missing',
-      rows: [{ label: 'Tags', value: skillCount > 0 ? `${skillCount} added` : 'None added' }],
+      tone: 'ok',
+      rows: [{ label: 'Tags', value: skillCount > 0 ? `${skillCount} added` : 'None added (optional)' }],
     })
   }
 
