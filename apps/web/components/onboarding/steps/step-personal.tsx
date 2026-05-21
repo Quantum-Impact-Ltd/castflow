@@ -83,7 +83,7 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="firstName">First name</Label>
-          <Input id="firstName" autoComplete="given-name" autoFocus {...form.register('firstName')} />
+          <Input id="firstName" autoComplete="given-name" {...form.register('firstName')} />
           {form.formState.errors.firstName && (
             <p className="text-destructive text-xs">
               {form.formState.errors.firstName.message}
