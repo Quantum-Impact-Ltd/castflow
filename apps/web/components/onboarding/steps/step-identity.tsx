@@ -1,11 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
+import { useDropzone } from 'react-dropzone'
 import { CheckCircle2, FileText, Lock, UploadCloud, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { UPLOAD_LIMITS } from '@castflow/validators'
 import { useUploadFile } from '@/lib/hooks/use-uploads'
 import { useMyIdDocumentUrl } from '@/lib/hooks/use-artist'
+import { cn } from '@/lib/utils'
 import { StepNav } from '../step-nav'
 import type { MyArtistProfile } from '@/lib/api/artists'
 
@@ -20,7 +22,6 @@ const MAX_MB = UPLOAD_LIMITS.id_document.maxSizeMb
 
 export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
   const upload = useUploadFile()
-  const inputRef = useRef<HTMLInputElement>(null)
   const [lastUploadedName, setLastUploadedName] = useState<string | null>(null)
 
   const hasDocument = Boolean(profile.idDocumentUrl)
@@ -49,6 +50,20 @@ export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
     )
   }
 
+  // Single-file dropzone to match the portfolio step's UX (Audit M18).
+  // Click-to-browse still works; drag-and-drop is the new affordance.
+  const dropzone = useDropzone({
+    onDrop: (files) => handleFile(files[0] ?? null),
+    accept: {
+      'image/jpeg': [],
+      'image/png': [],
+      'application/pdf': [],
+    },
+    multiple: false,
+    maxSize: MAX_MB * 1024 * 1024,
+    disabled: upload.isPending,
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-4 backdrop-blur-xl">
@@ -76,7 +91,7 @@ export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
             </div>
             <button
               type="button"
-              onClick={() => inputRef.current?.click()}
+              onClick={dropzone.open}
               disabled={upload.isPending}
               className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white/75 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-50"
             >
@@ -113,29 +128,30 @@ export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
       )}
 
       {!hasDocument && (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={upload.isPending}
-          className="w-full cursor-pointer rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] p-10 text-center transition hover:border-white/30 hover:bg-white/[0.04] disabled:cursor-wait disabled:opacity-60"
+        <div
+          {...dropzone.getRootProps()}
+          className={cn(
+            'w-full cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition',
+            dropzone.isDragActive
+              ? 'border-[#f9a26c]/70 bg-[#f9a26c]/[0.04]'
+              : 'border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/[0.04]',
+            upload.isPending && 'cursor-wait opacity-60',
+          )}
         >
+          <input {...dropzone.getInputProps()} />
           <UploadCloud className="mx-auto mb-3 h-8 w-8 text-white/55" />
           <p className="text-sm font-medium text-white">
-            {upload.isPending ? 'Uploading…' : 'Upload your ID'}
+            {upload.isPending
+              ? 'Uploading…'
+              : dropzone.isDragActive
+                ? 'Drop to upload'
+                : 'Drag your ID here, or click to browse'}
           </p>
           <p className="mt-1 text-xs text-white/50">
             Passport or UK driving licence · JPG, PNG, or PDF · max {MAX_MB} MB
           </p>
-        </button>
+        </div>
       )}
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".jpg,.jpeg,.png,.pdf"
-        className="hidden"
-        onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-      />
 
       <div className="space-y-2 text-xs leading-relaxed text-white/55">
         <p>
