@@ -20,8 +20,9 @@ import {
   updateExperience,
   submitForReview,
 } from '@/lib/api/artists'
+import { queryKeys } from '@/lib/query-keys'
 
-const myProfileKey = ['artist', 'me'] as const
+const myProfileKey = queryKeys.artist.me()
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Something went wrong'

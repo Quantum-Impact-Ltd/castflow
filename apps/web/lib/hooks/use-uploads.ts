@@ -3,8 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { uploadFile, deletePortfolioItem, setPrimaryPortfolioItem, type UploadType } from '@/lib/api/uploads'
+import { queryKeys } from '@/lib/query-keys'
 
-const myProfileKey = ['artist', 'me'] as const
+const myProfileKey = queryKeys.artist.me()
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Upload failed'
