@@ -127,7 +127,12 @@ export function StepExperience({ profile, onBack, onNext }: StepExperienceProps)
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="instagramHandle">Instagram handle</Label>
+        <Label htmlFor="instagramHandle">
+          Instagram handle
+          <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+            (optional)
+          </span>
+        </Label>
         <div className="relative">
           <AtSign className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input

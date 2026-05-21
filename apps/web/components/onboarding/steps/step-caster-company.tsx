@@ -199,7 +199,12 @@ export function StepCasterCompany({ profile, onSkip, onNext }: StepCasterCompany
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">
+          Phone
+          <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+            (optional)
+          </span>
+        </Label>
         <div className="relative">
           <Phone className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
@@ -216,7 +221,12 @@ export function StepCasterCompany({ profile, onSkip, onNext }: StepCasterCompany
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="website">Website</Label>
+        <Label htmlFor="website">
+          Website
+          <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+            (optional)
+          </span>
+        </Label>
         <div className="relative">
           <Globe className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input

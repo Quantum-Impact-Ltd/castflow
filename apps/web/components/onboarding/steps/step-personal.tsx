@@ -141,7 +141,12 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="pronouns">Pronouns</Label>
+          <Label htmlFor="pronouns">
+            Pronouns
+            <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+              (optional)
+            </span>
+          </Label>
           <Input id="pronouns" placeholder="she/her, they/them…" {...form.register('pronouns')} />
           <p className="text-muted-foreground text-xs">Optional. Shown on your profile.</p>
         </div>
@@ -157,7 +162,12 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
 
       <div className="space-y-1.5">
         <div className="flex items-end justify-between gap-2">
-          <Label htmlFor="bio">Bio</Label>
+          <Label htmlFor="bio">
+            Bio
+            <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+              (optional)
+            </span>
+          </Label>
           <span className="text-muted-foreground text-xs tabular-nums">
             {bio.length} / 300
           </span>
