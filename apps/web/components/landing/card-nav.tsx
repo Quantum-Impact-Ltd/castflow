@@ -1,10 +1,33 @@
 'use client'
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
-import { gsap } from 'gsap'
+// Type-only import — brings `gsap` into the type/namespace space without
+// shipping the library to the initial bundle. (Audit M14 — the actual
+// module load happens dynamically on the user's first hamburger tap.)
+import type { gsap } from 'gsap'
 import './card-nav.css'
+
+// Minimal value-type for the gsap default export. We can't use
+// `typeof gsap` here because the import above is type-only (the identifier
+// doesn't exist in the value space, so `typeof` rejects it).
+type GsapModule = {
+  set: (target: unknown, vars: Record<string, unknown>) => unknown
+  timeline: (vars?: Record<string, unknown>) => gsap.core.Timeline
+}
+
+// Cache the dynamic-import promise so multiple CardNav instances share one
+// network fetch + one parsed module.
+let gsapModulePromise: Promise<GsapModule> | null = null
+function loadGsap(): Promise<GsapModule> {
+  if (!gsapModulePromise) {
+    gsapModulePromise = import('gsap').then(
+      (m) => m.gsap as unknown as GsapModule,
+    )
+  }
+  return gsapModulePromise
+}
 
 export interface CardNavLink {
   label: string
@@ -58,6 +81,7 @@ export function CardNav({
   const navRef = useRef<HTMLElement | null>(null)
   const cardsRef = useRef<Array<HTMLDivElement | null>>([])
   const tlRef = useRef<gsap.core.Timeline | null>(null)
+  const gsapRef = useRef<GsapModule | null>(null)
 
   const calculateHeight = (): number => {
     const navEl = navRef.current
@@ -95,14 +119,16 @@ export function CardNav({
     return 260
   }
 
-  const createTimeline = (): gsap.core.Timeline | null => {
+  const createTimeline = (
+    g: GsapModule,
+  ): gsap.core.Timeline | null => {
     const navEl = navRef.current
     if (!navEl) return null
 
-    gsap.set(navEl, { height: 60, overflow: 'hidden' })
-    gsap.set(cardsRef.current, { y: 50, opacity: 0 })
+    g.set(navEl, { height: 60, overflow: 'hidden' })
+    g.set(cardsRef.current, { y: 50, opacity: 0 })
 
-    const tl = gsap.timeline({ paused: true })
+    const tl = g.timeline({ paused: true })
 
     tl.to(navEl, {
       height: calculateHeight,
@@ -119,33 +145,29 @@ export function CardNav({
     return tl
   }
 
-  useLayoutEffect(() => {
-    const tl = createTimeline()
-    tlRef.current = tl
-
-    return () => {
-      tl?.kill()
-      tlRef.current = null
-    }
-  }, [ease, items])
-
-  useLayoutEffect(() => {
+  // GSAP is loaded on first hamburger tap (see loadGsap() at top of file).
+  // Until then there's no timeline and no animation; the nav is just a
+  // collapsed shell driven by CSS — which is exactly the state most users
+  // who scroll past the nav ever see.
+  useEffect(() => {
+    if (!gsapRef.current) return
     const handleResize = () => {
-      if (!tlRef.current) return
+      const g = gsapRef.current
+      if (!g || !tlRef.current) return
 
       if (isExpanded) {
         const newHeight = calculateHeight()
-        gsap.set(navRef.current, { height: newHeight })
+        g.set(navRef.current, { height: newHeight })
 
         tlRef.current.kill()
-        const newTl = createTimeline()
+        const newTl = createTimeline(g)
         if (newTl) {
           newTl.progress(1)
           tlRef.current = newTl
         }
       } else {
         tlRef.current.kill()
-        const newTl = createTimeline()
+        const newTl = createTimeline(g)
         if (newTl) {
           tlRef.current = newTl
         }
@@ -157,17 +179,31 @@ export function CardNav({
   }, [isExpanded])
 
   const toggleMenu = () => {
+    // Open path: ensure GSAP is loaded, then build the timeline if it's the
+    // first interaction. The dynamic import is cached so subsequent toggles
+    // are synchronous.
+    if (!isExpanded) {
+      void loadGsap().then((g) => {
+        gsapRef.current = g
+        if (!tlRef.current) {
+          tlRef.current = createTimeline(g)
+        }
+        const tl = tlRef.current
+        if (!tl) return
+        setIsHamburgerOpen(true)
+        setIsExpanded(true)
+        tl.play(0)
+      })
+      return
+    }
+
+    // Close path: timeline must exist (we couldn't have gotten here without
+    // having opened it first).
     const tl = tlRef.current
     if (!tl) return
-    if (!isExpanded) {
-      setIsHamburgerOpen(true)
-      setIsExpanded(true)
-      tl.play(0)
-    } else {
-      setIsHamburgerOpen(false)
-      tl.eventCallback('onReverseComplete', () => setIsExpanded(false))
-      tl.reverse()
-    }
+    setIsHamburgerOpen(false)
+    tl.eventCallback('onReverseComplete', () => setIsExpanded(false))
+    tl.reverse()
   }
 
   const closeMenu = () => {
