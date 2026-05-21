@@ -66,13 +66,50 @@ fix. `bun run lint` has 8 pre-existing errors in `artist-profile-view.tsx`
 - **L18** (suspended page Metadata import) — fixed via H10
 - **H12** had already shipped via C4 (typeof-window SSR hack in shoot-detail)
 
-**Audit status:** 7/7 Critical + 17/17 High closed (28 issues fixed total this
-session including spillover). **38 issues remain** — 23 Medium, 18 Low minus
-the spillovers already done (M13, M21 from Criticals; L14, L18 from H10/C7;
-H12 from C4). See `AUDIT.md` for the live tracker.
+**Medium batch (also fixed this session):**
 
-**Remaining audit work:** All Medium and Low rows. See `AUDIT-HANDOFF.md`
+| ID(s) | Commit | Fix |
+| ----- | ------ | --- |
+| M1 | `dcb39ca` | Strip `'use client'` from `AuthShell` (atmospheric layer no longer ships as JS on conversion-critical auth routes). Form primitives split into `auth-form-fields.tsx`. |
+| M2 | `8abc893` | Login form prefills email from `?email=` query (sanitized) — closes the loop on the register-flow duplicate-email redirect. autoFocus moves to password when prefilled. |
+| M3 | `df1f3d6` | Open-redirect bypass on `safeRedirect` — extracted to `lib/safe-redirect.ts` with vitest coverage for protocol-relative, backslash, URL-encoded `%5C`/`%2F`, and control-char vectors. |
+| M4 | `0a0ac4e` | `fetcher` skips its 401→/login redirect when already on `/login`, `/register*`, `/forgot-password`, `/reset-password*`, `/verify-email*`, or `/suspended`. |
+| M5 | `3476876` | DOB collected at artist registration with 18+ enforcement. Shared `isOldEnoughToRegister` helper used by both signup and onboarding personal step. New validator + API tests. |
+| M6 | `58da926` | `<PasswordInput>` show/hide toggle wired into all 6 password fields (login, reset×2, register-artist×2, register-caster×2). |
+| M7 (meter) | `c3a6058` | `<PasswordStrengthMeter>` — rules-based, zero-deps — on register-artist, register-caster (compact), reset-password. **Row stays `[~]`** — HIBP k-anonymity breach-check half deferred (external network dep + privacy disclosure). |
+| M8 | `b273fb5` | Aligned caster register-form password hint copy with artist. |
+| M9 (how-it-works) | `d4a6569` | `how-it-works-content.tsx` is now a server component; `FlowBeamSection` (the only `useRef` island) extracted to `flow-beam-section.tsx`. **Row stays `[~]`** — talent/shoots content files still 100% client because their filter state lives at the page root; warrants its own session. |
+| M10 | `f7cb23c` | Portfolio lightbox: ESC, Tab focus trap, initial focus on ✕, focus restored to the originating thumbnail on close. |
+| M11 | `5b068b8` | Server-component `<SkipLink>` at top of body; targets a `#main-content` anchor in SessionProvider so it works for every route including AuthShell pages. |
+| M12 | `116ba79` | Global `@media (prefers-reduced-motion: reduce)` clamp on animation-duration / transition-duration / scroll-behavior. JS motion libs already check OS pref independently. |
+| M14 | `ae5392a` | GSAP no longer in the landing-page initial bundle — `card-nav.tsx` uses `import type` + a cached `loadGsap()` dynamic-import gated on first hamburger tap. |
+| M15 | `e2b81f5` | `useDebouncedValue<T>` hook; 250ms debounce on `/talent` and `/shoots` free-text query. Select facets stay sync. |
+| M16 | `cdf38e0` | XHR-based `putWithProgress()` replaces `fetch()` for R2 PUTs, emitting `onProgress(0–100)` + `AbortSignal` support. step-portfolio renders per-file placeholder cards with progress bars. |
+| M17 | `3f12f42` | Failed portfolio uploads keep the original `File` handle in pending state. Red placeholder card surfaces Retry (re-fires the mutation) and Dismiss controls. |
+| M18 | `9777db4` | `react-dropzone` on step-identity for drag-and-drop parity with portfolio. Hidden `<input ref>` pattern removed. |
+| M19 | `eb15e3d` | Shell exit label renamed from "Save & exit" → "Exit" (was a lie). `useBeforeUnloadWarning` wired into the four form-bearing steps gated on RHF `isDirty && !isPending`. Full per-step autosave deferred. |
+| M20 | `a21daa9` | `StepReview.handleSubmit` pre-validates the local `tone === 'missing'` flags before firing the submit mutation; jumps the stepper to the first incomplete section + toasts a fix-it message instead of round-tripping the API. |
+| M22 | `58aa461` | 30s cooldown on the pending-page "Check application status" button with a live countdown label. |
+| M23 | `86ad083` | End-to-end caster logo upload: `CasterProfile.logoUrl` column, `caster_logo` upload type in validators, `UploadService.confirmUpload` writes the URL, `PATCH /casters/me { logoUrl: null }` for clears, dropzone + preview in step-caster-company. **Requires `bunx prisma db push` on next deploy** (additive nullable column, no data migration). |
+
+**Spillover wins on the Medium batch:**
+
+- **M13** (contact form honeypot) — already shipped via C6
+- **M21** (suspended/banned blocked on onboarding) — already shipped via C7
+- **L14** (noindex on onboarding pages) — already shipped via C7
+
+**Audit status:** 7/7 Critical + 17/17 High + 23/23 Medium closed
+(21 `[x]` + 2 `[~]` partials for M7 and M9). **18 issues remain** — all
+Low (L1–L18), minus L14 + L18 which spilled out via C7 and H10. See
+`AUDIT.md` for the live tracker.
+
+**Remaining audit work:** Low rows only. See `AUDIT-HANDOFF.md`
 (repo root) for the working pattern a fresh session should follow.
+
+**Operational note for the next deploy:** `bunx prisma db push` is
+required so the new `caster_profiles.logo_url` column (M23) lands in
+Postgres. The change is additive nullable — no data migration needed
+and old rows default to NULL.
 
 **New env vars added in remediation:**
 
@@ -99,6 +136,14 @@ H12 from C4). See `AUDIT.md` for the live tracker.
 - `apps/web/lib/hooks/use-contact.ts`
 - `apps/web/lib/site.ts` (H8 SEO constants)
 - `packages/validators/src/contact.ts`
+- `apps/web/components/auth/auth-form-fields.tsx` (M1)
+- `apps/web/components/auth/password-input.tsx` (M6)
+- `apps/web/components/auth/password-strength-meter.tsx` (M7)
+- `apps/web/components/a11y/skip-link.tsx` (M11)
+- `apps/web/lib/safe-redirect.ts` + `.test.ts` (M3)
+- `apps/web/lib/hooks/use-debounced-value.ts` (M15)
+- `apps/web/lib/hooks/use-before-unload-warning.ts` (M19)
+- `apps/web/app/how-it-works/flow-beam-section.tsx` (M9 partial)
 
 ---
 
