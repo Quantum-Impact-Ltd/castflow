@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
 import { Providers } from '@/providers'
 import { SessionProvider, type ResolvedSession } from '@/providers/session-provider'
 import { auth } from '@/lib/auth-server'
+import { SITE_URL, SITE_NAME, SITE_DEFAULT_OG } from '@/lib/site'
 import './globals.css'
 
 const geistSans = Geist({
@@ -27,9 +28,29 @@ const instrumentSerif = Instrument_Serif({
 })
 
 export const metadata: Metadata = {
-  title: 'CastFlow — UK Casting Marketplace',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — UK Casting Marketplace`,
+    template: `%s — ${SITE_NAME}`,
+  },
   description:
     'Cast verified UK models and actors in days. Contracts, escrow payments, and reviews built in.',
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    url: SITE_URL,
+    title: `${SITE_NAME} — UK Casting Marketplace`,
+    description:
+      'Cast verified UK models and actors in days. Contracts, escrow payments, and reviews built in.',
+    images: [{ url: SITE_DEFAULT_OG, width: 1200, height: 630, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} — UK Casting Marketplace`,
+    description:
+      'Cast verified UK models and actors in days. Contracts, escrow payments, and reviews built in.',
+    images: [SITE_DEFAULT_OG],
+  },
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
