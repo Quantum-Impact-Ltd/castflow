@@ -107,7 +107,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | L7  | [x]    | Three Google fonts loaded — review if Geist Mono earns weight             | `layout.tsx:9-27`                     |
 | L8  | [ ]    | Inline brand hex strings instead of `--brand-*` tokens                    | multiple                              |
 | L9  | [ ]    | Two-bar hamburger in nav (visually unusual)                               | `card-nav.tsx:201-202`                |
-| L10 | [ ]    | `/verify-email/confirmed` may be orphaned                                 | `app/verify-email/confirmed/page.tsx` |
+| L10 | [x]    | `/verify-email/confirmed` may be orphaned                                 | `app/verify-email/confirmed/page.tsx` |
 | L11 | [ ]    | `dobMax` calculated at module load                                        | `step-personal.tsx:34-38`             |
 | L12 | [ ]    | `autoFocus` on every step's first input is aggressive on mobile           | all step components                   |
 | L13 | [ ]    | Skills step inconsistency (review says missing, stepper says passable)    | `step-review.tsx:114` vs `page.tsx:200-202` |
