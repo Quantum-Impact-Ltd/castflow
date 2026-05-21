@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
 import { Providers } from '@/providers'
 import { SessionProvider, type ResolvedSession } from '@/providers/session-provider'
+import { SkipLink } from '@/components/a11y/skip-link'
 import { auth } from '@/lib/auth-server'
 import { SITE_URL, SITE_NAME, SITE_DEFAULT_OG } from '@/lib/site'
 import './globals.css'
@@ -67,8 +68,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
     >
       <body>
+        <SkipLink />
         <Providers>
-          <SessionProvider initialSession={initialSession}>{children}</SessionProvider>
+          <SessionProvider initialSession={initialSession}>
+            {/* Skip-link target — `tabIndex={-1}` so the browser can focus
+             *  it programmatically without putting it in the keyboard tab
+             *  order itself. Every route renders inside this span, so the
+             *  skip link works site-wide including AuthShell pages. */}
+            <span id="main-content" tabIndex={-1} className="sr-only" />
+            {children}
+          </SessionProvider>
         </Providers>
       </body>
     </html>
