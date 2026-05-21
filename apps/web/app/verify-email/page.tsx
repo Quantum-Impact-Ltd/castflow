@@ -11,6 +11,19 @@ export const metadata = {
   description: 'We sent a verification link to your email.',
 }
 
+function VerifyEmailClientSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden>
+      <div className="mx-auto h-3 w-32 rounded bg-white/10" />
+      <div className="space-y-2">
+        <div className="h-3 w-20 rounded bg-white/10" />
+        <div className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04]" />
+      </div>
+      <div className="h-11 w-full rounded-xl bg-white/[0.06]" />
+    </div>
+  )
+}
+
 export default async function VerifyEmailPage() {
   // If the user is already authenticated (incl. dev-bypass auto-verified),
   // skip the "check your inbox" screen and send them to their dashboard.
@@ -56,7 +69,7 @@ export default async function VerifyEmailPage() {
       </div>
 
       <div className="mt-6 border-t border-white/10 pt-6">
-        <Suspense fallback={null}>
+        <Suspense fallback={<VerifyEmailClientSkeleton />}>
           <VerifyEmailClient />
         </Suspense>
       </div>
