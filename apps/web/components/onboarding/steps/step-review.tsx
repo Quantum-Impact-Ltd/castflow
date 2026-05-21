@@ -181,6 +181,19 @@ export function StepReview({ profile, onBack, onJumpTo }: StepReviewProps) {
   const cardRefs = useRef<Partial<Record<JumpableKey, HTMLDivElement | null>>>({})
 
   const handleSubmit = () => {
+    // Pre-validate locally — buildSections() already knows which sections
+    // are incomplete (missing required fields, < 3 portfolio photos, no ID
+    // doc). Jump to the first missing one without round-tripping the API,
+    // which would just bounce a VALIDATION_ERROR. Server validation stays
+    // authoritative for anything the client can't see. (Audit M20.)
+    const firstMissing = sections.find((s) => s.tone === 'missing')
+    if (firstMissing) {
+      onJumpTo(firstMissing.key)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      toast.error(`Please complete the ${firstMissing.title} section before submitting.`)
+      return
+    }
+
     submit.mutate(undefined, {
       onSuccess: () => {
         toast.success('Application submitted')
@@ -225,9 +238,9 @@ export function StepReview({ profile, onBack, onJumpTo }: StepReviewProps) {
         <div className="flex items-start gap-2 rounded-lg border border-rose-400/20 bg-rose-400/[0.06] p-3 text-xs text-rose-200">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            Some sections look incomplete. You can submit anyway, but the backend will
-            reject the application if any required field is missing or there are fewer
-            than 3 portfolio photos.
+            Some sections look incomplete — fill these in before submitting.
+            Submit-for-review needs all required fields, at least 3 portfolio
+            photos, and your ID document.
           </span>
         </div>
       )}
