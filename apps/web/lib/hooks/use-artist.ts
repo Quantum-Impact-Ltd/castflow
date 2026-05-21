@@ -12,6 +12,7 @@ import type {
 } from '@castflow/validators'
 import {
   getMyProfile,
+  getMyIdDocumentUrl,
   updateArtistType,
   replaceSkills,
   updatePersonal,
@@ -32,6 +33,22 @@ export function useMyArtistProfile() {
   return useQuery({
     queryKey: myProfileKey,
     queryFn: ({ signal }) => getMyProfile({ signal }),
+  })
+}
+
+/**
+ * Short-lived presigned read URL for the artist's own ID document. Enabled
+ * only when they actually have one on file (caller passes `enabled`). The
+ * URL itself expires in 10 minutes; refetched on demand.
+ */
+export function useMyIdDocumentUrl(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.artist.idDocumentUrl(),
+    queryFn: ({ signal }) => getMyIdDocumentUrl({ signal }),
+    enabled,
+    // No automatic refetch — the URL is short-lived; let the user click
+    // "View document" again if it expired.
+    staleTime: 9 * 60 * 1000,
   })
 }
 

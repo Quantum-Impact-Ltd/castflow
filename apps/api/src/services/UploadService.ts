@@ -1,4 +1,4 @@
-import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import type { PresignedUrlInput, ConfirmUploadInput } from '@castflow/validators'
 import { UPLOAD_LIMITS } from '@castflow/validators'
@@ -167,6 +167,35 @@ export class UploadService {
       }
     })
     return { deleted: true as const, id: itemId }
+  }
+
+  /**
+   * Short-lived presigned GET for the calling artist's OWN ID document. Only
+   * the owner can call this; the URL is single-use-ish (10 min lifetime) so
+   * even if the artist's session is shoulder-surfed the URL expires fast.
+   * Admins read ID docs through the admin surface, not this endpoint. (H14.)
+   */
+  static async getMyIdDocumentUrl(userId: string): Promise<{
+    url: string
+    expiresIn: number
+    contentTypeHint: 'image' | 'pdf' | 'unknown'
+  } | null> {
+    const profile = await prisma.artistProfile.findUnique({
+      where: { userId },
+      select: { idDocumentUrl: true },
+    })
+    if (!profile?.idDocumentUrl) return null
+    const key = profile.idDocumentUrl
+    const command = new GetObjectCommand({ Bucket: Buckets.private, Key: key })
+    const expiresIn = 60 * 10
+    const url = await getSignedUrl(r2, command, { expiresIn })
+    const lower = key.toLowerCase()
+    const contentTypeHint: 'image' | 'pdf' | 'unknown' = lower.endsWith('.pdf')
+      ? 'pdf'
+      : /\.(jpe?g|png)$/.test(lower)
+        ? 'image'
+        : 'unknown'
+    return { url, expiresIn, contentTypeHint }
   }
 
   static async setPrimaryPortfolioItem(userId: string, itemId: string) {

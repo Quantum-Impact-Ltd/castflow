@@ -40,6 +40,19 @@ export function getMyProfile(init?: Init): Promise<MyArtistProfile> {
   return fetcher<MyArtistProfile>('/artists/me', { method: 'GET', ...init })
 }
 
+export interface IdDocumentUrlResponse {
+  url: string
+  expiresIn: number
+  contentTypeHint: 'image' | 'pdf' | 'unknown'
+}
+
+export function getMyIdDocumentUrl(init?: Init): Promise<IdDocumentUrlResponse> {
+  return fetcher<IdDocumentUrlResponse>('/artists/me/id-document/url', {
+    method: 'GET',
+    ...init,
+  })
+}
+
 export function updateArtistType(input: UpdateArtistTypeInput, init?: Init) {
   return fetcher<MyArtistProfile>('/artists/me/type', {
     method: 'PATCH',

@@ -11,6 +11,7 @@ import {
 import { authenticate } from '../middleware/authenticate'
 import { requireRole } from '../middleware/requireRole'
 import { ArtistService } from '../services/ArtistService'
+import { UploadService } from '../services/UploadService'
 import { AppError } from '../errors'
 
 interface UserCtx {
@@ -91,6 +92,22 @@ artistRoutes.post('/me/submit', authenticate, requireRole('artist'), async (c) =
   const user = c.get('user')
   const profile = await ArtistService.submitForReview(user.id)
   return c.json({ success: true, data: profile })
+})
+
+// Presigned read URL for the artist's own ID document. Used by the
+// onboarding ID step to show a preview / "View document" after upload
+// so the artist can confirm they uploaded the right file before
+// submitting for review. (Audit H14.)
+artistRoutes.get('/me/id-document/url', authenticate, requireRole('artist'), async (c) => {
+  const user = c.get('user')
+  const result = await UploadService.getMyIdDocumentUrl(user.id)
+  if (!result) {
+    return c.json(
+      { success: false, error: { code: 'NOT_FOUND', message: 'No ID document on file' } },
+      404,
+    )
+  }
+  return c.json({ success: true, data: result })
 })
 
 /**

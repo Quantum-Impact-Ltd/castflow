@@ -23,6 +23,7 @@ export const queryKeys = {
   },
   artist: {
     me: () => ['artist', 'me'] as const,
+    idDocumentUrl: () => ['artist', 'me', 'id-document', 'url'] as const,
     bids: () => ['artist', 'bids'] as const,
     earnings: () => ['artist', 'earnings'] as const,
     payouts: () => ['artist', 'payouts'] as const,
