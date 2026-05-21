@@ -1,12 +1,25 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
+import type { Metadata } from 'next'
 import { ShieldAlert, Mail } from 'lucide-react'
+import { auth } from '@/lib/auth-server'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Account suspended — CastFlow',
   description: 'Your CastFlow account has been suspended.',
+  robots: { index: false, follow: false },
 }
 
-export default function SuspendedPage() {
+export default async function SuspendedPage() {
+  // Gate this page so casual visitors / curious users / bots can't load it.
+  // Only signed-in users whose status is actually suspended or banned see
+  // it. Everyone else gets bounced home. (Audit H10 + L18.)
+  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null)
+  if (!session?.user) redirect('/login')
+  const status = (session.user as { status?: string }).status
+  if (status !== 'suspended' && status !== 'banned') redirect('/')
+
   return (
     <div className="relative isolate grid min-h-screen w-full place-items-center overflow-hidden bg-[var(--ink-900)] px-4 text-white">
       <div
