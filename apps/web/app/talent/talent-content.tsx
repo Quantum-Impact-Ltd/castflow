@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, BadgeCheck, MapPin, Search, SlidersHorizontal, Star } from 'lucide-react'
 import { Reveal } from '@/components/landing/reveal'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
@@ -53,6 +54,10 @@ const EXPERIENCE_LABEL: Record<Exclude<ExperienceFilter, 'all'>, string> = {
 export function TalentContent() {
   const allArtists = useMemo(() => Object.values(MOCK_ARTISTS), [])
   const [query, setQuery] = useState('')
+  // Debounce the free-text query so re-filtering doesn't run on every
+  // keystroke. Select-based facets below stay synchronous because they
+  // only change on user action, not on every key. (Audit M15.)
+  const debouncedQuery = useDebouncedValue(query, 250)
   const [type, setType] = useState<TypeFilter>('all')
   const [city, setCity] = useState<string>('all')
   const [exp, setExp] = useState<ExperienceFilter>('all')
@@ -66,7 +71,7 @@ export function TalentContent() {
   }, [allArtists])
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = debouncedQuery.trim().toLowerCase()
     const matched = allArtists.filter((a) => {
       if (type !== 'all' && a.artistType !== type) return false
       if (city !== 'all' && a.city !== city) return false
@@ -86,7 +91,7 @@ export function TalentContent() {
       sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }
     return sorted
-  }, [allArtists, query, type, city, exp, avail, sort])
+  }, [allArtists, debouncedQuery, type, city, exp, avail, sort])
 
   const featured = useMemo(
     () => [...allArtists].sort((a, b) => Number(b.ratingAvg ?? 0) - Number(a.ratingAvg ?? 0))[0]!,

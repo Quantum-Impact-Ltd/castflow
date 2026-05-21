@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, CalendarDays, MapPin, Users, Search, SlidersHorizontal } from 'lucide-react'
 import { Reveal } from '@/components/landing/reveal'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
@@ -47,6 +48,9 @@ const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
 
 export function ShootsContent() {
   const [query, setQuery] = useState('')
+  // Debounce the free-text query so re-filtering doesn't fire on every
+  // keystroke. (Audit M15.)
+  const debouncedQuery = useDebouncedValue(query, 250)
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [city, setCity] = useState<string>('all')
   const [payment, setPayment] = useState<PaymentFilter>('all')
@@ -59,7 +63,7 @@ export function ShootsContent() {
   }, [])
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = debouncedQuery.trim().toLowerCase()
     const matched = MOCK_SHOOTS.filter((s) => {
       if (category !== 'all' && s.category !== category) return false
       if (city !== 'all' && s.locationCity !== city) return false
@@ -78,7 +82,7 @@ export function ShootsContent() {
       sorted.sort((a, b) => (b.rateAmount ?? 0) - (a.rateAmount ?? 0))
     }
     return sorted
-  }, [query, category, city, payment, sort])
+  }, [debouncedQuery, category, city, payment, sort])
 
   const featured = MOCK_SHOOTS[0]!
   const reset = () => {
