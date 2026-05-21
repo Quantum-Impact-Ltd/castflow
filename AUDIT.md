@@ -31,12 +31,12 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | ID  | Status | Issue                                                                           | Location                                                | Fix                                                                                |
 | --- | ------ | ------------------------------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | C1  | [x]    | Verify-email token consumed by SSR GET on prefetch / email-scanner link warming | `app/verify-email/[token]/page.tsx:13-26`               | Require user gesture: render confirm button that POSTs token on click              |
-| C2  | [ ]    | `/api/auth/send-verification-email` has no rate limit (email-bomb vector)       | `apps/api/src/index.ts:52-69`                           | Add `rateLimit({ windowMs: 3600_000, max: 5 })` keyed on email body, not just IP   |
-| C3  | [ ]    | Caster onboarding gate silently fails open on any fetch error                   | `app/(caster)/layout.tsx:38-40`                         | Remove swallow; redirect to `/onboarding/caster` on non-OK                         |
-| C4  | [ ]    | Blurred `shootLocationDetail` ships in DOM (DevTools reveals)                   | `app/shoots/[id]/shoot-detail-view.tsx:521-526`         | Server-render placeholder only; never include value until contract fully signed    |
-| C5  | [ ]    | Trust page `PrivacyStageCard` labels swapped (artist/caster sees…)              | `app/trust/page.tsx:372-373`                            | Swap items props or rename data fields                                             |
-| C6  | [ ]    | Contact form is mocked; toast renders literal `&apos;`                          | `app/contact/contact-content.tsx:99-109`                | Wire to Hono endpoint or remove form; fix `&apos;` → `'`                           |
-| C7  | [ ]    | Onboarding layout doesn't role-check                                            | `app/onboarding/layout.tsx:5-9`                         | Read `session.user.role`, redirect mismatch via `postLoginPath`                    |
+| C2  | [x]    | `/api/auth/send-verification-email` has no rate limit (email-bomb vector)       | `apps/api/src/index.ts:52-69`                           | Add `rateLimit({ windowMs: 3600_000, max: 5 })` keyed on email body, not just IP   |
+| C3  | [x]    | Caster onboarding gate silently fails open on any fetch error                   | `app/(caster)/layout.tsx:38-40`                         | Remove swallow; redirect to `/onboarding/caster` on non-OK                         |
+| C4  | [x]    | Blurred `shootLocationDetail` ships in DOM (DevTools reveals)                   | `app/shoots/[id]/shoot-detail-view.tsx:521-526`         | Server-render placeholder only; never include value until contract fully signed    |
+| C5  | [x]    | Trust page `PrivacyStageCard` labels swapped (artist/caster sees…)              | `app/trust/page.tsx:372-373`                            | Swap items props or rename data fields                                             |
+| C6  | [x]    | Contact form is mocked; toast renders literal `&apos;`                          | `app/contact/contact-content.tsx:99-109`                | Wire to Hono endpoint or remove form; fix `&apos;` → `'`                           |
+| C7  | [x]    | Onboarding layout doesn't role-check                                            | `app/onboarding/layout.tsx:5-9`                         | Read `session.user.role`, redirect mismatch via `postLoginPath`                    |
 
 ---
 
@@ -55,7 +55,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | H9   | [ ]    | Instagram external link missing `rel="noopener"`                   | `artist-profile-view.tsx:170-171`                                                       | Change `rel="noreferrer"` → `rel="noopener noreferrer"`                   |
 | H10  | [ ]    | `/suspended` accessible to anyone                                  | `app/suspended/page.tsx:9`                                                              | Server-side redirect users with `status !== 'suspended'`                  |
 | H11  | [ ]    | Dead session-aware code renders wrong UI for logged-in users       | `shoot-detail-view.tsx:53-54`, `artist-profile-view.tsx:36`                             | Wire `authClient.useSession()`; gate branches properly                    |
-| H12  | [ ]    | `typeof window` in JSX → hydration mismatch                        | `shoot-detail-view.tsx:528`                                                             | Use `usePathname()` or pass path from server                              |
+| H12  | [x]    | `typeof window` in JSX → hydration mismatch                        | `shoot-detail-view.tsx:528`                                                             | Use `usePathname()` or pass path from server                              |
 | H13  | [ ]    | Inline query keys break invalidation contract                      | `lib/hooks/use-artist.ts:24`, `lib/hooks/use-uploads.ts:7`                              | Add `queryKeys.artist.profile()`; use in both                             |
 | H14  | [ ]    | ID upload has no preview                                           | `step-identity.tsx:61-82`                                                               | Render `<img>` for images, "View document" link for PDFs                  |
 | H15  | [ ]    | Rejection feedback invisible — `approvalNotes` never shown         | `pending/page.tsx:21-25` + missing from stepper                                         | Show `approvalStatus === 'rejected'` banner with notes + resubmit CTA     |
@@ -80,7 +80,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | M10  | [ ]    | Lightbox modal lacks focus trap / ESC / return-focus                               | `artist-profile-view.tsx:306-354`              |
 | M11  | [ ]    | No skip-link in root or AuthShell                                                  | root layout                                    |
 | M12  | [ ]    | `prefers-reduced-motion` not respected on most animations                          | many decorative components                     |
-| M13  | [ ]    | No CAPTCHA / honeypot on contact form (when wired)                                 | `contact-content.tsx:99`                       |
+| M13  | [x]    | No CAPTCHA / honeypot on contact form (when wired)                                 | `contact-content.tsx:99`                       |
 | M14  | [ ]    | GSAP loaded on every public page for nav drawer                                    | `card-nav.tsx:6`                               |
 | M15  | [ ]    | Talent/shoots filter search runs on every keystroke (no debounce)                  | `talent-content.tsx`, `shoots-content.tsx`     |
 | M16  | [ ]    | Portfolio uploads have no progress %                                               | `lib/api/uploads.ts:44-49`                     |
@@ -88,7 +88,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | M18  | [ ]    | Inconsistent file picker UX (Portfolio dropzone, ID bare input)                    | `step-identity.tsx`                            |
 | M19  | [ ]    | No autosave; "Save & Exit" drops in-progress edits                                 | `onboarding-shell.tsx:42`                      |
 | M20  | [ ]    | `StepReview` submit doesn't pre-validate locally — N round trips                   | `step-review.tsx`                              |
-| M21  | [ ]    | No suspended/banned check in onboarding layout                                     | `onboarding/layout.tsx`                        |
+| M21  | [x]    | No suspended/banned check in onboarding layout                                     | `onboarding/layout.tsx`                        |
 | M22  | [ ]    | Pending-page refetch button has no cooldown                                        | `pending/page.tsx:89-97`                       |
 | M23  | [ ]    | Caster doesn't collect logo/avatar (legitimacy boost)                              | `step-caster-company.tsx`                      |
 
@@ -111,7 +111,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | L11 | [ ]    | `dobMax` calculated at module load                                        | `step-personal.tsx:34-38`             |
 | L12 | [ ]    | `autoFocus` on every step's first input is aggressive on mobile           | all step components                   |
 | L13 | [ ]    | Skills step inconsistency (review says missing, stepper says passable)    | `step-review.tsx:114` vs `page.tsx:200-202` |
-| L14 | [ ]    | No `<meta name="robots" content="noindex">` on onboarding pages           | onboarding layout                     |
+| L14 | [x]    | No `<meta name="robots" content="noindex">` on onboarding pages           | onboarding layout                     |
 | L15 | [ ]    | Optional fields not visually distinct                                     | multiple form components              |
 | L16 | [ ]    | No "time to complete" estimate on artist onboarding                       | step-craft / step 1                   |
 | L17 | [ ]    | Forgot-password landing doesn't autofocus email                           | `forgot-form.tsx:60-69`               |
@@ -168,4 +168,10 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 
 | Date | ID | Commit | Notes |
 | ---- | -- | ------ | ----- |
-| 2026-05-21 | C1 | (pending) | Split [token] page into server shell + client confirm button. Token now only consumed on user click — safe against email-link prefetchers. Added `verifyEmailToken` service + `noindex` metadata. |
+| 2026-05-21 | C1 | `11e45c0` | Split [token] page into server shell + client confirm button. Token now only consumed on user click — safe against email-link prefetchers. Added `verifyEmailToken` service + `noindex` metadata. |
+| 2026-05-21 | C2 | `ce53298` | Cap `/api/auth/send-verification-email` at 5/hour keyed on (lowercased email, IP). Body read via cloned Request so Better Auth still sees the original. `rateLimit` key fn now async-capable. |
+| 2026-05-21 | C3 | `ffda4e7` | Caster onboarding gate now fails closed. Restructured try/catch so redirect() isn't caught by the catch arm. Unconfirmed gate → redirect to `/onboarding/caster` instead of falling through. |
+| 2026-05-21 | C4 + H12 | `1cb9a55` | Locked `DetailRow` renders opaque placeholder; parent stops passing `shootLocationDetail` into the prop chain when isAuthed is false. Replaced `typeof window` SSR hack with `usePathname()`. |
+| 2026-05-21 | C5 | `7b8735c` | Renamed `caster`/`artist` fields → `casterSees`/`artistSees` to make semantics explicit. Stage 4 data corrected so "Exact shoot location revealed" sits under "Artist sees" (the only party who actually learns it post-signing). |
+| 2026-05-21 | C6 + M13 | `d9bc603` | Contact form now hits real `POST /api/v1/contact` (rate-limited 5/hr/IP). New `@castflow/validators` `contactMessageSchema` shared client+server. Honeypot field for bot defence. Toast escape fixed. |
+| 2026-05-21 | C7 + M21 + L14 | `a551533` | Parent `/onboarding/layout`: auth + admin redirect + suspended/banned redirect + `noindex`. Three per-flow sub-layouts (`artist/`, `caster/`, `pending/`) enforce role-vs-flow via `postLoginPath`. |

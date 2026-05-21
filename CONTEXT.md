@@ -7,7 +7,59 @@
 
 ## Current phase
 
-**Feature development**
+**Feature development** — interleaved with audit remediation (see `AUDIT.md`).
+
+---
+
+## Audit remediation (2026-05-21)
+
+Comprehensive audit of all non-dashboard surfaces (public marketing, auth,
+onboarding). Full findings + status tracking in `AUDIT.md` at repo root —
+7 Critical, 17 High, 23 Medium, 18 Low identified.
+
+**All 7 Critical issues fixed this session:**
+
+| ID | Commit | Fix |
+| -- | ------ | --- |
+| C1 | `11e45c0` | Verify-email `[token]` page no longer consumes token via SSR — split into server shell + client confirm button. Email-link prefetchers (Outlook Safe Links, Gmail link-warming, AV scanners) can no longer burn single-use tokens before the user clicks. Added `verifyEmailToken` to `lib/api/auth.ts` and `noindex` metadata. |
+| C2 | `ce53298` | Rate-limited `/api/auth/send-verification-email` at 5/hour keyed on `(lowercased email, IP)` so attackers can't email-bomb a target by rotating IPs OR by cycling target addresses from one IP. Body read via cloned Request so Better Auth's handler still sees the original stream. `rateLimit` middleware's `key` fn now async-capable (backward compatible). |
+| C3 | `ffda4e7` | Caster onboarding gate (`(caster)/layout.tsx`) was wrapping the gating fetch in a swallow-everything try/catch that let unonboarded casters past the gate on a momentary 5xx. Restructured so `redirect()` isn't caught (Next.js redirects throw a navigation signal). Now fails closed: unconfirmed gate → redirect to `/onboarding/caster`. |
+| C4 | `1cb9a55` | `DetailRow` on `/shoots/[id]` was CSS-blurring the `shootLocationDetail` value while still shipping it in the DOM (DevTools reveals). Now: locked branch renders an opaque placeholder and the parent stops passing the sensitive prop into the client subtree when `isAuthed === false`. Defence-in-depth alongside the CLAUDE.md API-side rule. Also killed H12 (`typeof window` SSR hack) by switching to `usePathname()`. |
+| C5 | `7b8735c` | Trust page `PrivacyStageCard` had ambiguously-named `caster`/`artist` data fields. Stage 4 (Contract fully signed) data was structured inconsistently with stages 1-3, so the "Exact shoot location revealed" line ended up under "Caster sees" — the caster already had the location. Renamed fields to `casterSees` / `artistSees` (explicit semantics) and corrected stage-4 data so the artist correctly gets "shoot location revealed" at signing. |
+| C6 | `d9bc603` | Contact form was mocked (fake `setTimeout` "success") and the success toast rendered a literal `&apos;` (broken JS escape). Now: real `POST /api/v1/contact` endpoint backed by `EmailService.sendEvent` → `CONTACT_INBOX_EMAIL` (new env var, defaults to `hello@castflow.co.uk`). Rate-limited 5/hour/IP. Shared `contactMessageSchema` in `@castflow/validators` includes an inline honeypot field (`website`) — server treats non-empty as silent reject. New frontend service (`lib/api/contact.ts`) + hook (`lib/hooks/use-contact.ts`). Also closes M13. |
+| C7 | `a551533` | Parent `app/onboarding/layout.tsx` only checked session existence — admins could load onboarding, suspended users could too, and casters on `/onboarding/artist` hit a dead-end 401 from `/artists/me`. Now parent layout: auth + admin redirect to `/admin` + suspended/banned redirect to `/suspended` + `noindex` metadata. Three new per-flow sub-layouts (`artist/layout.tsx`, `caster/layout.tsx`, `pending/layout.tsx`) enforce role-vs-flow via `postLoginPath` so misrouted users land where they belong. Also closes M21 + L14. |
+
+**Spillover wins** (medium/low fixed alongside criticals):
+
+- **H12** (typeof window SSR hack on /shoots/[id]) — fixed via C4
+- **M13** (no honeypot on contact form) — fixed via C6
+- **M21** (suspended/banned not blocked on onboarding) — fixed via C7
+- **L14** (no `noindex` on onboarding pages) — fixed via C7
+
+**Verification:** `bun run typecheck` green across all 4 workspaces after every
+fix. `bun run lint` has 8 pre-existing errors in `artist-profile-view.tsx`
+(model-stats template-literal type issue, not introduced by this audit work
+— that file is in the user's pending refactor surface).
+
+**Remaining audit work:** see `AUDIT.md` — 17 High, 22 Medium, 17 Low still
+open. Suggest tackling H1 (registration email-existence leak), H2
+(tokens-in-URL log exposure), H6 (`<img>` → `next/image` migration), and
+H15 (rejection feedback loop) next.
+
+**New files added in remediation:**
+
+- `apps/api/src/routes/contact.ts`
+- `apps/web/app/verify-email/[token]/verify-token-client.tsx`
+- `apps/web/app/onboarding/artist/layout.tsx`
+- `apps/web/app/onboarding/caster/layout.tsx`
+- `apps/web/app/onboarding/pending/layout.tsx`
+- `apps/web/lib/api/contact.ts`
+- `apps/web/lib/hooks/use-contact.ts`
+- `packages/validators/src/contact.ts`
+- `AUDIT.md` (repo root)
+
+**New env var:** `CONTACT_INBOX_EMAIL` (defaults to `hello@castflow.co.uk`).
+Add to `.env` for production routing.
 
 ---
 
@@ -24,11 +76,13 @@
 
 ## Feature completion status
 
-| #   | Feature                                                            | Status         |
-| --- | ------------------------------------------------------------------ | -------------- |
-| 01  | Auth (register/login/verify/reset, Google OAuth, redirect-by-role) | ✅ Complete    |
-| 02  | Artist onboarding                                                  | ⬜ Not started |
-| 03  | Admin: application queue                                           | ⬜ Not started |
+| #   | Feature                                                                       | Status         |
+| --- | ----------------------------------------------------------------------------- | -------------- |
+| 01  | Auth (register/login/verify/reset, Google OAuth, redirect-by-role)            | ✅ Complete    |
+| 02  | Artist onboarding (7-step branched stepper, model/actor, portfolio + ID)      | ✅ Complete    |
+| 03  | Caster onboarding (2-step welcome flow)                                       | ✅ Complete    |
+| 04  | Session/RBAC hardening + dev email bypass + Origin CSRF guard                 | ✅ Complete    |
+| 05  | Admin: application queue                                                      | ⬜ Not started |
 
 ---
 
@@ -1207,3 +1261,331 @@ Backend is at "minimally trustworthy" coverage and the dual-FK bug is closed. Re
 - Rate-limit middleware tests (HANDOFF.md §4 Tier C item 14) — explicitly deferred there as low-value.
 - Property-based / fuzz tests, load/perf tests, frontend E2E — deferred per HANDOFF.md "Coverage to leave for later".
 - Frontend resumes: Feature #2 (Artist Onboarding) is the next slice per the feature build order above.
+
+---
+
+## Feature 02 + 03 — Onboarding (artist + caster), plus auth/session hardening
+
+This session built the full frontend onboarding flow, restyled it to match the
+auth aesthetic, and hardened session/RBAC/CSRF across the stack. Status: typecheck
+clean across all 4 packages, lint clean on all touched files, 10/10 web vitest
+tests passing.
+
+### Feature 02 — Artist onboarding (✅ complete)
+
+**Route:** `apps/web/app/onboarding/artist/page.tsx` — single page, URL-synced
+step state (`?step=N`), branched flow with 7 steps (model) or 8 steps (actor).
+
+**Step inventory**
+
+| # | Step | Component | Backend |
+|---|------|-----------|---------|
+| 1 | Choose craft (Model / Actor card pick) | `step-craft.tsx` | `PATCH /api/v1/artists/me/type` |
+| 2 | Personal — first/last name, DOB (18+), gender, pronouns, city, bio | `step-personal.tsx` | `PATCH /api/v1/artists/me/personal` |
+| 3 | Stats (model: height/dress/shoe + optional measurements + hair/eye + 6-swatch skin tone OR actor: height/hair/eye + playable age range + voice/Spotlight/Equity) | `step-stats.tsx` | `PATCH /api/v1/artists/me/{model,actor}-stats` |
+| 4 | Skills *(actor only)* — chip multi-add across Accents / Languages / Special skills / Training | `step-skills.tsx` | `PUT /api/v1/artists/me/skills` |
+| 5 | Experience & rates — 3-card level picker + Instagram + optional hourly/half-day/full-day rates | `step-experience.tsx` | `PATCH /api/v1/artists/me/experience` |
+| 6 | Portfolio — react-dropzone, min 3 photos enforced (Next disabled), primary badge, hover-delete | `step-portfolio.tsx` | `POST /uploads/presigned-url`, `POST /uploads/confirm`, `DELETE /uploads/portfolio/:id` |
+| 7 | Identity — passport / UK driving licence to private R2 bucket | `step-identity.tsx` | same upload flow with `type: 'id_document'` |
+| 8 | Review & submit — section cards (CheckCircle / AlertCircle for ok/missing), edit jumps, submit → `/onboarding/pending` | `step-review.tsx` | `POST /api/v1/artists/me/submit` |
+
+**Backend additions (Feature 02)**
+
+- `packages/validators/src/artist.ts` — added `updateArtistTypeSchema`,
+  `replaceSkillsSchema`, plus `firstName`/`lastName` on
+  `artistPersonalInfoSchema`. Inferred types exported.
+- `apps/api/src/services/ArtistService.ts` — `updateArtistType` (locked once
+  `submittedAt` is set, wipes opposite-type stats/skills in a transaction),
+  `replaceSkills` (actor-only, full list replace). `updatePersonalInfo`
+  also writes Better Auth's `user.name = "${first} ${last}"` in the same
+  transaction so display name stays in sync.
+- `apps/api/src/routes/artists.ts` — `PATCH /me/type`, `PUT /me/skills`.
+- `apps/api/src/services/UploadService.ts` — fixed pre-existing bug where
+  the validator required `url` that the frontend wasn't sending. URL is
+  now server-derived from key (`R2_PUBLIC_URL + key`). Added
+  `deletePortfolioItem(userId, itemId)` with ownership check + primary
+  promotion (next-lowest `displayOrder` is promoted when the deleted item
+  was primary). `confirmUpload` now respects `caption` + `isPrimary` from
+  client input.
+- `apps/api/src/routes/uploads.ts` — `DELETE /portfolio/:id`.
+- `packages/validators/src/upload.ts` — `confirmUploadSchema.url` is now
+  optional (server derives), added optional `caption` + `isPrimary`.
+
+**Frontend additions (Feature 02)**
+
+- `apps/web/components/onboarding/` — `onboarding-shell.tsx`,
+  `onboarding-stepper.tsx`, `step-nav.tsx` + 10 step components.
+- `apps/web/lib/hooks/use-artist.ts` — `useUpdateArtistType`,
+  `useReplaceSkills` added (existing per-step PATCH hooks kept).
+- `apps/web/lib/hooks/use-uploads.ts` (new) — `useUploadFile`,
+  `useDeletePortfolioItem`.
+
+**UX rules baked in**
+
+- 18+ enforcement in the personal step's zod refine (hard-block on Next).
+- Min 3 photos enforced client-side (Next disabled) and server-side
+  (`submitForReview` throws `MIN_PORTFOLIO_REQUIRED` otherwise).
+- Step state synced one-way to URL (`?step=N`) so back/forward/refresh land
+  on the right step. Earlier render-loop bug fixed by removing
+  `searchParams` from the URL-sync `useEffect` dep array.
+- `/onboarding/artist` auto-forwards to `/onboarding/pending` when
+  `profile.submittedAt` is set and `approvalStatus !== 'rejected'` — avoids
+  showing the stepper to someone already in review.
+
+### Feature 03 — Caster onboarding (✅ complete)
+
+**Route:** `apps/web/app/onboarding/caster/page.tsx` — 2-step welcome, both
+skippable.
+
+| # | Step | Component | Backend |
+|---|------|-----------|---------|
+| 1 | Company — phone + website (both optional, both URL-validated where relevant) | `step-caster-company.tsx` | `PATCH /api/v1/casters/me` (existing) |
+| 2 | Welcome — two action tiles (Post a job / Browse talent) + payment-model explainer + dashboard fallback | `step-caster-welcome.tsx` | (no mutation) |
+
+No new backend was needed — `PATCH /casters/me` already accepted
+`phone` + `website`.
+
+### Visual unification (auth ↔ onboarding)
+
+Earlier rev had a clash: register flow in dark glassmorphic `AuthShell`,
+onboarding in clean light shell. Restyled onboarding to match auth:
+
+- `OnboardingShell` now wraps the tree in `<div className="dark">` so
+  shadcn primitives flip to dark theme, then layers the same ink-900
+  background + atmospheric particles + animated grid + color washes as
+  AuthShell.
+- `OnboardingStepper` restyled for dark — brand orange `#f9a26c` for the
+  current step (with ring), orange/15 for done, white/15 for upcoming,
+  font-mono uppercase labels.
+- `StepNav`'s Next button is a brand-orange gradient (matches the
+  ShimmerButton accent in AuthShell, without the shimmer overhead).
+- Every step's selected/active state uses brand orange on glass surfaces
+  (`border-[#f9a26c]/60 bg-[#f9a26c]/[0.06] ring-2 ring-[#f9a26c]/20`),
+  unselected uses `border-white/12 bg-white/[0.03]`.
+- `/onboarding/pending` page restyled with the same atmospheric backdrop;
+  the previous "Edit my application" link was removed to avoid a
+  redirect-loop with the artist page's submitted-state forward.
+
+### Register flow polish
+
+- `/register` subhead fixed — was lying with "you can always change later"
+  (role is permanent). Now reads "Two roles. Your choice is permanent."
+- New `RegisterProgress` component (3-dot indicator: Role · Account ·
+  Profile) wired into `AuthShell` via a new `topAccessory` prop. Each
+  register page passes `current={0|1}` so users see where they are in the
+  journey.
+- `artistType` (model / actor) was moved off `/register/artist`; it's
+  chosen at onboarding step 1 instead. Backend's `registerArtistSchema`
+  marks `artistType` optional and `AuthService.registerArtist` defaults
+  to `'model'` when omitted.
+
+### Session / auth hardening (Feature 04)
+
+Five interlocking changes:
+
+**1. Dev email-verification bypass**
+
+- New env `DEV_AUTO_VERIFY_EMAIL` (boolean, default false). When `true`
+  AND `NODE_ENV !== 'production'`:
+  - `apps/api/src/lib/auth.ts` flips `requireEmailVerification: false`
+    on Better Auth's emailAndPassword config.
+  - `AuthService.registerArtist/Caster` set `user.emailVerified = true`
+    inside the registration transaction via `maybeAutoVerifyEmail(tx, id)`.
+- `RegistrationResult` widened with `{ verificationEmailSent: boolean,
+  emailVerified: boolean }`. Registration forms branch on
+  `result.emailVerified` — true skips `/verify-email` and sends straight to
+  `/login?email=…`.
+- `apps/api/.env.example` documents the flag; `apps/api/.env` has it set to
+  `true` for the current dev environment. Production deploys must leave it
+  unset.
+
+**2. Reactive session UI (no more "Log in" flash on logged-in pages)**
+
+- `apps/web/lib/auth-client.ts` switched from `better-auth/client` to
+  `better-auth/react` — the latter exposes a real React `useSession()` hook
+  (`{ data, isPending, error }`); the client entry point exposes a
+  Nanostore atom that isn't callable as a hook.
+- `apps/web/lib/api/auth.ts` — `login()` and `logout()` now call
+  `authClient.signIn.email()` / `authClient.signOut()` instead of raw
+  `betterAuthRequest`. Better Auth's client methods update its internal
+  session store reactively, which is what makes `useSession()` consumers
+  re-render without a page refresh.
+- `useLogin()` and `useLogout()` hooks call `queryClient.clear()` on success
+  — wipes all per-user TanStack cache so account-switching can't leak data
+  from the previous user.
+- `LoginForm` and dashboard `Topbar` both use `useLogin` / `useLogout` now;
+  on success they navigate via `window.location.href` (hard reload) so
+  server-rendered layouts re-evaluate session immediately.
+
+**3. SessionProvider with server initialData**
+
+- `apps/web/providers/session-provider.tsx` (new) — client context that
+  bridges the server-rendered session (passed once) with Better Auth's
+  live `useSession()` store. Rule: while `isPending`, show `initialSession`
+  (server-rendered); after Better Auth resolves, trust its `data` (which
+  may be null after logout).
+- Root layout (`apps/web/app/layout.tsx`) is now `async`, server-fetches
+  session via `auth.api.getSession`, and passes it into
+  `<SessionProvider initialSession={...}>`.
+- Components should call `useAuthSession()` from `@/providers/session-provider`
+  instead of `useSession()` directly — same shape but populated on first paint.
+- Landing nav (`components/landing/nav.tsx`) consumes the provider and no
+  longer flashes "Log in / Get started" on hard-refresh of a logged-in page.
+
+**4. Strict RBAC across all role-group layouts**
+
+All three layouts (`(artist)`, `(caster)`, `(admin)`) now:
+
+- Redirect wrong-role visitors to **their** correct dashboard via
+  `postLoginPath` (was bouncing to `/login` regardless — confusing UX).
+- Bounce suspended/banned `status` to `/suspended` (new page, see below).
+- Artist layout's not-approved redirect now points to `/onboarding/artist`
+  (was `/onboarding/pending`) so users with an unfinished profile see the
+  stepper, not the waiting screen.
+
+Auth pages (`/login`, `/register`, `/register/artist`, `/register/caster`,
+`/verify-email`) all call a new `redirectIfAuthenticated()` helper in
+`lib/auth-server.ts` — logged-in users hitting these are sent straight to
+their dashboard via `postLoginPath`.
+
+**5. Suspended/banned screen**
+
+- `apps/web/app/suspended/page.tsx` (new) — dark atmospheric layout
+  matching the rest of the auth flow, ShieldAlert icon with rose accent,
+  "Contact Trust & Safety" mailto, homepage link.
+
+**6. Origin allowlist middleware (CSRF defence)**
+
+- `apps/api/src/middleware/requireOrigin.ts` (new). Mounted on `/api/v1/*`
+  before route handlers. Skips `GET/HEAD/OPTIONS`. For state-changing
+  methods, checks the `Origin` header against an allowlist:
+  `env.FRONTEND_URL` in production; that plus
+  `http://localhost:{3000,3001}` + 127.0.0.1 variants in dev. Throws
+  `FORBIDDEN (403)` on miss.
+- Browsers always send `Origin` on POST/PATCH/PUT/DELETE per Fetch §3.6.
+  Combined with the existing `cors({ origin: env.FRONTEND_URL, credentials:
+  true })`, this closes the classic CSRF vector cookies-with-credentials
+  opens up. Stripe webhooks (`/webhooks/*`) are unaffected — they have
+  their own signature verification.
+
+**7. Better Auth sign-up endpoint blocked**
+
+- `apps/api/src/index.ts` — `app.all('/api/auth/sign-up/*', …)` returns 404
+  before the BA handler. Our canonical entry points are
+  `POST /api/v1/auth/register-artist|register-caster` which run inside a
+  transaction that creates the matching profile row. Hitting BA's bare
+  `/sign-up/email` would create a user with no profile, leaving an orphan
+  that breaks every downstream relation.
+
+### Session reactivity — what's "free" via Better Auth
+
+Confirmed by reading `node_modules/better-auth/dist/client/session-refresh.mjs`:
+Better Auth ships a `WindowFocusManager`, `BroadcastChannel`, and
+`OnlineManager` and subscribes `useSession()` to all three by default. So:
+
+- Tab focus → re-fetches session (catches sessions revoked elsewhere).
+- Cross-tab logout → other tabs flip to logged-out within a second via
+  BroadcastChannel.
+- Network online → re-fetches.
+
+No additional wiring required for any of these.
+
+### Caveats from this session
+
+- **Stale Next.js generated types after deleting onboarding stubs.** After
+  removing `/onboarding/{personal,stats,experience,portfolio,verification,
+  review}` directories, `bun run typecheck` failed citing
+  `.next/types/validator.ts` references to the deleted pages. Cleared
+  `apps/web/.next` and re-ran — clean. If anyone else deletes pages, also
+  delete `.next/` before typechecking.
+- **`actorStatsSchema` uses `.default(false)` on `equityMember`**, making
+  the inferred output type require it but the input type allow `undefined`.
+  RHF resolvers type against the input, so `step-stats.tsx` widens the form
+  generic via `type ActorStatsFormInput = z.input<typeof actorStatsSchema>`.
+  Other schemas without `.default()` don't need this.
+- **`next/image` would have required whitelisting R2's public domain in
+  `next.config.ts`.** For the portfolio grid we just use plain `<img>` —
+  the file is small (~12 thumbnails) and avoids the env-tied config churn.
+- **`actorStats.equityMember` is `boolean` not `boolean | undefined`** in
+  Prisma; the form's default value passes `false` explicitly.
+- **Better Auth's `signIn.email` returns its base user type, not our
+  extended one.** Our `SessionUser` adds `role`, `approvalStatus`, `status`,
+  so `lib/api/auth.ts` widens via `as unknown as SessionUser`. Tracked —
+  if Better Auth ever ships a way to declare additional fields in the
+  client's type, swap to that.
+- **`postLoginPath` redirects unapproved artists to `/onboarding/artist`**,
+  not `/onboarding/pending`. The artist page itself forwards to pending
+  when `submittedAt` is set. This means once an artist submits, both
+  pages take them to the same place — but the auth-redirect tests now
+  assert `/onboarding/artist` (W3, W4, missing-status fallback), so the
+  test file was updated to match.
+
+### Files added this session
+
+```
+apps/api/src/middleware/requireOrigin.ts
+
+apps/web/providers/session-provider.tsx
+apps/web/components/auth/register-progress.tsx
+apps/web/components/onboarding/onboarding-shell.tsx
+apps/web/components/onboarding/onboarding-stepper.tsx
+apps/web/components/onboarding/step-nav.tsx
+apps/web/components/onboarding/steps/step-craft.tsx
+apps/web/components/onboarding/steps/step-personal.tsx
+apps/web/components/onboarding/steps/step-stats.tsx
+apps/web/components/onboarding/steps/step-skills.tsx
+apps/web/components/onboarding/steps/step-experience.tsx
+apps/web/components/onboarding/steps/step-portfolio.tsx
+apps/web/components/onboarding/steps/step-identity.tsx
+apps/web/components/onboarding/steps/step-review.tsx
+apps/web/components/onboarding/steps/step-caster-company.tsx
+apps/web/components/onboarding/steps/step-caster-welcome.tsx
+apps/web/components/ui/switch.tsx               (shadcn add switch)
+apps/web/lib/hooks/use-uploads.ts
+
+apps/web/app/onboarding/artist/page.tsx
+apps/web/app/onboarding/caster/page.tsx
+apps/web/app/suspended/page.tsx
+```
+
+### Files deleted
+
+```
+apps/web/app/onboarding/personal/       (old per-route stub)
+apps/web/app/onboarding/stats/
+apps/web/app/onboarding/experience/
+apps/web/app/onboarding/portfolio/
+apps/web/app/onboarding/verification/
+apps/web/app/onboarding/review/
+apps/web/app/onboarding/caster/billing/  (caster has no upfront billing)
+```
+
+### Env var additions
+
+| Variable                | Needed for                              | Set in dev? |
+|-------------------------|-----------------------------------------|-------------|
+| `DEV_AUTO_VERIFY_EMAIL` | Skip Resend in dev — auto-verify signups | ✅ Set to `true` in `apps/api/.env` |
+
+### Next up (post-session)
+
+Per the existing build order: **Feature #5 — Admin: artist application
+queue.** Approve / reject with reason, with rejection notes flowing through
+to the artist via email + in-app notification (notify-event is already
+wired). After that:
+
+- Caster: post a job — 6-step wizard, both payment types
+- Artist: job feed
+- Bidding + booking + contract + payment
+
+### Production / hardening wishlist (deferred)
+
+- CSP headers in `next.config.ts`
+- Audit log of login/logout/role-change events
+- Replace placeholder Stripe / Resend / R2 env values; remove
+  `DEV_AUTO_VERIFY_EMAIL` from prod deploys
+- Account-deletion endpoint (PRD §7.10 + 8.13) — currently no UI or
+  service for the "delete account" affordance
+- Session sliding-vs-absolute expiration policy review (currently 7-day
+  fixed via Better Auth defaults)
+- Multi-device session list + revoke (Better Auth ships an admin plugin
+  for this; not yet integrated)
