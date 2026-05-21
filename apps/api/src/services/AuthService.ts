@@ -1,9 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import type { RegisterArtistInput, RegisterCasterInput } from '@castflow/validators'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { auth } from '../lib/auth'
 import { env } from '../lib/env'
 import { AppError } from '../errors'
+import { EmailService } from './EmailService'
 
 /**
  * Dev convenience: when DEV_AUTO_VERIFY_EMAIL=true on a non-production
@@ -39,13 +41,16 @@ export interface RegistrationResult {
 function mapBetterAuthError(err: unknown): never {
   // Better Auth throws APIError instances with status + body.message.
   // Translate the common ones to our canonical AppError codes.
+  //
+  // NOTE: we deliberately do NOT translate 'already exists' messages to
+  // EMAIL_TAKEN — the caller handles email-collision via the pre-check
+  // path with a fake-success response (Audit H1). If we hit that branch
+  // it means Better Auth's own validator caught it after our pre-check;
+  // surface as a generic 400 to avoid re-introducing the enumeration leak.
   const e = err as { status?: string | number; body?: { message?: string } } & Error
   const message = e.body?.message ?? e.message ?? 'Sign-up failed'
   const lower = message.toLowerCase()
 
-  if (lower.includes('already') || lower.includes('exist') || lower.includes('taken')) {
-    throw new AppError('EMAIL_TAKEN', 'An account with this email already exists', 409)
-  }
   if (lower.includes('password')) {
     throw new AppError('WEAK_PASSWORD', message, 400)
   }
@@ -58,21 +63,55 @@ function mapBetterAuthError(err: unknown): never {
   throw new AppError('VALIDATION_ERROR', message, 400)
 }
 
-async function assertEmailAvailable(email: string): Promise<void> {
+type EmailAvailability =
+  | { kind: 'available' }
+  | { kind: 'taken' }
+  | { kind: 'banned' }
+
+async function checkEmailAvailability(email: string): Promise<EmailAvailability> {
   // Better Auth's sign-up returns a fake-success response for existing emails
   // (account-enumeration protection enabled by `requireEmailVerification: true`),
-  // so we must pre-check uniqueness before calling signUpEmail. A small race
-  // window remains; the DB's unique-email constraint catches concurrent dupes.
+  // so we pre-check uniqueness before calling signUpEmail. The caller decides
+  // how to handle 'taken' — we used to throw 409 here, which leaked email
+  // existence to attackers. Now the caller short-circuits to a fake-success
+  // response and emails the legitimate owner instead. (Audit H1.)
   const normalized = email.toLowerCase()
   const existing = await prisma.user.findFirst({
     where: { email: normalized },
     select: { id: true, status: true },
   })
-  if (!existing) return
-  if (existing.status === 'banned') {
-    throw new AppError('BANNED', 'This email is blocked', 403)
+  if (!existing) return { kind: 'available' }
+  if (existing.status === 'banned') return { kind: 'banned' }
+  return { kind: 'taken' }
+}
+
+/**
+ * Build a registration response that looks indistinguishable from a real
+ * signup. Used when the email is already taken so attackers can't tell.
+ * The user `id` is a random UUID — never the real user id (would leak).
+ */
+function fakeRegistrationResult(email: string): RegistrationResult {
+  const autoVerified = isDevAutoVerifyEnabled()
+  return {
+    user: { id: randomUUID(), email },
+    verificationEmailSent: !autoVerified,
+    emailVerified: autoVerified,
   }
-  throw new AppError('EMAIL_TAKEN', 'An account with this email already exists', 409)
+}
+
+/**
+ * Fire the collision-warning email without blocking the response. Errors
+ * are logged but never propagated — the caller still returns fake success.
+ */
+function notifyExistingOwner(email: string): void {
+  void EmailService.sendRegistrationCollisionEmail({ to: email.toLowerCase() }).catch(
+    (err: unknown) => {
+      console.error('[AuthService] collision email failed', {
+        email: email.toLowerCase(),
+        error: err instanceof Error ? err.message : String(err),
+      })
+    },
+  )
 }
 
 async function signUp(input: {
@@ -97,13 +136,21 @@ async function signUp(input: {
     }
 
     // Defence in depth: confirm the user row actually exists. If Better Auth's
-    // enumeration protection still fired (race-condition window), throw 409.
+    // enumeration protection fired (rare race-condition window between our
+    // pre-check and signUp where another request claimed the email),
+    // surface a generic 500 — we can't safely fake-success here because the
+    // caller's downstream prisma work would fail on a non-existent userId.
+    // Throwing EMAIL_TAKEN here would re-introduce the enumeration leak. (H1.)
     const persisted = await prisma.user.findUnique({
       where: { id: user.id },
       select: { id: true },
     })
     if (!persisted) {
-      throw new AppError('EMAIL_TAKEN', 'An account with this email already exists', 409)
+      throw new AppError(
+        'INTERNAL_ERROR',
+        'Could not complete registration. Please try again.',
+        500,
+      )
     }
 
     return { id: user.id, email: user.email }
@@ -115,7 +162,16 @@ async function signUp(input: {
 
 export class AuthService {
   static async registerArtist(input: RegisterArtistInput): Promise<RegistrationResult> {
-    await assertEmailAvailable(input.email)
+    const availability = await checkEmailAvailability(input.email)
+    if (availability.kind === 'banned') {
+      throw new AppError('BANNED', 'This email is blocked', 403)
+    }
+    if (availability.kind === 'taken') {
+      // Indistinguishable from a real signup: fake-success body + warning
+      // email to the legitimate owner. Account-enumeration defence. (H1.)
+      notifyExistingOwner(input.email)
+      return fakeRegistrationResult(input.email)
+    }
 
     const name = `${input.firstName} ${input.lastName}`
     const user = await signUp({
@@ -175,7 +231,15 @@ export class AuthService {
   }
 
   static async registerCaster(input: RegisterCasterInput): Promise<RegistrationResult> {
-    await assertEmailAvailable(input.email)
+    const availability = await checkEmailAvailability(input.email)
+    if (availability.kind === 'banned') {
+      throw new AppError('BANNED', 'This email is blocked', 403)
+    }
+    if (availability.kind === 'taken') {
+      // See registerArtist — same enumeration-defence path. (H1.)
+      notifyExistingOwner(input.email)
+      return fakeRegistrationResult(input.email)
+    }
 
     const user = await signUp({
       email: input.email,

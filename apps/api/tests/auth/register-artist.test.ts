@@ -66,7 +66,7 @@ describe('POST /api/v1/auth/register-artist', () => {
   )
 
   it(
-    'A2: duplicate email returns EMAIL_TAKEN',
+    'A2: duplicate email returns fake-success and emails the legitimate owner (enumeration defence — Audit H1)',
     async () => {
       const email = randomEmail()
       try {
@@ -84,19 +84,32 @@ describe('POST /api/v1/auth/register-artist', () => {
           body: JSON.stringify(payload),
         })
         expect(first.status).toBe(200)
+        EmailService.__clearTestInbox()
 
         const second = await app.request('/api/v1/auth/register-artist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
-        expect(second.status).toBe(409)
-        const body = (await second.json()) as { success: boolean; error: { code: string } }
-        expect(body.success).toBe(false)
-        expect(body.error.code).toBe('EMAIL_TAKEN')
+        // Indistinguishable from a real signup
+        expect(second.status).toBe(200)
+        const body = (await second.json()) as {
+          success: boolean
+          data: { user: { id: string; email: string }; verificationEmailSent: boolean }
+        }
+        expect(body.success).toBe(true)
+        expect(body.data.user.email).toBe(email)
 
+        // No new user row created
         const count = await prisma.user.count({ where: { email } })
         expect(count).toBe(1)
+
+        // The legitimate owner got the collision-warning email — give the
+        // fire-and-forget a moment to flush in test mode.
+        await new Promise((r) => setTimeout(r, 50))
+        const sent = EmailService.__lastEmail(email)
+        expect(sent).toBeDefined()
+        expect(sent?.subject).toMatch(/Someone tried to sign up/i)
       } finally {
         await cleanupByEmail(email)
       }

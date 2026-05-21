@@ -74,6 +74,29 @@ export class EmailService {
     await send({ to, subject: 'Reset your CastFlow password', html })
   }
 
+  /**
+   * Fired when someone attempts to register with an email that already has
+   * an account. Lets the legitimate owner know without revealing to the
+   * attempting party that the email exists (we return a fake-success
+   * response in that path so account enumeration is blocked). (Audit H1.)
+   */
+  static async sendRegistrationCollisionEmail({ to }: { to: string }): Promise<void> {
+    const loginUrl = `${env.FRONTEND_URL}/login`
+    const resetUrl = `${env.FRONTEND_URL}/forgot-password`
+    const html = `
+      <h1>Someone tried to sign up with your email</h1>
+      <p>We received a registration attempt for an account that already
+        belongs to you. If this was you trying to sign in, head to the
+        login page:</p>
+      <p><a href="${loginUrl}">Log in to CastFlow</a></p>
+      <p>If you've forgotten your password, you can reset it here:</p>
+      <p><a href="${resetUrl}">Reset password</a></p>
+      <p>If this wasn't you, you can ignore this email — your account is
+        safe and nothing has changed.</p>
+    `
+    await send({ to, subject: 'Someone tried to sign up with your email', html })
+  }
+
   static async sendWelcomeEmail({ to, role, firstName }: SendWelcomeArgs): Promise<void> {
     const ctaUrl =
       role === 'artist' ? `${env.FRONTEND_URL}/onboarding` : `${env.FRONTEND_URL}/caster/dashboard`
