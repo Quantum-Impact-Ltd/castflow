@@ -9,10 +9,14 @@ import type {
   ResetPasswordInput,
 } from '@castflow/validators'
 import { fetcher } from '@/lib/fetcher'
+import { authClient } from '@/lib/auth-client'
 
 export interface RegistrationResult {
   user: { id: string; email: string }
-  verificationEmailSent: true
+  /** False in dev-bypass mode — the account is already verified. */
+  verificationEmailSent: boolean
+  /** True when dev bypass is on — skip /verify-email and send to login. */
+  emailVerified: boolean
 }
 
 export interface SessionUser {
@@ -85,16 +89,36 @@ export function registerCaster(
   })
 }
 
-export async function login(input: LoginInput, init?: FetcherInit): Promise<{ user: SessionUser }> {
-  const res = await betterAuthRequest<{ user: SessionUser }>('/sign-in/email', {
-    body: input,
-    ...init,
+/**
+ * Login uses Better Auth's client method (not a raw fetch) so the in-memory
+ * session store reactively updates, which is what makes `useSession()`
+ * consumers re-render without a page refresh.
+ */
+export async function login(input: LoginInput): Promise<{ user: SessionUser }> {
+  const result = await authClient.signIn.email({
+    email: input.email,
+    password: input.password,
   })
-  return res
+  if (result.error) {
+    throw Object.assign(new Error(result.error.message ?? 'Login failed'), {
+      code: result.error.code ?? 'AUTH_ERROR',
+      status: result.error.status ?? 401,
+    })
+  }
+  // Better Auth's base types don't include our `role` additionalField, so
+  // we have to widen through `unknown` to land on our richer SessionUser.
+  const user = result.data?.user as unknown as SessionUser | undefined
+  if (!user) {
+    throw new Error('Login succeeded but no user was returned')
+  }
+  return { user }
 }
 
-export async function logout(init?: FetcherInit): Promise<void> {
-  await betterAuthRequest<unknown>('/sign-out', init)
+export async function logout(): Promise<void> {
+  const result = await authClient.signOut()
+  if (result.error) {
+    throw new Error(result.error.message ?? 'Logout failed')
+  }
 }
 
 export async function forgotPassword(
@@ -119,6 +143,33 @@ export async function resendVerification(email: string, init?: FetcherInit): Pro
     body: { email },
     ...init,
   })
+}
+
+/**
+ * Consume a single-use email-verification token. Must only run on explicit
+ * user action — calling this from a Server Component or on page load lets
+ * email-link prefetchers (Outlook Safe Links, Gmail link-warming, AV
+ * scanners) burn the token before the user clicks.
+ */
+export async function verifyEmailToken(token: string, init?: FetcherInit): Promise<void> {
+  const init2: RequestInit = {
+    method: 'GET',
+    credentials: 'include',
+    redirect: 'manual',
+    cache: 'no-store',
+  }
+  if (init?.signal) init2.signal = init.signal
+  const res = await fetch(
+    `${API_BASE}/api/auth/verify-email?token=${encodeURIComponent(token)}`,
+    init2,
+  )
+  const ok = res.ok || (res.status >= 300 && res.status < 400)
+  if (!ok) {
+    throw Object.assign(new Error('Verification failed'), {
+      code: 'INVALID_TOKEN',
+      status: res.status,
+    })
+  }
 }
 
 export async function getSession(init?: FetcherInit): Promise<{ user: SessionUser } | null> {
