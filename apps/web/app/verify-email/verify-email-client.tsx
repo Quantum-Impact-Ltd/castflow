@@ -4,8 +4,11 @@ import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Send } from 'lucide-react'
+import { z } from 'zod'
 import { AuthField, AuthInput } from '@/components/auth/auth-shell'
 import { useResendVerification } from '@/lib/hooks/use-auth'
+
+const emailSchema = z.string().trim().email()
 
 export function VerifyEmailClient() {
   const params = useSearchParams()
@@ -14,11 +17,14 @@ export function VerifyEmailClient() {
   const mutation = useResendVerification()
 
   const handleResend = () => {
-    if (!email) {
-      toast.error('Enter your email to resend the verification link.')
+    // Validate client-side before hitting the (now rate-limited) server.
+    // Without this, any string was POSTed and burned a bucket slot. (Audit H4.)
+    const parsed = emailSchema.safeParse(email)
+    if (!parsed.success) {
+      toast.error('Enter a valid email to resend the verification link.')
       return
     }
-    mutation.mutate(email, {
+    mutation.mutate(parsed.data, {
       onSuccess: () =>
         toast.success('Verification email re-sent. Check your inbox.'),
     })
