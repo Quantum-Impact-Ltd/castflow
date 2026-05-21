@@ -41,25 +41,64 @@ fix. `bun run lint` has 8 pre-existing errors in `artist-profile-view.tsx`
 (model-stats template-literal type issue, not introduced by this audit work
 — that file is in the user's pending refactor surface).
 
-**Remaining audit work:** see `AUDIT.md` — 17 High, 22 Medium, 17 Low still
-open. Suggest tackling H1 (registration email-existence leak), H2
-(tokens-in-URL log exposure), H6 (`<img>` → `next/image` migration), and
-H15 (rejection feedback loop) next.
+**High batch (also fixed this session):**
+
+| ID(s) | Commit | Fix |
+| ----- | ------ | --- |
+| H3 | `6aeea8a` | Drop `onError` toast on `useForgotPassword` (account-enumeration defence). |
+| H4 | `b766d77` | Zod-validate resend-verification email client-side before hitting rate-limited server. |
+| H9 | `7246412` | `rel="noopener noreferrer"` on Instagram + ICO external links. |
+| H13 | `fb3b676` | Route `['artist','me']` inline keys through `queryKeys.artist.me()` factory across use-artist + use-uploads. |
+| H16 | `d79beb7` | "within 48 hours" → "usually within 48 hours" on pending + step-review. |
+| H10 + L18 | `1ada477` | `/suspended` page requires session + status ∈ {suspended,banned}; typed Metadata + noindex. |
+| H7 + H8 | `d3b7cdd` | SEO foundation: `lib/site.ts`, `app/sitemap.ts`, `app/robots.ts`, root `metadataBase`/`openGraph`/`twitter`, per-artist `generateMetadata`. New env `NEXT_PUBLIC_SITE_URL`. |
+| H1 | `1efed66` | Registration enumeration: dup signups return fake-success + email warning to legitimate owner. Test rewritten. |
+| H2 | `b441630` | `safeLog` print-fn for hono/logger scrubs `token=`/`code=` query params and opaque path segments. |
+| H11 | `2f5142d` | Wired `useAuthSession()` into shoot-detail + artist-profile (killed `isCaster=false` hardcodes). |
+| H14 | `9cf7e5e` | New `GET /api/v1/artists/me/id-document/url` presigned-read endpoint; step-identity renders image preview or PDF link after upload. |
+| H15 | `bd174a2` | `/onboarding/pending` shows admin `approvalNotes` with resubmit CTA (no silent redirect). Artist stepper shows rejection banner across every step. |
+| H17 | `f73feac` | `StepCasterWelcome` gates action cards on `complete.isSuccess` — no more race when caster clicks too fast. |
+| H6 | `e404e87` + `abbb65a` | `<img>` → `next/image` migration: landing/directory surfaces first, then detail + onboarding portfolio. Skipped tilt card / avatar circles / presigned-URL ID preview (documented). picsum.photos allowlisted as placeholder TODO. |
+| H5 | `996cabc` | Cloudflare Turnstile on `/register-{artist,caster}` (env-flagged via `TURNSTILE_SECRET_KEY` / `NEXT_PUBLIC_TURNSTILE_SITE_KEY` — no-op when unset). New `requireCaptcha` middleware + `<TurnstileWidget>`. Login after-N-fail deferred (noted in handoff). |
+
+**Spillover wins on the High batch:**
+
+- **L18** (suspended page Metadata import) — fixed via H10
+- **H12** had already shipped via C4 (typeof-window SSR hack in shoot-detail)
+
+**Audit status:** 7/7 Critical + 17/17 High closed (28 issues fixed total this
+session including spillover). **38 issues remain** — 23 Medium, 18 Low minus
+the spillovers already done (M13, M21 from Criticals; L14, L18 from H10/C7;
+H12 from C4). See `AUDIT.md` for the live tracker.
+
+**Remaining audit work:** All Medium and Low rows. See `AUDIT-HANDOFF.md`
+(repo root) for the working pattern a fresh session should follow.
+
+**New env vars added in remediation:**
+
+- `CONTACT_INBOX_EMAIL` (API; defaults to `hello@castflow.co.uk`)
+- `NEXT_PUBLIC_SITE_URL` (web; defaults to `https://castflow.co.uk`)
+- `TURNSTILE_SECRET_KEY` (API; optional — leave unset to disable CAPTCHA)
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (web; optional — pair with above)
 
 **New files added in remediation:**
 
+- `AUDIT.md` (repo root)
+- `AUDIT-HANDOFF.md` (repo root) — brief for fresh sessions to continue
 - `apps/api/src/routes/contact.ts`
+- `apps/api/src/lib/log.ts` (H2 token-scrubbing logger)
+- `apps/api/src/middleware/captcha.ts` (H5 Turnstile)
 - `apps/web/app/verify-email/[token]/verify-token-client.tsx`
 - `apps/web/app/onboarding/artist/layout.tsx`
 - `apps/web/app/onboarding/caster/layout.tsx`
 - `apps/web/app/onboarding/pending/layout.tsx`
+- `apps/web/app/sitemap.ts` (H8)
+- `apps/web/app/robots.ts` (H8)
+- `apps/web/components/auth/turnstile-widget.tsx` (H5)
 - `apps/web/lib/api/contact.ts`
 - `apps/web/lib/hooks/use-contact.ts`
+- `apps/web/lib/site.ts` (H8 SEO constants)
 - `packages/validators/src/contact.ts`
-- `AUDIT.md` (repo root)
-
-**New env var:** `CONTACT_INBOX_EMAIL` (defaults to `hello@castflow.co.uk`).
-Add to `.env` for production routing.
 
 ---
 
