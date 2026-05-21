@@ -7,15 +7,17 @@
 
 ## Current phase
 
-**Feature development** — interleaved with audit remediation (see `AUDIT.md`).
+**Feature development** — the 2026-05 frontend audit remediation pass
+completed 2026-05-22 (archived at `audit/2026-05-frontend-audit.md`).
 
 ---
 
 ## Audit remediation (2026-05-21)
 
 Comprehensive audit of all non-dashboard surfaces (public marketing, auth,
-onboarding). Full findings + status tracking in `AUDIT.md` at repo root —
-7 Critical, 17 High, 23 Medium, 18 Low identified.
+onboarding). Full findings + status tracking in
+`audit/2026-05-frontend-audit.md` — 7 Critical, 17 High, 23 Medium,
+18 Low identified.
 
 **All 7 Critical issues fixed this session:**
 
@@ -98,13 +100,19 @@ fix. `bun run lint` has 8 pre-existing errors in `artist-profile-view.tsx`
 - **M21** (suspended/banned blocked on onboarding) — already shipped via C7
 - **L14** (noindex on onboarding pages) — already shipped via C7
 
-**Audit status:** 7/7 Critical + 17/17 High + 23/23 Medium closed
-(21 `[x]` + 2 `[~]` partials for M7 and M9). **18 issues remain** — all
-Low (L1–L18), minus L14 + L18 which spilled out via C7 and H10. See
-`AUDIT.md` for the live tracker.
+**Audit status (final, 2026-05-22):** 7/7 Critical + 17/17 High +
+23/23 Medium + 18/18 Low closed. 64 of 65 rows are `[x]`; the
+remaining two are `[~]` partials on M7 (HIBP breached-password
+check — deferred because it adds an external network dep and
+triggers a privacy-disclosure obligation worth a separate decision)
+and M9 (talent/shoots top-level `'use client'` → server component
+conversion — deferred because filter state lives at the page root
+and warrants its own refactor session). Every other row landed.
 
-**Remaining audit work:** Low rows only. See `AUDIT-HANDOFF.md`
-(repo root) for the working pattern a fresh session should follow.
+Archive: the live tracker has moved from `AUDIT.md` at repo root to
+`audit/2026-05-frontend-audit.md`. `AUDIT-HANDOFF.md` at repo root
+remains as a historical reference for how the remediation pass was
+run; reading it is no longer required for new work.
 
 **Operational note for the next deploy:** `bunx prisma db push` is
 required so the new `caster_profiles.logo_url` column (M23) lands in
@@ -121,8 +129,8 @@ and old rows default to NULL.
 
 **New files added in remediation:**
 
-- `AUDIT.md` (repo root)
-- `AUDIT-HANDOFF.md` (repo root) — brief for fresh sessions to continue
+- `audit/2026-05-frontend-audit.md` (archived final tracker; was `AUDIT.md` at repo root during the remediation pass)
+- `AUDIT-HANDOFF.md` (repo root) — historical brief from the remediation pass
 - `apps/api/src/routes/contact.ts`
 - `apps/api/src/lib/log.ts` (H2 token-scrubbing logger)
 - `apps/api/src/middleware/captcha.ts` (H5 Turnstile)
