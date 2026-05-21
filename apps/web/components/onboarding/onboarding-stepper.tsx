@@ -38,7 +38,7 @@ export function OnboardingStepper({
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
           <motion.div
-            className="h-full bg-[#f9a26c]"
+            className="h-full bg-[var(--cta-400)]"
             initial={false}
             animate={{ width: `${((currentIndex + 1) / steps.length) * 100}%` }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -71,9 +71,9 @@ export function OnboardingStepper({
                   className={cn(
                     'relative grid h-8 w-8 place-items-center rounded-full border text-xs font-medium transition',
                     status === 'done' &&
-                      'border-[#f9a26c]/70 bg-[#f9a26c]/15 text-[#f9a26c]',
+                      'border-[var(--cta-400)]/70 bg-[var(--cta-400)]/15 text-[var(--cta-400)]',
                     status === 'current' &&
-                      'border-[#f9a26c] bg-[#f9a26c] text-[var(--ink-900)] ring-4 ring-[#f9a26c]/20',
+                      'border-[var(--cta-400)] bg-[var(--cta-400)] text-[var(--ink-900)] ring-4 ring-[var(--cta-400)]/20',
                     status === 'upcoming' &&
                       'border-white/15 bg-white/[0.03] text-white/45'
                   )}
@@ -95,7 +95,7 @@ export function OnboardingStepper({
                 <div className="mx-2 -mt-5 flex-1">
                   <div className="relative h-px w-full overflow-hidden bg-white/10">
                     <motion.div
-                      className="absolute inset-y-0 left-0 bg-[#f9a26c]/70"
+                      className="absolute inset-y-0 left-0 bg-[var(--cta-400)]/70"
                       initial={false}
                       animate={{ width: i < currentIndex ? '100%' : '0%' }}
                       transition={{ duration: 0.5, ease: 'easeOut' }}

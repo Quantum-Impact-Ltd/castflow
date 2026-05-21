@@ -13,7 +13,7 @@ export const AuthInput = forwardRef<HTMLInputElement, ComponentProps<'input'>>(
           'h-11 w-full rounded-xl border border-white/12 bg-white/[0.04] px-4 text-sm text-white',
           'placeholder:text-white/35',
           'transition-colors outline-none',
-          'focus-visible:border-[#f9a26c] focus-visible:ring-2 focus-visible:ring-[#f9a26c]/30',
+          'focus-visible:border-[var(--cta-400)] focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/30',
           'disabled:pointer-events-none disabled:opacity-50',
           'aria-invalid:border-rose-400/70 aria-invalid:ring-2 aria-invalid:ring-rose-400/20',
           className,

@@ -55,10 +55,10 @@ export default async function VerifyEmailPage() {
       }
     >
       <div className="flex flex-col items-center gap-5 text-center">
-        <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#f9a26c]/15 text-[#f9a26c]">
+        <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--cta-400)]/15 text-[var(--cta-400)]">
           <span
             aria-hidden
-            className="absolute inset-0 animate-ping rounded-full bg-[#f9a26c]/20"
+            className="absolute inset-0 animate-ping rounded-full bg-[var(--cta-400)]/20"
           />
           <Mail className="relative h-6 w-6" aria-hidden />
         </span>

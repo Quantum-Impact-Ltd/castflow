@@ -42,11 +42,11 @@ export function AuthShell({
       {/* Atmospheric layers — soft color washes, grid pattern, particles */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-40 -top-40 h-[36rem] w-[36rem] rounded-full bg-[#2a6b96] opacity-[0.22] blur-[140px]"
+        className="pointer-events-none absolute -left-40 -top-40 h-[36rem] w-[36rem] rounded-full bg-[var(--brand-700)] opacity-[0.22] blur-[140px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[#f9a26c] opacity-[0.16] blur-[140px]"
+        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[var(--cta-400)] opacity-[0.16] blur-[140px]"
       />
       <AnimatedGridPattern
         numSquares={34}
@@ -74,7 +74,7 @@ export function AuthShell({
           className="group inline-flex items-center gap-2 text-lg font-medium tracking-tight text-white transition-opacity hover:opacity-90"
         >
           <span
-            className="inline-block h-2 w-2 rounded-full bg-[#f9a26c] transition-transform duration-500 group-hover:scale-150"
+            className="inline-block h-2 w-2 rounded-full bg-[var(--cta-400)] transition-transform duration-500 group-hover:scale-150"
             aria-hidden
           />
           CastFlow
@@ -95,8 +95,8 @@ export function AuthShell({
             <div className="mb-6 flex justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.03] px-3.5 py-1.5 backdrop-blur">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#f9a26c] opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#f9a26c]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--cta-400)] opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--cta-400)]" />
                 </span>
                 <AnimatedShinyText
                   shimmerWidth={130}

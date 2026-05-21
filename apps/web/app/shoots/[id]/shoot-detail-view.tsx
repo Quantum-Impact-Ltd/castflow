@@ -110,8 +110,8 @@ export function ShootDetailView({ shoot }: Props) {
           <BorderBeam
             duration={11}
             size={15}
-            colorFrom="#85bcda"
-            colorTo="#2a6b96"
+            colorFrom="var(--brand-300)"
+            colorTo="var(--brand-700)"
             borderWidth={2}
           />
           <div className="relative aspect-[16/9] w-full overflow-hidden lg:aspect-[21/9]">
@@ -379,8 +379,8 @@ export function ShootDetailView({ shoot }: Props) {
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <MagicCard
               className="rounded-3xl"
-              gradientFrom="#85bcda"
-              gradientTo="#2a6b96"
+              gradientFrom="var(--brand-300)"
+              gradientTo="var(--brand-700)"
               gradientColor="rgba(42, 107, 150, 0.06)"
               gradientSize={280}
             >

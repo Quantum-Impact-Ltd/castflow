@@ -124,7 +124,7 @@ export function LoginForm() {
           hint={
             <Link
               href="/forgot-password"
-              className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/50 transition-colors hover:text-[#f9a26c]"
+              className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/50 transition-colors hover:text-[var(--cta-400)]"
             >
               Forgot?
             </Link>
@@ -152,7 +152,7 @@ export function LoginForm() {
         <ShimmerButton
           type="submit"
           disabled={mutation.isPending}
-          background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
+          background="linear-gradient(135deg, var(--cta-400) 0%, var(--cta-500) 100%)"
           shimmerColor="#ffffff"
           className="h-12 w-full px-6 text-sm font-semibold"
         >

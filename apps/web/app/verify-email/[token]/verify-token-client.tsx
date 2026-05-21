@@ -40,7 +40,7 @@ export function VerifyTokenClient({ token }: VerifyTokenClientProps) {
         </p>
         <Link
           href="/login"
-          className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-[#f9a26c] px-4 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[#f9a26c]/90"
+          className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--cta-400)] px-4 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[var(--cta-400)]/90"
         >
           Continue to log in
           <ArrowRight className="h-4 w-4" aria-hidden />
@@ -63,7 +63,7 @@ export function VerifyTokenClient({ token }: VerifyTokenClientProps) {
         <div className="flex w-full flex-col gap-2">
           <Link
             href="/verify-email"
-            className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[#f9a26c] text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[#f9a26c]/90"
+            className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--cta-400)] text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[var(--cta-400)]/90"
           >
             Resend verification email
           </Link>
@@ -88,7 +88,7 @@ export function VerifyTokenClient({ token }: VerifyTokenClientProps) {
         type="button"
         onClick={handleConfirm}
         disabled={status === 'pending'}
-        className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-[#f9a26c] px-4 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[#f9a26c]/90 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--cta-400)] px-4 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[var(--cta-400)]/90 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === 'pending' ? (
           <>

@@ -106,8 +106,8 @@ export function Hero() {
           <BorderBeam
             size={180}
             duration={14}
-            colorFrom="#85bcda"
-            colorTo="#2a6b96"
+            colorFrom="var(--brand-300)"
+            colorTo="var(--brand-700)"
             borderWidth={2}
           />
           <Image

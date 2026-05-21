@@ -54,11 +54,11 @@ export function OnboardingShell({
       {/* Atmospheric layers — soft color washes, grid pattern, particles */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-[#2a6b96] opacity-[0.22] blur-[140px]"
+        className="pointer-events-none absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-[var(--brand-700)] opacity-[0.22] blur-[140px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[#f9a26c] opacity-[0.14] blur-[140px]"
+        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[var(--cta-400)] opacity-[0.14] blur-[140px]"
       />
       <AnimatedGridPattern
         numSquares={28}
@@ -87,7 +87,7 @@ export function OnboardingShell({
             className="group inline-flex items-center gap-2 text-sm font-medium tracking-tight text-white transition-opacity hover:opacity-90"
           >
             <span
-              className="inline-block h-2 w-2 rounded-full bg-[#f9a26c] transition-transform duration-500 group-hover:scale-150"
+              className="inline-block h-2 w-2 rounded-full bg-[var(--cta-400)] transition-transform duration-500 group-hover:scale-150"
               aria-hidden
             />
             CastFlow

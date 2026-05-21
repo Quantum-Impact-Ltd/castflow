@@ -134,14 +134,14 @@ function RoleTile({
         {/* Copy */}
         <div className="relative flex flex-col justify-center gap-2 p-5 sm:p-6">
           <p className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
-            <span className="text-[#f9a26c]">{icon}</span>
+            <span className="text-[var(--cta-400)]">{icon}</span>
             {eyebrow}
           </p>
           <h2 className="text-lg font-semibold leading-tight text-white sm:text-xl">
             {title}
           </h2>
           <p className="text-sm leading-relaxed text-white/65">{body}</p>
-          <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#f9a26c] transition-colors">
+          <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cta-400)] transition-colors">
             Continue
             <ArrowRight
               className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"

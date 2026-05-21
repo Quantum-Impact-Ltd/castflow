@@ -55,7 +55,7 @@ export function VerifyEmailClient() {
           Sent to{' '}
           <span className="font-medium text-white/85">{initialEmail}</span>
           {' — '}
-          <a href="/register" className="text-[#f9a26c] underline-offset-4 hover:underline">
+          <a href="/register" className="text-[var(--cta-400)] underline-offset-4 hover:underline">
             Wrong email?
           </a>
         </p>

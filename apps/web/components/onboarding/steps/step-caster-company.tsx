@@ -116,7 +116,7 @@ export function StepCasterCompany({ profile, onSkip, onNext }: StepCasterCompany
     >
       <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-4 text-sm backdrop-blur-xl">
         <p className="font-medium text-white">
-          Signed in as <span className="text-[#f9a26c]">{profile.companyName}</span>
+          Signed in as <span className="text-[var(--cta-400)]">{profile.companyName}</span>
         </p>
         <p className="text-xs text-white/55">
           {profile.contactName} ·{' '}
@@ -173,7 +173,7 @@ export function StepCasterCompany({ profile, onSkip, onNext }: StepCasterCompany
             className={cn(
               'cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition',
               logoDropzone.isDragActive
-                ? 'border-[#f9a26c]/70 bg-[#f9a26c]/[0.04]'
+                ? 'border-[var(--cta-400)]/70 bg-[var(--cta-400)]/[0.04]'
                 : 'border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/[0.04]',
               upload.isPending && 'cursor-wait opacity-60',
             )}

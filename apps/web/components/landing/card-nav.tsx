@@ -232,7 +232,7 @@ export function CardNav({
             onClick={toggleMenu}
             aria-label={isExpanded ? 'Close menu' : 'Open menu'}
             aria-expanded={isExpanded}
-            style={{ color: menuColor ?? '#0d1b26' }}
+            style={{ color: menuColor ?? 'var(--ink-900)' }}
           >
             <div className="hamburger-line" />
             <div className="hamburger-line" />
@@ -242,7 +242,7 @@ export function CardNav({
           <Link
             href="/"
             className="logo-container"
-            style={{ color: menuColor ?? '#0d1b26', textDecoration: 'none' }}
+            style={{ color: menuColor ?? 'var(--ink-900)', textDecoration: 'none' }}
             onClick={closeMenu}
           >
             {logo}
@@ -254,7 +254,7 @@ export function CardNav({
                 <button
                   type="button"
                   className="card-nav-secondary"
-                  style={{ color: menuColor ?? '#0d1b26', background: 'none', border: 0 }}
+                  style={{ color: menuColor ?? 'var(--ink-900)', background: 'none', border: 0 }}
                   onClick={() => {
                     closeMenu()
                     secondary.onClick?.()
@@ -266,7 +266,7 @@ export function CardNav({
                 <Link
                   href={secondary.href ?? '#'}
                   className="card-nav-secondary"
-                  style={{ color: menuColor ?? '#0d1b26' }}
+                  style={{ color: menuColor ?? 'var(--ink-900)' }}
                   onClick={closeMenu}
                 >
                   {secondary.label}

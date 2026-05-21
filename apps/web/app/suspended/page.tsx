@@ -28,7 +28,7 @@ export default async function SuspendedPage() {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[#2a6b96] opacity-[0.16] blur-[140px]"
+        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[var(--brand-700)] opacity-[0.16] blur-[140px]"
       />
 
       <div className="relative z-10 mx-auto max-w-md text-center">
@@ -54,7 +54,7 @@ export default async function SuspendedPage() {
         <div className="mt-8 flex flex-col items-center gap-3">
           <a
             href="mailto:trust@castflow.co.uk?subject=Account%20appeal"
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-br from-[#f9a26c] to-[#e67e3e] px-5 text-sm font-semibold text-[var(--ink-900)] shadow-[0_10px_30px_-12px_rgba(249,162,108,0.55)] transition hover:from-[#fab17f] hover:to-[#e88a4b]"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-br from-[var(--cta-400)] to-[var(--cta-500)] px-5 text-sm font-semibold text-[var(--ink-900)] shadow-[0_10px_30px_-12px_rgba(249,162,108,0.55)] transition hover:from-[#fab17f] hover:to-[#e88a4b]"
           >
             <Mail className="h-4 w-4" />
             Contact Trust &amp; Safety

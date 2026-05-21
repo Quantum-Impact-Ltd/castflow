@@ -31,7 +31,7 @@ export function ForgotPasswordForm() {
   if (submitted) {
     return (
       <div className="flex flex-col items-center gap-4 py-2 text-center">
-        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#f9a26c]/15 text-[#f9a26c]">
+        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--cta-400)]/15 text-[var(--cta-400)]">
           <MailCheck className="h-5 w-5" aria-hidden />
         </span>
         <p className="text-sm leading-relaxed text-white/85">
@@ -72,7 +72,7 @@ export function ForgotPasswordForm() {
       <ShimmerButton
         type="submit"
         disabled={mutation.isPending}
-        background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
+        background="linear-gradient(135deg, var(--cta-400) 0%, var(--cta-500) 100%)"
         shimmerColor="#ffffff"
         className="h-12 w-full px-6 text-sm font-semibold"
       >

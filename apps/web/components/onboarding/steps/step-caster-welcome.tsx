@@ -42,7 +42,7 @@ export function StepCasterWelcome() {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-5 backdrop-blur-xl">
-          <Loader2 className="h-5 w-5 animate-spin text-[#f9a26c]" />
+          <Loader2 className="h-5 w-5 animate-spin text-[var(--cta-400)]" />
           <div className="text-sm">
             <p className="font-medium text-white">Finishing setup…</p>
             <p className="text-xs leading-relaxed text-white/60">
@@ -72,7 +72,7 @@ export function StepCasterWelcome() {
               href={a.href}
               className="group flex flex-col gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-5 backdrop-blur-xl transition hover:border-white/25 hover:bg-white/[0.05]"
             >
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#f9a26c] text-[var(--ink-900)]">
+              <div className="grid h-10 w-10 place-items-center rounded-lg bg-[var(--cta-400)] text-[var(--ink-900)]">
                 <Icon className="h-5 w-5" />
               </div>
               <div className="space-y-1">
@@ -81,7 +81,7 @@ export function StepCasterWelcome() {
                 </h3>
                 <p className="text-sm leading-relaxed text-white/60">{a.blurb}</p>
               </div>
-              <span className="mt-auto inline-flex items-center font-mono text-[10px] font-medium tracking-[0.18em] text-[#f9a26c] uppercase">
+              <span className="mt-auto inline-flex items-center font-mono text-[10px] font-medium tracking-[0.18em] text-[var(--cta-400)] uppercase">
                 Go
                 <ArrowRight className="ml-1 h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
               </span>

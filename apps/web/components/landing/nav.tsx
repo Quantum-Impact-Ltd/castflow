@@ -8,7 +8,7 @@ import { postLoginPath } from '@/lib/auth-redirect'
 const ITEMS: CardNavItem[] = [
   {
     label: 'For casters',
-    bgColor: '#0d1b26',
+    bgColor: 'var(--ink-900)',
     textColor: '#ffffff',
     links: [
       { label: 'Why CastFlow for casters', href: '/casters' },
@@ -19,7 +19,7 @@ const ITEMS: CardNavItem[] = [
   },
   {
     label: 'For artists',
-    bgColor: '#2a6b96',
+    bgColor: 'var(--brand-700)',
     textColor: '#ffffff',
     links: [
       { label: 'Why CastFlow for artists', href: '/artists' },
@@ -29,8 +29,8 @@ const ITEMS: CardNavItem[] = [
   },
   {
     label: 'Platform',
-    bgColor: '#85bcda',
-    textColor: '#0d1b26',
+    bgColor: 'var(--brand-300)',
+    textColor: 'var(--ink-900)',
     links: [
       { label: 'How it works', href: '/how-it-works' },
       { label: 'Trust & safety', href: '/trust' },
@@ -74,7 +74,7 @@ export function Nav() {
       logo={
         <span className="inline-flex items-center gap-2">
           <span
-            className="inline-block h-2 w-2 rounded-full bg-[#2a6b96]"
+            className="inline-block h-2 w-2 rounded-full bg-[var(--brand-700)]"
             aria-hidden
           />
           CastFlow
@@ -84,8 +84,8 @@ export function Nav() {
       secondary={secondary}
       cta={cta}
       baseColor="#ffffff"
-      menuColor="#0d1b26"
-      buttonBgColor="#0d1b26"
+      menuColor="var(--ink-900)"
+      buttonBgColor="var(--ink-900)"
       buttonTextColor="#ffffff"
     />
   )

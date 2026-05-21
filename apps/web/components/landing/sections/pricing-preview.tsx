@@ -103,16 +103,16 @@ export function PricingPreviewSection() {
                     <BorderBeam
                       size={20}
                       duration={9}
-                      colorFrom="#85bcda"
-                      colorTo="#2a6b96"
+                      colorFrom="var(--brand-300)"
+                      colorTo="var(--brand-700)"
                       borderWidth={2}
                     />
                     <BorderBeam
                       size={20}
                       duration={9}
                       delay={4.5}
-                      colorFrom="#85bcda"
-                      colorTo="#2a6b96"
+                      colorFrom="var(--brand-300)"
+                      colorTo="var(--brand-700)"
                       borderWidth={2}
                     />
                     <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center rounded-full bg-primary px-3 py-1 font-mono text-xs font-medium uppercase tracking-[0.18em] text-primary-foreground">

@@ -113,7 +113,7 @@
 }
 
 .card-nav-cta-button {
-  background-color: #0d1b26;
+  background-color: var(--ink-900);
   color: white;
   border: none;
   border-radius: calc(0.85rem - 0.4rem);
@@ -129,7 +129,7 @@
 }
 
 .card-nav-cta-button:hover {
-  background-color: #2a6b96;
+  background-color: var(--brand-700);
 }
 
 .card-nav-content {

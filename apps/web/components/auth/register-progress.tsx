@@ -25,8 +25,8 @@ export function RegisterProgress({ current, className }: RegisterProgressProps) 
               <span
                 className={cn(
                   'grid h-5 w-5 place-items-center rounded-full border text-[10px] font-medium tabular-nums transition',
-                  isDone && 'border-[#f9a26c]/60 bg-[#f9a26c]/15 text-[#f9a26c]',
-                  isCurrent && 'border-[#f9a26c] bg-[#f9a26c] text-[var(--ink-900)]',
+                  isDone && 'border-[var(--cta-400)]/60 bg-[var(--cta-400)]/15 text-[var(--cta-400)]',
+                  isCurrent && 'border-[var(--cta-400)] bg-[var(--cta-400)] text-[var(--ink-900)]',
                   !isDone && !isCurrent && 'border-white/15 text-white/40'
                 )}
               >

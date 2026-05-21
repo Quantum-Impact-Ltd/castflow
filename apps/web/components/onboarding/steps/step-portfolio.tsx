@@ -190,7 +190,7 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
         className={cn(
           'cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition',
           isDragActive
-            ? 'border-[#f9a26c]/70 bg-[#f9a26c]/[0.04]'
+            ? 'border-[var(--cta-400)]/70 bg-[var(--cta-400)]/[0.04]'
             : 'border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/[0.04]',
           upload.isPending && 'cursor-wait opacity-60'
         )}
@@ -214,7 +214,7 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
           return (
             <p className="mt-2 text-xs">
               {activeCount > 0 && (
-                <span className="text-[#f9a26c]">
+                <span className="text-[var(--cta-400)]">
                   Uploading {activeCount} file{activeCount === 1 ? '' : 's'}…
                 </span>
               )}
@@ -234,7 +234,7 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
       <div className="flex items-center justify-between text-xs">
         <span className="text-white/55">
           <strong
-            className={cn(canContinue ? 'text-[#f9a26c]' : 'text-rose-300')}
+            className={cn(canContinue ? 'text-[var(--cta-400)]' : 'text-rose-300')}
           >
             {photoCount}
           </strong>{' '}
@@ -319,7 +319,7 @@ function PortfolioCard({
         className="object-cover"
       />
       {item.isPrimary ? (
-        <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-[#f9a26c] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-900)]">
+        <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-[var(--cta-400)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-900)]">
           <Star className="h-3 w-3 fill-current" />
           Primary
         </span>
@@ -386,7 +386,7 @@ function UploadProgressCard({
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/[0.06] px-2 py-1 text-[11px] font-medium text-white transition-colors hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f9a26c]/40"
+            className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/[0.06] px-2 py-1 text-[11px] font-medium text-white transition-colors hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/40"
           >
             <RotateCcw className="h-3 w-3" aria-hidden />
             Retry
@@ -394,7 +394,7 @@ function UploadProgressCard({
           <button
             type="button"
             onClick={onDismiss}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f9a26c]/40"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/40"
             aria-label={`Dismiss ${name}`}
           >
             <X className="h-3.5 w-3.5" aria-hidden />
@@ -415,7 +415,7 @@ function UploadProgressCard({
       <div className="w-full">
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-[#f9a26c] transition-[width] duration-200"
+            className="h-full rounded-full bg-[var(--cta-400)] transition-[width] duration-200"
             style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
           />
         </div>

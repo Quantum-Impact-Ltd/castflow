@@ -101,14 +101,14 @@ export function StepExperience({ profile, onBack, onNext }: StepExperienceProps)
                 className={cn(
                   'group flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition backdrop-blur-xl',
                   isSelected
-                    ? 'border-[#f9a26c]/60 bg-[#f9a26c]/[0.06] ring-2 ring-[#f9a26c]/20'
+                    ? 'border-[var(--cta-400)]/60 bg-[var(--cta-400)]/[0.06] ring-2 ring-[var(--cta-400)]/20'
                     : 'border-white/12 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]'
                 )}
               >
                 <Icon
                   className={cn(
                     'h-5 w-5 transition',
-                    isSelected ? 'text-[#f9a26c]' : 'text-white/55'
+                    isSelected ? 'text-[var(--cta-400)]' : 'text-white/55'
                   )}
                 />
                 <span className="text-sm font-semibold tracking-tight text-white">

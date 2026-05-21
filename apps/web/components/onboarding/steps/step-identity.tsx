@@ -67,7 +67,7 @@ export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-4 backdrop-blur-xl">
-        <Lock className="mt-0.5 h-5 w-5 shrink-0 text-[#f9a26c]" />
+        <Lock className="mt-0.5 h-5 w-5 shrink-0 text-[var(--cta-400)]" />
         <div className="space-y-1 text-sm">
           <p className="font-medium text-white">Your ID is private</p>
           <p className="leading-relaxed text-white/60">
@@ -133,7 +133,7 @@ export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
           className={cn(
             'w-full cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition',
             dropzone.isDragActive
-              ? 'border-[#f9a26c]/70 bg-[#f9a26c]/[0.04]'
+              ? 'border-[var(--cta-400)]/70 bg-[var(--cta-400)]/[0.04]'
               : 'border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/[0.04]',
             upload.isPending && 'cursor-wait opacity-60',
           )}

@@ -105,7 +105,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | L5  | [x]    | Reset-password keeps token in hidden form input unnecessarily             | `reset-form.tsx:67`                   |
 | L6  | [x]    | `EMAIL_NOT_VERIFIED` mapped via HTTP 403, not canonical code              | `login-form.tsx:44`                   |
 | L7  | [x]    | Three Google fonts loaded — review if Geist Mono earns weight             | `layout.tsx:9-27`                     |
-| L8  | [ ]    | Inline brand hex strings instead of `--brand-*` tokens                    | multiple                              |
+| L8  | [x]    | Inline brand hex strings instead of `--brand-*` tokens                    | multiple                              |
 | L9  | [x]    | Two-bar hamburger in nav (visually unusual)                               | `card-nav.tsx:201-202`                |
 | L10 | [x]    | `/verify-email/confirmed` may be orphaned                                 | `app/verify-email/confirmed/page.tsx` |
 | L11 | [x]    | `dobMax` calculated at module load                                        | `step-personal.tsx:34-38`             |

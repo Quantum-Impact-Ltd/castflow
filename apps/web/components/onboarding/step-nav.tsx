@@ -55,7 +55,7 @@ export function StepNav({
           disabled={isSubmitting || nextDisabled}
           className={cn(
             'inline-flex h-10 items-center gap-1.5 rounded-xl px-5 text-sm font-semibold tracking-tight transition',
-            'bg-gradient-to-br from-[#f9a26c] to-[#e67e3e] text-[var(--ink-900)]',
+            'bg-gradient-to-br from-[var(--cta-400)] to-[var(--cta-500)] text-[var(--ink-900)]',
             'shadow-[0_10px_30px_-12px_rgba(249,162,108,0.55)]',
             'hover:from-[#fab17f] hover:to-[#e88a4b]',
             'disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'

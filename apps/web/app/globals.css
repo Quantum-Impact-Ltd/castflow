@@ -61,6 +61,12 @@
   --brand-800: #245878;
   --brand-900: #1e4a64;
 
+  /* Warm CTA accent — the orange used on shimmer buttons, eyebrow icons,
+     hover states, and gradient endpoints. Tokenised here so the dozens of
+     inline `#f9a26c` and `#e67e3e` strings stay in sync. (Audit L8.) */
+  --cta-400: #f9a26c;
+  --cta-500: #e67e3e;
+
   /* Surfaces tinted toward the brand hue (240°) with low chroma — pure #fff
      is banned per the shared design law. The page reads as warmed/cooled
      off-white, not stark. All hue values aligned to 240 so the whole
@@ -121,7 +127,7 @@
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
   --primary: var(--brand-400);
-  --primary-foreground: #0d1b26;
+  --primary-foreground: var(--ink-900);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
@@ -140,7 +146,7 @@
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: var(--brand-400);
-  --sidebar-primary-foreground: #0d1b26;
+  --sidebar-primary-foreground: var(--ink-900);
   --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: var(--brand-300);
   --sidebar-border: oklch(1 0 0 / 10%);

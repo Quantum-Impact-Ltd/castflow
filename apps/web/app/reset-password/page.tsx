@@ -45,7 +45,7 @@ export default function ResetPasswordPage() {
         </p>
         <Link
           href="/forgot-password"
-          className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[#f9a26c] px-4 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[#f9a26c]/90"
+          className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--cta-400)] px-4 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[var(--cta-400)]/90"
         >
           Request a new reset link
           <ArrowRight className="h-4 w-4" aria-hidden />

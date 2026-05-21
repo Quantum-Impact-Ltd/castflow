@@ -138,7 +138,7 @@ export function RegisterCasterForm() {
             className={cn(
               'h-11 w-full appearance-none rounded-xl border border-white/12 bg-white/[0.04] px-4 pr-10 text-sm text-white',
               'transition-colors outline-none',
-              'focus-visible:border-[#f9a26c] focus-visible:ring-2 focus-visible:ring-[#f9a26c]/30',
+              'focus-visible:border-[var(--cta-400)] focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/30',
             )}
           >
             {COMPANY_TYPES.map((t) => (
@@ -246,7 +246,7 @@ export function RegisterCasterForm() {
       <ShimmerButton
         type="submit"
         disabled={mutation.isPending || (captchaEnabled && !captchaToken)}
-        background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
+        background="linear-gradient(135deg, var(--cta-400) 0%, var(--cta-500) 100%)"
         shimmerColor="#ffffff"
         className="h-12 w-full px-6 text-sm font-semibold"
       >

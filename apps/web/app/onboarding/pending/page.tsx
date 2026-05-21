@@ -55,11 +55,11 @@ export default function OnboardingPendingPage() {
     <div className="relative isolate grid min-h-screen w-full place-items-center overflow-hidden bg-[var(--ink-900)] px-4 text-white">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-[#2a6b96] opacity-[0.22] blur-[140px]"
+        className="pointer-events-none absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-[var(--brand-700)] opacity-[0.22] blur-[140px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[#f9a26c] opacity-[0.16] blur-[140px]"
+        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[var(--cta-400)] opacity-[0.16] blur-[140px]"
       />
 
       <div className="relative z-10 mx-auto max-w-md text-center">
@@ -97,7 +97,7 @@ export default function OnboardingPendingPage() {
             <div className="mt-8 flex flex-col items-center gap-3">
               <Link
                 href="/onboarding/artist"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#f9a26c] px-5 py-2.5 text-sm font-semibold text-[var(--ink-900)] transition hover:bg-[#fab17f]"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--cta-400)] px-5 py-2.5 text-sm font-semibold text-[var(--ink-900)] transition hover:bg-[#fab17f]"
               >
                 Edit profile & resubmit
                 <ArrowRight className="h-4 w-4" />
@@ -121,7 +121,7 @@ export default function OnboardingPendingPage() {
             <div className="mt-8">
               <Link
                 href="/artist/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#f9a26c] px-5 py-2.5 text-sm font-semibold text-[var(--ink-900)] transition hover:bg-[#fab17f]"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--cta-400)] px-5 py-2.5 text-sm font-semibold text-[var(--ink-900)] transition hover:bg-[#fab17f]"
               >
                 Go to dashboard
                 <ArrowRight className="h-4 w-4" />
@@ -131,7 +131,7 @@ export default function OnboardingPendingPage() {
         ) : (
           <>
             <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-white/12 bg-white/[0.04] backdrop-blur-xl">
-              <Clock className="h-6 w-6 text-[#f9a26c]" />
+              <Clock className="h-6 w-6 text-[var(--cta-400)]" />
             </div>
             <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
               Application submitted

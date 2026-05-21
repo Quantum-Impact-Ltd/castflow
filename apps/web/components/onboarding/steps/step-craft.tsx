@@ -64,7 +64,7 @@ export function StepCraft({ currentType, onNext }: StepCraftProps) {
                 'group relative flex flex-col items-start gap-3 rounded-2xl border p-6 text-left transition',
                 'backdrop-blur-xl',
                 isSelected
-                  ? 'border-[#f9a26c]/60 bg-[#f9a26c]/[0.06] ring-2 ring-[#f9a26c]/20'
+                  ? 'border-[var(--cta-400)]/60 bg-[var(--cta-400)]/[0.06] ring-2 ring-[var(--cta-400)]/20'
                   : 'border-white/12 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]'
               )}
             >
@@ -72,7 +72,7 @@ export function StepCraft({ currentType, onNext }: StepCraftProps) {
                 className={cn(
                   'grid h-10 w-10 place-items-center rounded-lg border transition',
                   isSelected
-                    ? 'border-[#f9a26c] bg-[#f9a26c] text-[var(--ink-900)]'
+                    ? 'border-[var(--cta-400)] bg-[var(--cta-400)] text-[var(--ink-900)]'
                     : 'border-white/15 bg-white/[0.04] text-white/75'
                 )}
               >

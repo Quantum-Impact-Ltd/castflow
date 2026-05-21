@@ -117,7 +117,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <ShimmerButton
         type="submit"
         disabled={mutation.isPending}
-        background="linear-gradient(135deg, #f9a26c 0%, #e67e3e 100%)"
+        background="linear-gradient(135deg, var(--cta-400) 0%, var(--cta-500) 100%)"
         shimmerColor="#ffffff"
         className="h-12 w-full px-6 text-sm font-semibold"
       >
