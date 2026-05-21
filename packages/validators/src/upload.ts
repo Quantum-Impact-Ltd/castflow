@@ -1,14 +1,26 @@
 import { z } from 'zod'
 
 export const presignedUrlSchema = z.object({
-  type: z.enum(['portfolio_photo', 'portfolio_video', 'id_document', 'demo_reel']),
+  type: z.enum([
+    'portfolio_photo',
+    'portfolio_video',
+    'id_document',
+    'demo_reel',
+    'caster_logo',
+  ]),
   contentType: z.string().min(1),
   size: z.number().int().positive(),
 })
 
 export const confirmUploadSchema = z.object({
   url: z.string().url().optional(),
-  type: z.enum(['portfolio_photo', 'portfolio_video', 'id_document', 'demo_reel']),
+  type: z.enum([
+    'portfolio_photo',
+    'portfolio_video',
+    'id_document',
+    'demo_reel',
+    'caster_logo',
+  ]),
   key: z.string().min(1),
   caption: z.string().max(200).optional(),
   isPrimary: z.boolean().optional(),
@@ -30,6 +42,10 @@ export const UPLOAD_LIMITS = {
   demo_reel: {
     types: ['video/mp4', 'video/quicktime'],
     maxSizeMb: 200,
+  },
+  caster_logo: {
+    types: ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'],
+    maxSizeMb: 2,
   },
 } as const
 

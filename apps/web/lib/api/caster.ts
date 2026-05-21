@@ -8,6 +8,9 @@ export interface UpdateCasterInput {
   contactName?: string
   phone?: string | null
   website?: string | null
+  /** Only `null` is accepted (to clear the logo) — setting a new logo URL
+   *  happens via the upload-confirm path, server-side. */
+  logoUrl?: null
 }
 
 export function getMyCaster(init?: Init) {

@@ -1,6 +1,11 @@
 import { fetcher } from '@/lib/fetcher'
 
-export type UploadType = 'portfolio_photo' | 'portfolio_video' | 'id_document' | 'demo_reel'
+export type UploadType =
+  | 'portfolio_photo'
+  | 'portfolio_video'
+  | 'id_document'
+  | 'demo_reel'
+  | 'caster_logo'
 
 export interface PresignedUploadResponse {
   uploadUrl: string

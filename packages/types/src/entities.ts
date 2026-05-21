@@ -123,6 +123,9 @@ export interface CasterProfile {
   contactName: string
   phone: string | null
   website: string | null
+  /** Public R2 URL to the caster's company logo. Optional — set via the
+   *  upload-confirm path, cleared via PATCH /casters/me { logoUrl: null }. */
+  logoUrl: string | null
   ratingAvg: number | null
   ratingCount: number
   jobsPosted: number

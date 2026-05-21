@@ -128,6 +128,19 @@ export class UploadService {
       return { kind: 'id_document' as const, key: input.key }
     }
 
+    if (input.type === 'caster_logo') {
+      const profile = await prisma.casterProfile.findUnique({
+        where: { userId },
+        select: { id: true },
+      })
+      if (!profile) throw new AppError('NOT_FOUND', 'Caster profile not found', 404)
+      await prisma.casterProfile.update({
+        where: { id: profile.id },
+        data: { logoUrl: publicUrl },
+      })
+      return { kind: 'caster_logo' as const, url: publicUrl }
+    }
+
     return { kind: 'noop' as const, url: input.url ?? publicUrl }
   }
 

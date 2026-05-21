@@ -364,6 +364,10 @@ model CasterProfile {
   contactName      String      @map("contact_name")
   phone            String?
   website          String?
+  // Public R2 key for the company logo. Shown on caster's profile + on
+  // jobs they post — boosts perceived legitimacy with artists deciding
+  // whether to bid. Optional. (Audit M23.)
+  logoUrl          String?     @map("logo_url")
   stripeCustomerId String?     @map("stripe_customer_id")
   ratingAvg               Decimal?  @db.Decimal(2, 1) @map("rating_avg")
   ratingCount             Int       @default(0) @map("rating_count")

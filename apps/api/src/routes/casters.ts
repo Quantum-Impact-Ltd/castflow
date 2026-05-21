@@ -12,6 +12,11 @@ const updateProfileSchema = z.object({
   contactName: z.string().min(1).max(100).optional(),
   phone: z.string().max(30).optional(),
   website: z.string().url().optional().or(z.literal('')),
+  // Logo is set server-side via the upload-confirm path (UploadService
+  // writes CasterProfile.logoUrl). PATCH /casters/me only accepts `null`
+  // so the caster can explicitly clear their logo without re-uploading.
+  // (Audit M23.)
+  logoUrl: z.null().optional(),
 })
 
 export const casterRoutes = new Hono<AppEnv>()
@@ -54,6 +59,7 @@ casterRoutes.patch('/me', authenticate, requireRole('caster'), async (c) => {
   if (parsed.data.contactName) data.contactName = parsed.data.contactName
   if (parsed.data.phone !== undefined) data.phone = parsed.data.phone || null
   if (parsed.data.website !== undefined) data.website = parsed.data.website || null
+  if (parsed.data.logoUrl === null) data.logoUrl = null
 
   const updated = await prisma.casterProfile.update({
     where: { id: profile.id },
