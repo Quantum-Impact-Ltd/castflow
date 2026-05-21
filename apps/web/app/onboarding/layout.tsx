@@ -1,38 +1,27 @@
-import Link from 'next/link'
+import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
+import { auth } from '@/lib/auth-server'
 
-const STEPS = [
-  { href: '/onboarding/personal', label: 'Personal' },
-  { href: '/onboarding/stats', label: 'Stats' },
-  { href: '/onboarding/experience', label: 'Experience' },
-  { href: '/onboarding/portfolio', label: 'Portfolio' },
-  { href: '/onboarding/verification', label: 'ID' },
-  { href: '/onboarding/review', label: 'Review' },
-] as const
+// Onboarding pages should never be indexed — they're per-user flows behind
+// auth. (Audit L14.)
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
-export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-background min-h-screen">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-          <Link href="/" className="text-sm font-semibold">
-            CastFlow
-          </Link>
-          <p className="text-muted-foreground text-xs">Profile setup</p>
-        </div>
-        <nav className="mx-auto max-w-3xl px-4 pb-4">
-          <ol className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            {STEPS.map((s, i) => (
-              <li key={s.href} className="flex items-center gap-2">
-                {i > 0 && <span>›</span>}
-                <Link href={s.href} className="hover:text-foreground hover:underline">
-                  {i + 1}. {s.label}
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </nav>
-      </header>
-      <main className="mx-auto max-w-2xl px-4 py-10">{children}</main>
-    </div>
-  )
+export default async function OnboardingLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null)
+  if (!session?.user) redirect('/login')
+
+  // Admins don't onboard — bounce them to /admin. (Audit C7.)
+  if (session.user.role === 'admin') redirect('/admin')
+
+  // Suspended / banned users can't proceed regardless of role. Mirrors
+  // the panel layouts in (artist)/(caster)/(admin). (Audit M21.)
+  const status = (session.user as { status?: string }).status
+  if (status === 'suspended' || status === 'banned') redirect('/suspended')
+
+  // Role-vs-flow check (artist sub-routes only allow artists, etc.) lives
+  // in the per-flow layouts: app/onboarding/{artist,caster,pending}/layout.tsx.
+  return <>{children}</>
 }
