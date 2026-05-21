@@ -16,17 +16,14 @@ import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useLogin } from '@/lib/hooks/use-auth'
 import { postLoginPath } from '@/lib/auth-redirect'
 import { authClient } from '@/lib/auth-client'
+import { safeInternalRedirect } from '@/lib/safe-redirect'
 
 export function LoginForm() {
   const searchParams = useSearchParams()
   const mutation = useLogin()
   const [serverError, setServerError] = useState<string | null>(null)
 
-  const rawRedirect = searchParams.get('redirect')
-  const safeRedirect =
-    rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
-      ? rawRedirect
-      : null
+  const safeRedirect = safeInternalRedirect(searchParams.get('redirect'))
 
   // Prefill email when arriving from the register flow's duplicate-email
   // redirect (or any deep link of the form /login?email=…). We hard-cap
