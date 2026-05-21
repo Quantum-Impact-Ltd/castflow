@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useDropzone } from 'react-dropzone'
-import { Star, Trash2, UploadCloud, ImageIcon, AlertCircle } from 'lucide-react'
+import {
+  Star,
+  Trash2,
+  UploadCloud,
+  ImageIcon,
+  AlertCircle,
+  RotateCcw,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { UPLOAD_LIMITS } from '@castflow/validators'
 import { useUploadFile, useDeletePortfolioItem, useSetPrimaryPortfolioItem } from '@/lib/hooks/use-uploads'
@@ -62,21 +70,72 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
 
   // Track which item IDs are currently being deleted so each card shows its own spinner
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
-  // Per-file upload progress for placeholder cards (Audit M16). Keyed by a
-  // synthetic upload-id so multiple files dropped in one batch each get
-  // their own row + bar without colliding on filename clashes.
+  // Per-file upload progress + failure state for placeholder cards (Audit
+  // M16/M17). We hang onto the original File handle so a failed entry can be
+  // retried in place — losing the file on error and forcing the user to
+  // find it again on disk was a known UX gap.
   const [pendingUploads, setPendingUploads] = useState<
-    Array<{ id: string; name: string; progress: number }>
+    Array<{
+      id: string
+      name: string
+      file: File
+      progress: number
+      status: 'uploading' | 'failed'
+      error?: string
+    }>
   >([])
 
-  const updatePending = (id: string, progress: number) => {
+  const updateProgress = (id: string, progress: number) => {
     setPendingUploads((prev) =>
       prev.map((p) => (p.id === id ? { ...p, progress } : p)),
     )
   }
 
+  const markFailed = (id: string, error: string) => {
+    setPendingUploads((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, status: 'failed' as const, error, progress: 0 } : p,
+      ),
+    )
+  }
+
   const removePending = (id: string) => {
     setPendingUploads((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  const startUpload = (uploadId: string, file: File) => {
+    setPendingUploads((prev) =>
+      prev.map((p) =>
+        p.id === uploadId
+          ? { ...p, status: 'uploading' as const, progress: 0, error: undefined }
+          : p,
+      ),
+    )
+    upload.mutate(
+      {
+        file,
+        type: 'portfolio_photo',
+        onProgress: (pct) => updateProgress(uploadId, pct),
+      },
+      {
+        onSuccess: () => {
+          toast.success(`${file.name} uploaded`)
+          removePending(uploadId)
+        },
+        onError: (err) => {
+          markFailed(
+            uploadId,
+            err instanceof Error ? err.message : 'Upload failed',
+          )
+        },
+      },
+    )
+  }
+
+  const retryUpload = (id: string) => {
+    const entry = pendingUploads.find((p) => p.id === id)
+    if (!entry) return
+    startUpload(entry.id, entry.file)
   }
 
   const onDrop = (files: File[]) => {
@@ -92,22 +151,15 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
       const uploadId = `${file.name}-${file.size}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
       setPendingUploads((prev) => [
         ...prev,
-        { id: uploadId, name: file.name, progress: 0 },
-      ])
-      upload.mutate(
         {
+          id: uploadId,
+          name: file.name,
           file,
-          type: 'portfolio_photo',
-          onProgress: (pct) => updatePending(uploadId, pct),
+          progress: 0,
+          status: 'uploading',
         },
-        {
-          onSuccess: () => {
-            toast.success(`${file.name} uploaded`)
-            removePending(uploadId)
-          },
-          onError: () => removePending(uploadId),
-        },
-      )
+      ])
+      startUpload(uploadId, file)
     }
   }
 
@@ -151,12 +203,32 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
         <p className="mt-1 text-xs text-white/50">
           JPG, PNG or WebP · up to {MAX_PHOTO_MB} MB · multiple at once
         </p>
-        {pendingUploads.length > 0 && (
-          <p className="mt-2 text-xs text-[#f9a26c]">
-            Uploading {pendingUploads.length} file
-            {pendingUploads.length === 1 ? '' : 's'}…
-          </p>
-        )}
+        {(() => {
+          const activeCount = pendingUploads.filter(
+            (p) => p.status === 'uploading',
+          ).length
+          const failedCount = pendingUploads.filter(
+            (p) => p.status === 'failed',
+          ).length
+          if (activeCount === 0 && failedCount === 0) return null
+          return (
+            <p className="mt-2 text-xs">
+              {activeCount > 0 && (
+                <span className="text-[#f9a26c]">
+                  Uploading {activeCount} file{activeCount === 1 ? '' : 's'}…
+                </span>
+              )}
+              {activeCount > 0 && failedCount > 0 && (
+                <span className="text-white/40"> · </span>
+              )}
+              {failedCount > 0 && (
+                <span className="text-rose-300">
+                  {failedCount} failed
+                </span>
+              )}
+            </p>
+          )
+        })()}
       </div>
 
       <div className="flex items-center justify-between text-xs">
@@ -181,7 +253,15 @@ export function StepPortfolio({ profile, onBack, onNext }: StepPortfolioProps) {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {pendingUploads.map((p) => (
-            <UploadProgressCard key={p.id} name={p.name} progress={p.progress} />
+            <UploadProgressCard
+              key={p.id}
+              name={p.name}
+              progress={p.progress}
+              status={p.status}
+              {...(p.error !== undefined ? { error: p.error } : {})}
+              onRetry={() => retryUpload(p.id)}
+              onDismiss={() => removePending(p.id)}
+            />
           ))}
           {items.map((item) => (
             <PortfolioCard
@@ -273,7 +353,57 @@ function PortfolioCard({
   )
 }
 
-function UploadProgressCard({ name, progress }: { name: string; progress: number }) {
+function UploadProgressCard({
+  name,
+  progress,
+  status,
+  error,
+  onRetry,
+  onDismiss,
+}: {
+  name: string
+  progress: number
+  status: 'uploading' | 'failed'
+  error?: string
+  onRetry: () => void
+  onDismiss: () => void
+}) {
+  if (status === 'failed') {
+    return (
+      <div
+        className="group relative flex aspect-square flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-rose-400/30 bg-rose-400/[0.06] p-4 text-center"
+        role="status"
+        aria-label={`Upload failed for ${name}${error ? `: ${error}` : ''}`}
+      >
+        <AlertCircle className="h-6 w-6 text-rose-300" aria-hidden />
+        <p className="line-clamp-2 text-[11px] font-medium text-rose-100">
+          {name}
+        </p>
+        {error ? (
+          <p className="line-clamp-2 text-[10px] text-rose-200/80">{error}</p>
+        ) : null}
+        <div className="mt-1 flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/[0.06] px-2 py-1 text-[11px] font-medium text-white transition-colors hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f9a26c]/40"
+          >
+            <RotateCcw className="h-3 w-3" aria-hidden />
+            Retry
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f9a26c]/40"
+            aria-label={`Dismiss ${name}`}
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className="group relative flex aspect-square flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-4"
