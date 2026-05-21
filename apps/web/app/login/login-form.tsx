@@ -53,7 +53,11 @@ export function LoginForm() {
       },
       onError: (err) => {
         const e = err as Error & { code?: string; status?: number }
-        if (e.code === 'EMAIL_NOT_VERIFIED' || e.status === 403) {
+        // Match on the canonical code only — `status === 403` alone is too
+        // broad (a banned/suspended account also returns 403, and "verify
+        // your email" would be misleading there). Better Auth always sets
+        // `code: 'EMAIL_NOT_VERIFIED'` on the unverified-login path. (Audit L6.)
+        if (e.code === 'EMAIL_NOT_VERIFIED') {
           setServerError('Please verify your email before logging in.')
         } else if (e.status === 401) {
           setServerError('Incorrect email or password.')
