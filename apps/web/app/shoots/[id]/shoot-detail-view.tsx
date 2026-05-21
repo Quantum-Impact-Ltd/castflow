@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   ArrowRight,
   CalendarDays,
@@ -306,12 +306,15 @@ export function ShootDetailView({ shoot }: Props) {
                 <DetailRow
                   label="Call time"
                   locked={!isAuthed}
-                  value={shoot.callTime}
+                  {...(isAuthed ? { value: shoot.callTime } : {})}
                 />
                 <DetailRow
                   label="Shoot address"
                   locked={!isAuthed}
-                  value={shoot.shootLocationDetail}
+                  // Sensitive: never pass the address into the client tree
+                  // when the user isn't entitled to it. Defence-in-depth on
+                  // top of the API-side rule (CLAUDE.md).
+                  {...(isAuthed ? { value: shoot.shootLocationDetail } : {})}
                   lockHint="Released after booking confirmed"
                 />
                 <DetailRow label="Wardrobe" value={shoot.wardrobe} />
@@ -509,10 +512,17 @@ function DetailRow({
   lockHint,
 }: {
   label: string
-  value: string
+  /** Omit (or pass empty) when locked — the locked branch never renders this. */
+  value?: string
   locked?: boolean
   lockHint?: string
 }) {
+  const pathname = usePathname()
+  // When locked we MUST NOT render the real `value` — CSS blur is presentation
+  // only, the address is still in the DOM for anyone with DevTools. Render an
+  // opaque placeholder so the unauthorised value never leaves the server's
+  // hand. CLAUDE.md non-negotiable rule: shootLocationDetail is never
+  // returned until contract fully signed. (Audit C4.)
   return (
     <div className="grid grid-cols-1 gap-2 border-b border-border/60 pb-6 last:border-b-0 sm:grid-cols-[200px_1fr] sm:gap-6">
       <dt className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-foreground/55">
@@ -521,11 +531,14 @@ function DetailRow({
       <dd className="text-sm leading-relaxed text-foreground/85">
         {locked ? (
           <span className="inline-flex flex-wrap items-center gap-2">
-            <span className="select-none rounded-md bg-foreground/5 px-2.5 py-1 font-mono text-xs text-foreground/40 [filter:blur(3px)]">
-              {value}
+            <span
+              aria-hidden
+              className="select-none rounded-md bg-foreground/5 px-2.5 py-1 font-mono text-xs text-foreground/40"
+            >
+              ••••• ••• ••
             </span>
             <Link
-              href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/shoots')}`}
+              href={`/login?redirect=${encodeURIComponent(pathname ?? '/shoots')}`}
               className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 underline-offset-4 transition-colors hover:text-foreground hover:underline"
             >
               <Lock className="h-3 w-3" aria-hidden /> Sign in to view
