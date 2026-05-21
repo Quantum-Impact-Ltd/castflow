@@ -109,13 +109,13 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | L9  | [x]    | Two-bar hamburger in nav (visually unusual)                               | `card-nav.tsx:201-202`                |
 | L10 | [x]    | `/verify-email/confirmed` may be orphaned                                 | `app/verify-email/confirmed/page.tsx` |
 | L11 | [x]    | `dobMax` calculated at module load                                        | `step-personal.tsx:34-38`             |
-| L12 | [ ]    | `autoFocus` on every step's first input is aggressive on mobile           | all step components                   |
-| L13 | [ ]    | Skills step inconsistency (review says missing, stepper says passable)    | `step-review.tsx:114` vs `page.tsx:200-202` |
+| L12 | [x]    | `autoFocus` on every step's first input is aggressive on mobile           | all step components                   |
+| L13 | [x]    | Skills step inconsistency (review says missing, stepper says passable)    | `step-review.tsx:114` vs `page.tsx:200-202` |
 | L14 | [x]    | No `<meta name="robots" content="noindex">` on onboarding pages           | onboarding layout                     |
-| L15 | [ ]    | Optional fields not visually distinct                                     | multiple form components              |
-| L16 | [ ]    | No "time to complete" estimate on artist onboarding                       | step-craft / step 1                   |
-| L17 | [ ]    | Forgot-password landing doesn't autofocus email                           | `forgot-form.tsx:60-69`               |
-| L18 | [ ]    | Suspended page metadata missing `Metadata` type import                    | `app/suspended/page.tsx:4`            |
+| L15 | [x]    | Optional fields not visually distinct                                     | multiple form components              |
+| L16 | [x]    | No "time to complete" estimate on artist onboarding                       | step-craft / step 1                   |
+| L17 | [x]    | Forgot-password landing doesn't autofocus email                           | `forgot-form.tsx:60-69`               |
+| L18 | [x]    | Suspended page metadata missing `Metadata` type import                    | `app/suspended/page.tsx:4`            |
 
 ---
 
@@ -223,3 +223,9 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | 2026-05-21 | L9 | `cae183b` | Conventional 3-bar hamburger in the landing nav. Added a third `.hamburger-line` and a `:nth-child(2)` opacity-fade so the icon collapses to the same X glyph on open. Tweaked the gap/translateY math (gap 6→5, translateY ±4 → ±7) to keep the closed icon balanced. |
 | 2026-05-21 | L10 | `68d95b8` | Deleted `/verify-email/confirmed/page.tsx`. The route was orphaned — no code in apps/web, apps/api, or the Better Auth flow ever linked to it (the `[token]` success path lands the user back at `/login`). Removing it eliminates the search-index risk (it had no noindex) and drift surface. |
 | 2026-05-21 | L11 | `f5bf985` | `dobMax` was computed by a module-load IIFE in `step-personal.tsx`, so a tab open across midnight kept yesterday's 18+ cap on the date picker. Extracted into a `calculateDobMax()` helper called from the component body — re-evaluated per render at near-zero cost. |
+| 2026-05-22 | L12 | `162650d` | Removed the lone `autoFocus` from `step-personal`'s first-name input. It was the only onboarding step that auto-focused, so on mobile it punched up the keyboard immediately on arrival — before the user could read the section copy or tips panel. Aligns step-personal with the rest of the flow. |
+| 2026-05-22 | L13 | `293ccf4` | `step-review` was flagging skills with 0 entries as `tone: 'missing'` even though the artist-onboarding gate (`resolveFirstIncompleteStep`) explicitly treats skills as optional via `continue`. That contradiction meant an artist with no skills passed every step yet had submit blocked by `hasMissing` (M20). Skills tone is now unconditionally `'ok'`; the row reads "None added (optional)" when empty. |
+| 2026-05-22 | L15 | `b758e2f` | Inline "(optional)" muted suffix added to the `<Label>` for fields that buried optionality in helper text below the input: step-personal (Pronouns, Bio), step-experience (Instagram handle), step-caster-company (Phone, Website). Fields whose labels already advertised optionality (step-stats voice type / spotlight URL, step-experience rates legend, step-caster-company logo) were left alone. |
+| 2026-05-22 | L16 | `0075468` | Appended "Takes about 10 minutes start to finish." to the craft step's subtitle in `onboarding/artist/page.tsx`. Lands in the existing hero copy slot (`OnboardingShell subtitle` prop) — no new UI surface to maintain. |
+| 2026-05-22 | L17 | `05627f4` | Added `autoFocus` to the email field on `/forgot-password`. The page is one input deep and matches the prefilled-password autoFocus pattern on `/login`. |
+| 2026-05-22 | L18 | (already done in H10) | The Suspended page already imports `Metadata` from `next` and types its `metadata` export accordingly — closed during the H10 implementation (`bd66937` or thereabouts; commit landed with the gate logic). Flipping the row for bookkeeping. |
