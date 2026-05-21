@@ -117,6 +117,7 @@ and old rows default to NULL.
 - `NEXT_PUBLIC_SITE_URL` (web; defaults to `https://castflow.co.uk`)
 - `TURNSTILE_SECRET_KEY` (API; optional — leave unset to disable CAPTCHA)
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (web; optional — pair with above)
+- `NEXT_PUBLIC_APPLE_ENABLED` (web; optional — set to `true` to surface the Apple sign-in button on /login. API must also have `APPLE_CLIENT_ID` + `APPLE_CLIENT_SECRET` set for the OAuth flow to succeed.)
 
 **New files added in remediation:**
 

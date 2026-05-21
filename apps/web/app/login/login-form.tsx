@@ -73,6 +73,20 @@ export function LoginForm() {
       })
   }
 
+  const handleApple = () => {
+    setServerError(null)
+    authClient.signIn
+      .social({ provider: 'apple', callbackURL: safeRedirect ?? '/' })
+      .catch((err: unknown) => {
+        setServerError((err as Error).message || 'Apple sign-in failed.')
+      })
+  }
+
+  // Backend supports Apple via `socialProviders.apple` when APPLE_CLIENT_ID /
+  // APPLE_CLIENT_SECRET are set. Gate the UI on a build-time public flag so
+  // we can roll out the credentials before exposing the button. (Audit L4.)
+  const appleEnabled = process.env['NEXT_PUBLIC_APPLE_ENABLED'] === 'true'
+
   return (
     <div className="space-y-5">
       <form
@@ -155,7 +169,31 @@ export function LoginForm() {
         <GoogleGlyph />
         Continue with Google
       </button>
+
+      {appleEnabled ? (
+        <button
+          type="button"
+          onClick={handleApple}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] text-sm font-medium text-white transition-colors hover:bg-white/[0.08]"
+        >
+          <AppleGlyph />
+          Continue with Apple
+        </button>
+      ) : null}
     </div>
+  )
+}
+
+function AppleGlyph() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="h-4 w-4 fill-current"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M16.365 1.43c0 1.14-.46 2.234-1.213 3.022-.82.85-2.13 1.51-3.21 1.42-.137-1.122.41-2.275 1.16-3.013.84-.85 2.26-1.503 3.263-1.43zM20.5 17.27c-.39.9-.58 1.31-1.08 2.11-.7 1.12-1.69 2.51-2.92 2.52-1.1.01-1.38-.71-2.86-.7-1.49.01-1.8.72-2.9.71-1.23-.01-2.17-1.27-2.87-2.39-1.95-3.13-2.15-6.81-.95-8.77.85-1.39 2.19-2.21 3.46-2.21 1.29 0 2.1.71 3.16.71 1.03 0 1.66-.71 3.15-.71 1.13 0 2.33.62 3.18 1.69-2.8 1.54-2.34 5.55.63 7.04z" />
+    </svg>
   )
 }
 
