@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Briefcase, Users } from 'lucide-react'
+import { ArrowRight, Briefcase, Loader2, Users } from 'lucide-react'
 import { useCompleteOnboarding } from '@/lib/hooks/use-caster'
 
 const ACTIONS = [
@@ -33,6 +33,33 @@ export function StepCasterWelcome() {
     firedRef.current = true
     complete.mutate()
   })
+
+  // Wait for the mutation to commit before revealing the action cards.
+  // Without this, a caster clicking 'Post a job' before the PATCH lands
+  // would be bounced back here by the (caster)/layout gate (which checks
+  // onboardingCompletedAt on every navigation) and lose context. (H17.)
+  if (!complete.isSuccess) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-5 backdrop-blur-xl">
+          <Loader2 className="h-5 w-5 animate-spin text-[#f9a26c]" />
+          <div className="text-sm">
+            <p className="font-medium text-white">Finishing setup…</p>
+            <p className="text-xs leading-relaxed text-white/60">
+              {complete.isError
+                ? 'Something went wrong — retrying.'
+                : 'Just a second — wiring up your account.'}
+            </p>
+          </div>
+        </div>
+        {/* Skeleton placeholder for the cards so the layout doesn't jump. */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="h-40 animate-pulse rounded-2xl bg-white/[0.03]" />
+          <div className="h-40 animate-pulse rounded-2xl bg-white/[0.03]" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
