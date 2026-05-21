@@ -236,7 +236,7 @@ export function StepReview({ profile, onBack, onJumpTo }: StepReviewProps) {
         <h3 className="text-sm font-semibold tracking-tight text-white">What happens next</h3>
         <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-white/65">
           <li>· Your application goes to the admin review queue.</li>
-          <li>· Expected turnaround is within 48 hours.</li>
+          <li>· Expected turnaround is usually within 48 hours.</li>
           <li>· You&apos;ll get an email when there&apos;s a decision.</li>
           <li>
             · If approved, your profile goes live and you can start bidding on jobs

@@ -78,8 +78,8 @@ export default function OnboardingPendingPage() {
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-white/65">
               Thanks for applying to CastFlow. A real human admin will look over your
-              profile within 48 hours — we&apos;ll email you the moment there&apos;s a
-              decision.
+              profile — usually within 48 hours. We&apos;ll email you the moment
+              there&apos;s a decision.
             </p>
             <p className="mt-3 text-sm leading-relaxed text-white/65">
               You can close this tab — there&apos;s nothing else to do for now.
