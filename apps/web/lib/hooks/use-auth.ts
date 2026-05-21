@@ -66,9 +66,12 @@ export function useLogout() {
 }
 
 export function useForgotPassword() {
+  // No `onError` toast: the form intentionally renders a generic success
+  // state in `onSettled` regardless of result so we don't leak whether the
+  // email exists (account-enumeration defence). A red toast on top of that
+  // success card contradicts the UI and tips off attackers. (Audit H3.)
   return useMutation({
     mutationFn: (input: ForgotPasswordInput) => forgotPassword(input),
-    onError: (err) => toast.error(errorMessage(err)),
   })
 }
 
