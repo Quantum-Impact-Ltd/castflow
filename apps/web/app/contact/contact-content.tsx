@@ -4,8 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { toast } from 'sonner'
+import { contactMessageSchema, type ContactMessageInput } from '@castflow/validators'
+import { useSendContactMessage } from '@/lib/hooks/use-contact'
 import {
   AlertTriangle,
   ArrowRight,
@@ -62,31 +63,22 @@ const TOPICS: Array<{
   },
 ]
 
-const contactSchema = z.object({
-  name: z.string().min(2, 'Please enter your name'),
-  email: z.string().email('Enter a valid email address'),
-  company: z.string().optional(),
-  topic: z.enum(['sales', 'support', 'safety', 'press', 'other']),
-  message: z
-    .string()
-    .min(20, 'Tell us a bit more — 20+ characters helps us route this fast')
-    .max(2000, 'Keep it under 2000 characters'),
-})
-
-type ContactInput = z.infer<typeof contactSchema>
+type ContactInput = ContactMessageInput
 
 export function ContactContent() {
   const [topic, setTopic] = useState<Topic>('sales')
   const form = useForm<ContactInput>({
-    resolver: zodResolver(contactSchema),
+    resolver: zodResolver(contactMessageSchema),
     defaultValues: {
       name: '',
       email: '',
       company: '',
       topic: 'sales',
       message: '',
+      website: '',
     },
   })
+  const sendMessage = useSendContactMessage()
 
   const {
     register,
@@ -97,15 +89,20 @@ export function ContactContent() {
   } = form
 
   const onSubmit = async (values: ContactInput) => {
-    // Mock submission — wire to Resend / backend later.
-    await new Promise((r) => setTimeout(r, 900))
-    toast.success('Message sent', {
-      description: `We&apos;ll reply to ${values.email} within ${
+    try {
+      await sendMessage.mutateAsync(values)
+      const sla =
         TOPICS.find((t) => t.value === values.topic)?.sla ?? '24 hours'
-      }.`,
-    })
-    reset()
-    setTopic('sales')
+      toast.success('Message sent', {
+        description: `We'll reply to ${values.email} within ${sla}.`,
+      })
+      reset()
+      setTopic('sales')
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Something went wrong — try again'
+      toast.error('We couldn’t send your message', { description: message })
+    }
   }
 
   return (
@@ -160,6 +157,18 @@ export function ContactContent() {
                   className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2"
                   noValidate
                 >
+                  {/* Honeypot — kept off-screen + hidden from AT. Bots that
+                      blindly fill every input populate this; server treats
+                      any non-empty value as a silent reject. Real users
+                      never see or focus this field. */}
+                  <input
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    className="hidden"
+                    {...register('website')}
+                  />
                   <Field label="Name" htmlFor="name" error={errors.name?.message}>
                     <Input
                       id="name"

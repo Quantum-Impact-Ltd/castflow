@@ -23,6 +23,9 @@ const envSchema = z.object({
 
   RESEND_API_KEY: z.string().min(1),
   EMAIL_FROM: z.string().email().default('noreply@castflow.co.uk'),
+  // Where contact-form submissions land. Defaults to the topic-routed
+  // inbox documented on /contact; can be overridden per environment.
+  CONTACT_INBOX_EMAIL: z.string().email().default('hello@castflow.co.uk'),
 
   FRONTEND_URL: z.string().url(),
 
@@ -32,6 +35,14 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   APPLE_CLIENT_ID: z.string().optional(),
   APPLE_CLIENT_SECRET: z.string().optional(),
+
+  // Dev-only: auto-verify newly registered users so they can log in without
+  // a working Resend setup. Ignored when NODE_ENV === 'production' so it
+  // can't leak into a live deployment by accident.
+  DEV_AUTO_VERIFY_EMAIL: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true' || v === '1'),
 })
 
 const result = envSchema.safeParse(process.env)
