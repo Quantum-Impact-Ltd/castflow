@@ -28,6 +28,7 @@ import { NumberTicker } from '@/components/ui/number-ticker'
 import { Reveal } from '@/components/landing/reveal'
 import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
 import { formatCurrency, cn } from '@/lib/utils'
+import { useAuthSession } from '@/providers/session-provider'
 import {
   getSimilarShoots,
   type PublicJob,
@@ -49,9 +50,12 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 export function ShootDetailView({ shoot }: Props) {
   const router = useRouter()
-  // TODO: replace with `authClient.useSession()` once API is live.
-  const isAuthed = false
-  const isArtist = false
+  // Real session — replaces prior `isAuthed = false`/`isArtist = false`
+  // hardcodes so logged-in users see the actual gated UI rather than the
+  // public anonymous view. (Audit H11.)
+  const { session } = useAuthSession()
+  const isAuthed = Boolean(session?.user)
+  const isArtist = session?.user.role === 'artist'
 
   const remainingSpots = Math.max(
     shoot.headcountRequired - shoot.headcountFilled,

@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { Reveal } from '@/components/landing/reveal'
 import { getMockArtist, getMockReviews } from '@/lib/mock/artists'
 import { cn } from '@/lib/utils'
+import { useAuthSession } from '@/providers/session-provider'
 import type { PortfolioItem, ArtistSkill, Review } from '@castflow/types'
 
 // NOTE: Using mock data while `/talent/:id` is still caster-auth-gated on the
@@ -31,9 +32,11 @@ export function ArtistProfileView({ id }: Props) {
   const router = useRouter()
   const profile = getMockArtist(id)
   const reviews = getMockReviews(id)
-  // TODO: wire `authClient.useSession()` once the backend is running.
-  // While on mock data, default to the public (anonymous) view.
-  const isCaster = false
+  // Real session — replaces the prior `const isCaster = false` placeholder
+  // which made every logged-in caster see the public "Sign in to contact"
+  // UI. (Audit H11.)
+  const { session } = useAuthSession()
+  const isCaster = session?.user.role === 'caster'
 
   const handleContactClick = () => {
     if (!isCaster) {
