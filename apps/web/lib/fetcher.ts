@@ -56,6 +56,24 @@ function buildUrl(path: string, params?: RequestOptions['params']): string {
   return qs ? `${url}?${qs}` : url
 }
 
+// Public auth surfaces where a 401 from a background request should NOT
+// trigger a hard navigation to /login. Anything else (dashboards, public
+// pages firing authenticated queries) still bounces.
+const AUTH_SURFACE_PREFIXES = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+  '/suspended',
+] as const
+
+function isOnAuthSurface(pathname: string): boolean {
+  return AUTH_SURFACE_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`) || pathname.startsWith(`${p}?`),
+  )
+}
+
 function isSuccessEnvelope<T>(v: unknown): v is SuccessEnvelope<T> {
   return typeof v === 'object' && v !== null && (v as { success?: unknown }).success === true
 }
@@ -83,8 +101,15 @@ export async function fetcher<T>(path: string, opts: RequestOptions = {}): Promi
   // 401 redirect preserved from the previous axios interceptor.
   // Browser-only — server-side callers (route handlers, server components)
   // get the ApiError thrown below and decide their own redirect strategy.
+  //
+  // Guard against bouncing the user when they're already on a public auth
+  // page (login itself round-trips through Better Auth, which can 401 a
+  // wrong-password attempt from the /login screen; without this guard we'd
+  // hard-reload /login and clobber any error state the form is rendering).
   if (res.status === 401 && typeof window !== 'undefined') {
-    window.location.href = '/login'
+    if (!isOnAuthSurface(window.location.pathname)) {
+      window.location.href = '/login'
+    }
   }
 
   let payload: unknown
