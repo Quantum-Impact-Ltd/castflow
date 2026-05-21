@@ -56,7 +56,8 @@ interface StepCopy {
 const STEP_COPY: Record<StepKey, StepCopy> = {
   craft: {
     title: 'Which craft are you here for?',
-    subtitle: 'Pick the one that fits you best. This shapes the rest of your application.',
+    subtitle:
+      'Pick the one that fits you best. This shapes the rest of your application. Takes about 10 minutes start to finish.',
     tips: {
       heading: 'Not sure which to pick?',
       bullets: [
