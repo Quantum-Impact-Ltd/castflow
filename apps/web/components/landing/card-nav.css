@@ -44,7 +44,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  gap: 6px;
+  gap: 5px;
   background: transparent;
   border: 0;
   padding: 0 0.25rem;
@@ -66,11 +66,15 @@
 }
 
 .hamburger-menu.open .hamburger-line:first-child {
-  transform: translateY(4px) rotate(45deg);
+  transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger-menu.open .hamburger-line:nth-child(2) {
+  opacity: 0;
 }
 
 .hamburger-menu.open .hamburger-line:last-child {
-  transform: translateY(-4px) rotate(-45deg);
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 .logo-container {

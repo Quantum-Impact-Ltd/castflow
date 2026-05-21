@@ -106,7 +106,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | L6  | [x]    | `EMAIL_NOT_VERIFIED` mapped via HTTP 403, not canonical code              | `login-form.tsx:44`                   |
 | L7  | [x]    | Three Google fonts loaded — review if Geist Mono earns weight             | `layout.tsx:9-27`                     |
 | L8  | [ ]    | Inline brand hex strings instead of `--brand-*` tokens                    | multiple                              |
-| L9  | [ ]    | Two-bar hamburger in nav (visually unusual)                               | `card-nav.tsx:201-202`                |
+| L9  | [x]    | Two-bar hamburger in nav (visually unusual)                               | `card-nav.tsx:201-202`                |
 | L10 | [x]    | `/verify-email/confirmed` may be orphaned                                 | `app/verify-email/confirmed/page.tsx` |
 | L11 | [x]    | `dobMax` calculated at module load                                        | `step-personal.tsx:34-38`             |
 | L12 | [ ]    | `autoFocus` on every step's first input is aggressive on mobile           | all step components                   |

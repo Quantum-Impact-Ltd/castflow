@@ -236,6 +236,7 @@ export function CardNav({
           >
             <div className="hamburger-line" />
             <div className="hamburger-line" />
+            <div className="hamburger-line" />
           </button>
 
           <Link
