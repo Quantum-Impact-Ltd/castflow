@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useDropzone } from 'react-dropzone'
 import { Star, Trash2, UploadCloud, ImageIcon, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -195,10 +196,12 @@ function PortfolioCard({
 }) {
   return (
     <div className="group relative aspect-square overflow-hidden rounded-xl border border-white/12 bg-white/[0.04]">
-      <img
+      <Image
         src={item.url}
         alt={item.caption ?? 'Portfolio item'}
-        className="h-full w-full object-cover"
+        fill
+        sizes="(min-width: 768px) 25vw, 50vw"
+        className="object-cover"
       />
       {item.isPrimary ? (
         <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-[#f9a26c] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-900)]">

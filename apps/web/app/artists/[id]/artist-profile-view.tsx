@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Lock, MapPin, Star, Sparkles, ChevronLeft } from 'lucide-react'
 import ProfileCard from '@/components/card/profile-card'
@@ -285,11 +286,12 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
                 playsInline
               />
             ) : (
-              <img
+              <Image
                 src={item.url}
                 alt={item.caption ?? 'Portfolio image'}
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                fill
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
             )}
             {item.caption && (
@@ -340,10 +342,18 @@ function Lightbox({
             className="max-h-[85vh] w-auto rounded-xl"
           />
         ) : (
-          <img
+          // Lightbox shows the full-size image; Image with fill won't work
+          // (no explicit dims). Use width=0/height=0 trick with style for
+          // intrinsic sizing while still going through the optimiser.
+          <Image
             src={item.url}
             alt={item.caption ?? 'Portfolio image'}
+            width={1600}
+            height={1200}
+            sizes="100vw"
             className="max-h-[85vh] w-auto rounded-xl"
+            style={{ width: 'auto', height: 'auto' }}
+            priority
           />
         )}
         {item.caption && (
