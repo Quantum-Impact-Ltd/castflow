@@ -99,7 +99,7 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | ID  | Status | Issue                                                                     | Location                              |
 | --- | ------ | ------------------------------------------------------------------------- | ------------------------------------- |
 | L1  | [x]    | `Suspense fallback={null}` causes blank flash                             | login + verify-email pages            |
-| L2  | [ ]    | External Unsplash `<img>` on `/register`                                  | `app/register/page.tsx:121, 87`       |
+| L2  | [x]    | External Unsplash `<img>` on `/register`                                  | `app/register/page.tsx:121, 87`       |
 | L3  | [ ]    | Resend-verification button has no cooldown timer                          | `verify-email-client.tsx`             |
 | L4  | [ ]    | Apple Sign-In missing despite backend support                             | `login-form.tsx:138-144`              |
 | L5  | [ ]    | Reset-password keeps token in hidden form input unnecessarily             | `reset-form.tsx:67`                   |
@@ -213,3 +213,4 @@ Counts: **7 Critical, 17 High, 23 Medium, 18 Low**.
 | 2026-05-21 | M2 | `8abc893` | Login form now reads `?email=` from the search params, sanitises (length≤254, must contain '@') and uses it as the RHF default. autoFocus moves to the password field when prefilled so the user can type their password immediately. Closes the loop on register-{artist,caster} which already redirect to `/login?email=…` on the duplicate-email path. |
 | 2026-05-21 | M1 | `dcb39ca` | Stripped `'use client'` from `AuthShell` (the heavy atmospheric layer — Particles canvas, AnimatedGridPattern, blur washes — no longer ships as JS on /login, /register, /verify-email, /forgot-password, /reset-password). Form-only primitives (`AuthInput`, `AuthField`, `AuthDivider`) extracted to a sibling `auth-form-fields.tsx` client module; six consumer forms updated to import from there. |
 | 2026-05-21 | L1 | `5ed7846` | Replaced `Suspense fallback={null}` with layout-matched skeleton placeholders on `/login` and `/verify-email`. Both wrap a client component using `useSearchParams()`, so the boundary is required; the previous empty fallback caused a visible blank flash + layout shift while the client subtree streamed in. Skeleton sizes mirror the real form (email + password + submit + divider + Google CTA for login; resend email field + button for verify-email) so there's no jump when the real form mounts. |
+| 2026-05-21 | L2 | (subsumed by H6) | The `/register` role tiles already migrated to `next/image` as part of H6 part-1 (`e404e87`). Unsplash hosts are allowlisted in `next.config.ts`. No code change needed — flipping the row for bookkeeping. |
