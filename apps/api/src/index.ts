@@ -7,6 +7,7 @@ import { auth } from './lib/auth'
 import { AppError } from './errors'
 
 import { rateLimit } from './middleware/rateLimit'
+import { requireOrigin } from './middleware/requireOrigin'
 import { authRoutes } from './routes/auth'
 import { artistRoutes } from './routes/artists'
 import { casterRoutes } from './routes/casters'
@@ -66,6 +67,50 @@ app.use(
     message: 'Too many password-reset requests. Try again later.',
   })
 )
+// Resend-verification: hard cap per (email, IP). Without this an attacker
+// can email-bomb a target by replaying the endpoint, burning Resend quota
+// and getting the sender domain blocklisted. Read the email from a cloned
+// request body so Better Auth's downstream handler still sees the original.
+app.use(
+  '/api/auth/send-verification-email',
+  rateLimit({
+    scope: 'auth:resend-verification',
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: 'Too many verification-email requests. Try again later.',
+    key: async (c) => {
+      let email = 'unknown'
+      try {
+        const cloned = c.req.raw.clone()
+        const body = (await cloned.json()) as { email?: unknown } | null
+        if (body && typeof body.email === 'string') {
+          email = body.email.trim().toLowerCase()
+        }
+      } catch {
+        // Malformed body — fall back to IP-only key.
+      }
+      const ip =
+        c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+        c.req.header('x-real-ip') ??
+        c.req.header('cf-connecting-ip') ??
+        'unknown'
+      return `${email}|${ip}`
+    },
+  })
+)
+// Block Better Auth's auto-mounted sign-up endpoint. Our canonical entry
+// points are POST /api/v1/auth/register-artist|register-caster — those run
+// inside a transaction that creates the ArtistProfile/CasterProfile rows.
+// Hitting BA's bare /sign-up/email would create a user with no profile,
+// leaving an orphan that breaks every downstream relation. Reject it with a
+// 404 so the route effectively doesn't exist from a client's perspective.
+app.all('/api/auth/sign-up/*', (c) =>
+  c.json(
+    { success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } },
+    404
+  )
+)
+
 // `*` reliably captures the full Better Auth surface here. In this app shape,
 // `/**` appeared in the route table but fell through to Hono's 404 handler.
 app.on(['GET', 'POST'], '/api/auth/*', async (c) => {
@@ -74,6 +119,11 @@ app.on(['GET', 'POST'], '/api/auth/*', async (c) => {
 
 // ── API v1 ─────────────────────────────────────────────────────────────────
 const api = app.basePath('/api/v1')
+
+// CSRF defence: every state-changing /api/v1/* call must come from an
+// allowed Origin. Read-only methods pass through. Webhooks live under
+// /webhooks/* and have their own signature check.
+api.use('*', requireOrigin)
 
 api.route('/auth', authRoutes)
 api.route('/artists', artistRoutes)

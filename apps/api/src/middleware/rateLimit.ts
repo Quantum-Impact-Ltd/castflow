@@ -2,7 +2,7 @@ import type { Context, MiddlewareHandler } from 'hono'
 import { env } from '../lib/env'
 import { AppError } from '../errors'
 
-type KeyFn = (c: Context) => string
+type KeyFn = (c: Context) => string | Promise<string>
 
 interface RateLimitOptions {
   windowMs: number
@@ -58,7 +58,7 @@ export function rateLimit(opts: RateLimitOptions): MiddlewareHandler {
     const now = Date.now()
     sweep(now)
 
-    const bucketKey = `${scope}:${key(c)}`
+    const bucketKey = `${scope}:${await key(c)}`
     const existing = buckets.get(bucketKey)
 
     if (!existing || existing.resetAt <= now) {
