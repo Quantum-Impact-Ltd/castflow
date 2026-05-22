@@ -159,20 +159,28 @@ function FeaturedArtistCard({
           )}
         />
 
-        {/* Availability dot */}
+        {/* Availability badge — readable at glance per audit P1 */}
         <span
-          className="absolute right-3.5 top-3.5 z-20 flex h-2 w-2"
-          aria-label={artist.available ? 'Available' : 'Unavailable'}
+          className={cn(
+            'absolute right-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1',
+            'font-mono text-[10px] font-semibold uppercase tracking-[0.18em]',
+            artist.available
+              ? 'bg-emerald-500/95 text-emerald-50'
+              : 'bg-foreground/70 text-background',
+          )}
         >
-          {artist.available ? (
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-          ) : null}
-          <span
-            className={cn(
-              'relative inline-flex h-2 w-2 rounded-full ring-2 ring-white/85',
-              artist.available ? 'bg-emerald-500' : 'bg-foreground/40',
-            )}
-          />
+          <span className="relative flex h-1.5 w-1.5">
+            {artist.available ? (
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-200 opacity-80" />
+            ) : null}
+            <span
+              className={cn(
+                'relative inline-flex h-1.5 w-1.5 rounded-full',
+                artist.available ? 'bg-emerald-200' : 'bg-background/80',
+              )}
+            />
+          </span>
+          {artist.available ? 'Available' : 'Booked'}
         </span>
 
         {/* Bottom gradient seal */}

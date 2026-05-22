@@ -568,7 +568,7 @@ function CasterCard({ shoot }: { shoot: Shoot }) {
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
             Posted by
           </p>
-          <h3 className="mt-2 font-serif text-3xl leading-tight text-foreground">
+          <h3 className="mt-2 text-3xl font-medium tracking-[-0.015em] leading-tight text-foreground">
             {shoot.caster.companyName}
           </h3>
           {shoot.casterMeta.verified ? (

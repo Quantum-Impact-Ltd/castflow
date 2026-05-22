@@ -412,8 +412,8 @@ function ContactRow({
 
 function SafetyCallout() {
   return (
-    <div className="flex gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-6">
-      <span className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-full bg-amber-500/15 text-amber-700">
+    <div className="flex gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+      <span className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-full bg-amber-100 text-amber-700">
         <AlertTriangle className="h-4 w-4" aria-hidden />
       </span>
       <div>

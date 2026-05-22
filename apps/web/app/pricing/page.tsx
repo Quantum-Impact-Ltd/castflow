@@ -156,9 +156,7 @@ function TierCard({ tier }: { tier: Tier }) {
           </span>
           <span className="text-sm text-foreground/60">/ month</span>
         </p>
-        <p className="mt-2 font-mono text-sm text-foreground/70">
-          + {tier.commission}
-        </p>
+        <p className="mt-2 text-sm text-foreground/70">+ {tier.commission}</p>
       </div>
 
       <ul className="mt-8 flex flex-1 flex-col gap-3 border-t border-border/60 pt-6">
