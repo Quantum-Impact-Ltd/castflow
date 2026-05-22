@@ -114,7 +114,7 @@ export function StepCasterCompany({ profile, onSkip, onNext }: StepCasterCompany
       noValidate
       className="space-y-5"
     >
-      <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-4 text-sm backdrop-blur-xl">
+      <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-4 text-sm">
         <p className="font-medium text-white">
           Signed in as <span className="text-[var(--cta-400)]">{profile.companyName}</span>
         </p>
@@ -132,7 +132,7 @@ export function StepCasterCompany({ profile, onSkip, onNext }: StepCasterCompany
       <div className="space-y-1.5">
         <Label>Company logo</Label>
         {currentLogo ? (
-          <div className="flex items-center gap-4 rounded-2xl border border-white/12 bg-white/[0.03] p-3 backdrop-blur-xl">
+          <div className="flex items-center gap-4 rounded-2xl border border-white/12 bg-white/[0.03] p-3">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/12 bg-white/[0.04]">
               <Image
                 src={currentLogo}

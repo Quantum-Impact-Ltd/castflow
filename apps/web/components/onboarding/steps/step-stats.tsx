@@ -207,7 +207,7 @@ function ModelStatsForm({ profile, onBack, onNext }: StepStatsProps) {
                 type="button"
                 onClick={() => form.setValue('skinTone', s.value, { shouldValidate: true })}
                 className={cn(
-                  'group flex flex-col items-center gap-2 rounded-xl border p-3 transition backdrop-blur-xl',
+                  'group flex flex-col items-center gap-2 rounded-xl border p-3 transition',
                   isSelected
                     ? 'border-[var(--cta-400)]/60 bg-[var(--cta-400)]/[0.06] ring-2 ring-[var(--cta-400)]/20'
                     : 'border-white/12 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]'
@@ -336,7 +336,7 @@ function ActorStatsForm({ profile, onBack, onNext }: StepStatsProps) {
         />
       </div>
 
-      <div className="flex items-center justify-between rounded-xl border border-white/12 bg-white/[0.03] p-4 backdrop-blur-xl">
+      <div className="flex items-center justify-between rounded-xl border border-white/12 bg-white/[0.03] p-4">
         <div className="space-y-0.5">
           <Label htmlFor="equityMember" className="text-white/85">
             Equity member

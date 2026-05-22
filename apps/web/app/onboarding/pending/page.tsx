@@ -77,7 +77,7 @@ export default function OnboardingPendingPage() {
           </div>
         ) : profile?.approvalStatus === 'rejected' ? (
           <>
-            <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-rose-400/30 bg-rose-400/[0.08] backdrop-blur-xl">
+            <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-rose-400/30 bg-rose-400/[0.08]">
               <AlertTriangle className="h-6 w-6 text-rose-300" />
             </div>
             <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
@@ -113,7 +113,7 @@ export default function OnboardingPendingPage() {
           </>
         ) : profile?.approvalStatus === 'approved' ? (
           <>
-            <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-emerald-400/30 bg-emerald-400/[0.08] backdrop-blur-xl">
+            <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-emerald-400/30 bg-emerald-400/[0.08]">
               <CheckCircle2 className="h-6 w-6 text-emerald-400" />
             </div>
             <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
@@ -137,7 +137,7 @@ export default function OnboardingPendingPage() {
           </>
         ) : (
           <>
-            <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-white/12 bg-white/[0.04] backdrop-blur-xl">
+            <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-white/12 bg-white/[0.04]">
               <Clock className="h-6 w-6 text-[var(--cta-400)]" />
             </div>
             <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">

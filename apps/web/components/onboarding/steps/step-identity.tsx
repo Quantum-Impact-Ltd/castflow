@@ -66,7 +66,7 @@ export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-4 backdrop-blur-xl">
+      <div className="flex items-start gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-4">
         <Lock className="mt-0.5 h-5 w-5 shrink-0 text-[var(--cta-400)]" />
         <div className="space-y-1 text-sm">
           <p className="font-medium text-white">Your ID is private</p>
@@ -78,7 +78,7 @@ export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
       </div>
 
       {hasDocument && !upload.isPending && (
-        <div className="space-y-3 rounded-2xl border border-emerald-400/30 bg-emerald-400/[0.06] p-4 backdrop-blur-xl">
+        <div className="space-y-3 rounded-2xl border border-emerald-400/30 bg-emerald-400/[0.06] p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5 text-emerald-300" />

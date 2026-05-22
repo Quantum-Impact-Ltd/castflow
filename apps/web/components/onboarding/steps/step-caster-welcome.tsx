@@ -41,7 +41,7 @@ export function StepCasterWelcome() {
   if (!complete.isSuccess) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-5 backdrop-blur-xl">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-5">
           <Loader2 className="h-5 w-5 animate-spin text-[var(--cta-400)]" />
           <div className="text-sm">
             <p className="font-medium text-white">Finishing setup…</p>
@@ -70,7 +70,7 @@ export function StepCasterWelcome() {
             <Link
               key={a.href}
               href={a.href}
-              className="group flex flex-col gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-5 backdrop-blur-xl transition hover:border-white/25 hover:bg-white/[0.05]"
+              className="group flex flex-col gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-5 transition hover:border-white/25 hover:bg-white/[0.05]"
             >
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-[var(--cta-400)] text-[var(--ink-900)]">
                 <Icon className="h-5 w-5" />
@@ -90,7 +90,7 @@ export function StepCasterWelcome() {
         })}
       </div>
 
-      <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-5 backdrop-blur-xl">
+      <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-5">
         <h3 className="text-sm font-semibold tracking-tight text-white">How payment works</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/65">
           You pay per booking, not upfront. When you accept an artist&apos;s bid, the

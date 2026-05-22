@@ -62,7 +62,6 @@ export function StepCraft({ currentType, onNext }: StepCraftProps) {
               onClick={() => setSelected(opt.value)}
               className={cn(
                 'group relative flex flex-col items-start gap-3 rounded-2xl border p-6 text-left transition',
-                'backdrop-blur-xl',
                 isSelected
                   ? 'border-[var(--cta-400)]/60 bg-[var(--cta-400)]/[0.06] ring-2 ring-[var(--cta-400)]/20'
                   : 'border-white/12 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]'

@@ -99,7 +99,7 @@ export function StepExperience({ profile, onBack, onNext }: StepExperienceProps)
                   form.setValue('experienceLevel', lvl.value, { shouldValidate: true })
                 }
                 className={cn(
-                  'group flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition backdrop-blur-xl',
+                  'group flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition',
                   isSelected
                     ? 'border-[var(--cta-400)]/60 bg-[var(--cta-400)]/[0.06] ring-2 ring-[var(--cta-400)]/20'
                     : 'border-white/12 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]'

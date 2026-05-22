@@ -234,6 +234,13 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 12 — `/impeccable distill` drop leftover decoration.** GlareHover (all 4 consumers), OrbitingCircles dual orbits on `/artists`, AnimatedList stagger on `/how-it-works`, AnimatedGridPattern skew-y-12 on `/how-it-works`, MagicCard gradient on shoot-detail bid panel, NumberTicker on all static landing values. ✅ Done.
 - [x] **Action 13 — `/impeccable polish` final pass.** `font-mono` dropped on 5 marketing stat values, FAQ `<details>` gain an open-state tint + hairline divider, decorative Sparkles icon on `/how-it-works` removed (+ import), `/shoots/[id]` separator count cut 5 → 2 (with margin-based rhythm replacing the dividers). Empty-state h3-serif finding was already mooted — local EmptyState renders `<p>`, not `<h3>`. ✅ Done.
 
+### Re-audit follow-ups (post 12 → 18/20)
+
+- [x] **R1 — strip onboarding step glass.** Codemod `backdrop-blur-xl` across 7 step components + 3 `/onboarding/pending` icon wrappers. ✅ Done.
+- [ ] **R2 — marketing ShimmerButton → solid pill.** Rewrite `ShimmerButtonLink` so 4 marketing CTAs lose the shimmer.
+- [ ] **R3 — `/artists` eyebrow codemod.** 5 missed `text-primary` section eyebrows on `/artists/page.tsx`.
+- [ ] **R4 — contact topic pill focus ring.** `focus-visible:ring-2 ring-primary` on `/contact` topic pills.
+
 ---
 
 ## Action Log

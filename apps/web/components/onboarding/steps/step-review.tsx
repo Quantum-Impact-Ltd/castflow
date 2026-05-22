@@ -250,7 +250,7 @@ export function StepReview({ profile, onBack, onJumpTo }: StepReviewProps) {
         </div>
       )}
 
-      <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-5 backdrop-blur-xl">
+      <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-5">
         <h3 className="text-sm font-semibold tracking-tight text-white">What happens next</h3>
         <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-white/65">
           <li>· Your application goes to the admin review queue.</li>
@@ -280,7 +280,7 @@ const ReviewCard = forwardRef<HTMLDivElement, { section: Section; onEdit: () => 
       <div
         ref={ref}
         className={cn(
-          'rounded-2xl border p-4 backdrop-blur-xl transition',
+          'rounded-2xl border p-4 transition',
           section.tone === 'ok'
             ? 'border-white/12 bg-white/[0.03]'
             : 'border-rose-400/30 bg-rose-400/[0.04]'
