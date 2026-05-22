@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { contactMessageSchema, type ContactMessageInput } from '@castflow/validators'
 import { useSendContactMessage } from '@/lib/hooks/use-contact'
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowRight,
   Building2,
@@ -506,7 +507,12 @@ function Field({
         )}
       </div>
       {children}
-      {error && <p className="text-xs font-medium text-destructive">{error}</p>}
+      {error ? (
+        <p className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700">
+          <AlertCircle className="h-3 w-3" aria-hidden />
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }
