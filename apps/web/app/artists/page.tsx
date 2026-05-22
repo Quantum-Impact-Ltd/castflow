@@ -160,7 +160,7 @@ export default function ArtistsPage() {
                       Paid out
                     </span>
                   </div>
-                  <p className="mt-6 font-mono text-6xl font-medium tracking-[-0.04em] text-foreground">
+                  <p className="mt-6 text-6xl font-medium tracking-[-0.04em] text-foreground">
                     £4,280
                   </p>
                   <p className="mt-2 text-sm text-foreground/70">Net to bank · 4 bookings</p>

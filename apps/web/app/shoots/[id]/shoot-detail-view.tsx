@@ -376,7 +376,7 @@ export function ShootDetailView({ shoot }: Props) {
                   )}
                 </div>
 
-                <p className="mt-3 font-mono text-4xl font-medium tracking-[-0.02em] text-foreground">
+                <p className="mt-3 text-4xl font-medium tracking-[-0.02em] text-foreground">
                   {rateLabel}
                 </p>
                 <p className="mt-1 text-xs text-foreground/60">
@@ -410,19 +410,17 @@ export function ShootDetailView({ shoot }: Props) {
                   />
                 </ul>
 
-                <Separator className="my-6" />
-
                 {isAuthed && isArtist ? (
                   <Button
                     onClick={handleApply}
                     size="lg"
-                    className="h-12 w-full rounded-full text-base"
+                    className="mt-8 h-12 w-full rounded-full text-base"
                   >
                     Submit a bid
                     <ArrowRight className="ml-1 h-4 w-4" aria-hidden />
                   </Button>
                 ) : (
-                  <>
+                  <div className="mt-8">
                     <ShimmerButtonLink
                       href={`/login?redirect=${encodeURIComponent(`/shoots/${shoot.id}`)}`}
                       className="h-12 w-full px-7 text-base font-medium"
@@ -437,7 +435,7 @@ export function ShootDetailView({ shoot }: Props) {
                     >
                       Not an artist yet? Apply to join
                     </Button>
-                  </>
+                  </div>
                 )}
 
                 <p className="mt-4 flex items-start gap-1.5 text-[11px] leading-relaxed text-foreground/55">
@@ -584,9 +582,7 @@ function CasterCard({ shoot }: { shoot: Shoot }) {
         </span>
       </div>
 
-      <Separator className="my-6" />
-
-      <dl className="grid grid-cols-3 gap-4">
+      <dl className="mt-8 grid grid-cols-3 gap-4">
         <CasterStat
           label="Shoots posted"
           value={shoot.casterMeta.shootsPosted}
@@ -607,9 +603,7 @@ function CasterCard({ shoot }: { shoot: Shoot }) {
         />
       </dl>
 
-      <Separator className="my-6" />
-
-      <p className="flex items-start gap-2 text-sm leading-relaxed text-foreground/70">
+      <p className="mt-8 flex items-start gap-2 text-sm leading-relaxed text-foreground/70">
         <FileText className="mt-0.5 h-4 w-4 flex-none text-foreground/50" aria-hidden />
         All contracts on CastFlow include NDA, usage rights, and exclusivity
         terms. Both parties sign before shoot address is revealed.

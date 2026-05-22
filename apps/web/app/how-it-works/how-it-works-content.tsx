@@ -14,7 +14,6 @@ import {
   Wallet,
   MessageSquare,
   Users,
-  Sparkles,
 } from 'lucide-react'
 import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
@@ -268,10 +267,6 @@ function BentoFeaturesSection() {
                   {f.title}
                 </h3>
                 <p className="mt-2 max-w-md text-sm leading-relaxed text-foreground/70">{f.body}</p>
-                <Sparkles
-                  className="absolute -right-6 -bottom-6 h-32 w-32 text-foreground/[0.04] transition-transform duration-500 group-hover:rotate-12"
-                  aria-hidden
-                />
               </div>
             ))}
           </div>

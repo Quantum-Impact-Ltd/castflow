@@ -151,7 +151,7 @@ function TierCard({ tier }: { tier: Tier }) {
 
       <div className="mt-8">
         <p className="flex items-baseline gap-1">
-          <span className="font-mono text-5xl font-medium tracking-[-0.03em] text-foreground">
+          <span className="text-5xl font-medium tracking-[-0.03em] text-foreground">
             {tier.monthly}
           </span>
           <span className="text-sm text-foreground/60">/ month</span>
@@ -385,17 +385,19 @@ export default function PricingPage() {
                 <ul className="divide-y divide-border/60 rounded-2xl border border-border/60 bg-background">
                   {FAQS.map((faq) => (
                     <li key={faq.q}>
-                      <details className="group">
+                      <details className="group transition-colors open:bg-[var(--surface-50)]/40">
                         <summary className="flex cursor-pointer items-center justify-between gap-4 px-6 py-5 text-base font-medium text-foreground transition-colors hover:bg-[var(--surface-50)]/60 [&::-webkit-details-marker]:hidden">
                           <span>{faq.q}</span>
                           <span
                             aria-hidden
-                            className="font-mono text-xl text-foreground/40 transition-transform duration-200 group-open:rotate-45"
+                            className="font-mono text-xl text-foreground/40 transition-transform duration-200 group-open:rotate-45 group-open:text-foreground/70"
                           >
                             +
                           </span>
                         </summary>
-                        <div className="px-6 pb-6 text-sm leading-relaxed text-foreground/75">
+                        {/* Hairline divider only appears when the panel is open,
+                            so the closed list reads as a clean column of rows. */}
+                        <div className="border-t border-border/40 px-6 py-5 text-sm leading-relaxed text-foreground/75">
                           {faq.a}
                         </div>
                       </details>
@@ -482,7 +484,7 @@ function BreakdownCard({
       <p className="mt-3 text-sm text-foreground/70">{label}</p>
       <p
         className={cn(
-          'mt-4 inline-flex items-baseline font-mono text-5xl font-medium tracking-[-0.03em]',
+          'mt-4 inline-flex items-baseline text-5xl font-medium tracking-[-0.03em]',
           highlight ? 'text-primary' : 'text-foreground',
           amountClassName
         )}

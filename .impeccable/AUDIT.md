@@ -232,7 +232,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 10 — `/impeccable harden` empty/loading/error coverage.** Inline CTAs on the three key list `<EmptyState>`s, portfolio in-flight upload progress + 3-photo gate, StatusBadge native `title` tooltips. ✅ Done. Save toast was already wired in `useUpdateMyCaster`; SSR-skeleton sizing deferred (architectural change, not state coverage).
 - [x] **Action 11 — `/impeccable colorize` palette discipline.** Section eyebrows demoted from brand to neutral across 11 files; caster stat-tile `tint` rule dropped (all tiles share one surface); portfolio pending-review badge `text-white` → `text-amber-50`. ✅ Done. Contact-form validation-color swap and rose literals deferred (the rose tokens are in active use on auth and the contact validator change risks misreading severity — needs editorial judgment).
 - [x] **Action 12 — `/impeccable distill` drop leftover decoration.** GlareHover (all 4 consumers), OrbitingCircles dual orbits on `/artists`, AnimatedList stagger on `/how-it-works`, AnimatedGridPattern skew-y-12 on `/how-it-works`, MagicCard gradient on shoot-detail bid panel, NumberTicker on all static landing values. ✅ Done.
-- [ ] **Action 13 — `/impeccable polish` final pass.** Stat tile typography (no `font-mono` for numbers), FAQ `<details>` open-state on `/pricing`, decorative Sparkles icon on `/how-it-works`, empty-state h3 serifs on `/artists/[id]`, separator overuse on `/shoots/[id]`.
+- [x] **Action 13 — `/impeccable polish` final pass.** `font-mono` dropped on 5 marketing stat values, FAQ `<details>` gain an open-state tint + hairline divider, decorative Sparkles icon on `/how-it-works` removed (+ import), `/shoots/[id]` separator count cut 5 → 2 (with margin-based rhythm replacing the dividers). Empty-state h3-serif finding was already mooted — local EmptyState renders `<p>`, not `<h3>`. ✅ Done.
 
 ---
 
@@ -374,6 +374,36 @@ plus `aria-busy={mutation.isPending}` for screen-reader feedback while submittin
 **Messaging inbox badge alignment** — `components/messaging/inbox.tsx:38–58`
 - Was: `<div>` text-row with `ml-2` between date and unread badge — block-context allowed the badge to wrap below the date when the parent row got narrow.
 - Now: right column is `flex shrink-0 items-center gap-2`, with date and badge as flex siblings. Date stays on its line; badge can no longer wrap below it. Left column got `min-w-0` + `truncate` on the display-name and job-title rows so a long display name pushes the date column normally instead of clipping unevenly.
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
+
+### Action 13 — final polish (2026-05-22)
+
+**`font-mono` dropped on 5 marketing stat values:**
+- `app/casters/page.tsx:372` — Stat tile value (`text-4xl`).
+- `app/artists/page.tsx:163` — £4,280 hero panel value (`text-6xl`).
+- `app/pricing/page.tsx:154` — tier price (`text-5xl`).
+- `app/pricing/page.tsx:487` — commission breakdown step amount (`text-5xl`).
+- `app/shoots/[id]/shoot-detail-view.tsx:379` — bid panel rate label (`text-4xl`).
+
+Each was Geist Mono on a marketing-stat value; per DESIGN.md the mono face is reserved for "transaction IDs, rate breakdowns, contract reference numbers" — marketing stats are inappropriate. Now they render in the default Geist Sans at the same size + weight + tracking.
+
+**FAQ `<details>` open-state polish** — `app/pricing/page.tsx:386–406`
+- The plus chevron previously rotated to 45° on `group-open` (which was fine) but the open panel was indistinguishable from a closed one once opened.
+- Now: `<details>` gains `open:bg-[var(--surface-50)]/40` so the open card softly tints; the chevron also bumps from `text-foreground/40` to `text-foreground/70` on open. The answer panel gains a `border-t border-border/40` (only visible when open, since the answer only mounts then) plus tighter `py-5` rhythm. Closed list reads as a clean column of rows; open rows clearly stand apart.
+
+**Decorative Sparkles icon dropped** — `app/how-it-works/how-it-works-content.tsx:271`
+- Was: `<Sparkles className="absolute -right-6 -bottom-6 h-32 w-32 text-foreground/[0.04] ... group-hover:rotate-12" />` — a faint decorative sparkle hovering off the bottom-right of every feature card.
+- Now: removed entirely (and the `Sparkles` import cleaned from the lucide import list).
+
+**Separator overuse on `/shoots/[id]` cut 5 → 2:**
+- Kept: `Separator my-10` between the meta row and the Tabs (line 239), `Separator my-6` between the bid-panel header and the KeyFact list (line 388). Both mark genuine major section transitions.
+- Removed:
+  - The separator between the KeyFact list and the Submit/Sign-in button block — button block now uses `mt-8` margin instead, with a separate `mt-8` div wrapping the sign-in alternative so the apply-button + lock-message rhythm still reads.
+  - The two CasterCard separators (between the trust chip and the 3-col stats grid, and between the stats grid and the contract footnote) — both replaced with `mt-8` margin on the following block. The visual rhythm carries without the hairline.
+
+**Empty-state h3 serifs** — found not present.
+- Audit P3 claimed empty-state h3s at `:271` and `:538` of `artist-profile-view.tsx` were `font-serif text-2xl`. Re-read: the local `EmptyState` helper (line 583) renders children inside a plain `<p>` (`text-sm text-foreground/60`), not an h3. The two call sites pass plain text as children. No font-serif h3 exists; no change needed.
 
 **Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
 
