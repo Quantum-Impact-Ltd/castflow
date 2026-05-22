@@ -235,7 +235,8 @@ export default function CastersPage() {
 
             <Reveal delay={120}>
               <div className="mt-16 overflow-hidden rounded-2xl border border-border/60 bg-background">
-                <div className="grid grid-cols-[1.4fr_1fr_1fr] items-center gap-4 bg-[var(--surface-50)] px-6 py-5">
+                {/* Column header — hidden on mobile where rows self-label */}
+                <div className="hidden grid-cols-[1.4fr_1fr_1fr] items-center gap-4 bg-[var(--surface-50)] px-6 py-5 sm:grid">
                   <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
                     Metric
                   </span>
@@ -250,11 +251,25 @@ export default function CastersPage() {
                   {COMPARISON.map((row) => (
                     <div
                       key={row.label}
-                      className="grid grid-cols-[1.4fr_1fr_1fr] items-center gap-4 px-6 py-4"
+                      className="px-5 py-5 sm:grid sm:grid-cols-[1.4fr_1fr_1fr] sm:items-center sm:gap-4 sm:px-6 sm:py-4"
                     >
-                      <span className="text-sm font-medium text-foreground">{row.label}</span>
-                      <span className="text-sm text-foreground/60">{row.agency}</span>
-                      <span className="text-sm font-medium text-foreground">{row.castflow}</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {row.label}
+                      </span>
+                      <span className="mt-3 flex items-baseline justify-between gap-4 sm:mt-0 sm:block">
+                        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55 sm:hidden">
+                          Agency
+                        </span>
+                        <span className="text-sm text-foreground/60">{row.agency}</span>
+                      </span>
+                      <span className="mt-1.5 flex items-baseline justify-between gap-4 sm:mt-0 sm:block">
+                        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-primary sm:hidden">
+                          CastFlow
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
+                          {row.castflow}
+                        </span>
+                      </span>
                     </div>
                   ))}
                 </div>

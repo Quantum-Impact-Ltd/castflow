@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef } from 'react'
-import { FileText, Gavel, Handshake, Wallet } from 'lucide-react'
+import { Fragment, useRef } from 'react'
+import { ChevronDown, FileText, Gavel, Handshake, Wallet } from 'lucide-react'
 import { Reveal } from '@/components/landing/reveal'
 import { AnimatedBeam } from '@/components/ui/animated-beam'
 
@@ -122,33 +122,46 @@ export function FlowBeamSection() {
           </div>
         </Reveal>
 
-        <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4 lg:mt-16">
+        {/* Card flow — single column with chevron connectors at <lg so the
+            sequential meaning carries through on mobile/tablet, then a 4-col
+            grid at lg+ where the AnimatedBeam takes over the flow semantic. */}
+        <div className="mt-12 flex flex-col gap-0 lg:mt-16 lg:grid lg:grid-cols-4 lg:gap-4">
           {STEPS.map((step, i) => (
-            <Reveal key={step.num} delay={i * 80}>
-              <div className="flex h-full flex-col rounded-2xl border border-border/60 bg-background p-8">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-3xl font-medium tracking-[-0.02em] text-primary">
-                    {step.num}
-                  </span>
-                  <step.icon className="h-5 w-5 text-foreground/40 lg:hidden" aria-hidden />
+            <Fragment key={step.num}>
+              <Reveal delay={i * 80}>
+                <div className="flex h-full flex-col rounded-2xl border border-border/60 bg-background p-8">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-3xl font-medium tracking-[-0.02em] text-primary">
+                      {step.num}
+                    </span>
+                    <step.icon className="h-5 w-5 text-foreground/40 lg:hidden" aria-hidden />
+                  </div>
+                  <h3 className="mt-6 text-xl font-medium tracking-[-0.015em] text-foreground">
+                    {step.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-foreground/70">{step.body}</p>
+                  <ul className="mt-6 space-y-2 border-t border-border/60 pt-5">
+                    {step.details.map((d) => (
+                      <li
+                        key={d}
+                        className="flex items-start gap-2 text-xs leading-relaxed text-foreground/65"
+                      >
+                        <span className="mt-1.5 inline-block h-1 w-1 flex-none rounded-full bg-primary/80" />
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <h3 className="mt-6 text-xl font-medium tracking-[-0.015em] text-foreground">
-                  {step.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-foreground/70">{step.body}</p>
-                <ul className="mt-6 space-y-2 border-t border-border/60 pt-5">
-                  {step.details.map((d) => (
-                    <li
-                      key={d}
-                      className="flex items-start gap-2 text-xs leading-relaxed text-foreground/65"
-                    >
-                      <span className="mt-1.5 inline-block h-1 w-1 flex-none rounded-full bg-primary/80" />
-                      {d}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Reveal>
+              </Reveal>
+              {i < STEPS.length - 1 ? (
+                <div
+                  aria-hidden
+                  className="flex justify-center py-4 text-foreground/30 lg:hidden"
+                >
+                  <ChevronDown className="h-5 w-5" />
+                </div>
+              ) : null}
+            </Fragment>
           ))}
         </div>
       </div>

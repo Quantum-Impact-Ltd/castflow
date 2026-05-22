@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef } from 'react'
-import { Lock, Camera, Unlock, Banknote } from 'lucide-react'
+import { Fragment, useRef } from 'react'
+import { Banknote, Camera, ChevronDown, Lock, Unlock } from 'lucide-react'
 import { Reveal } from '@/components/landing/reveal'
 import { AnimatedBeam } from '@/components/ui/animated-beam'
 
@@ -106,30 +106,38 @@ export function EscrowFlowSection() {
           </div>
         </Reveal>
 
-        {/* Step detail cards */}
+        {/* Step detail cards — chevron connectors at <lg preserve flow semantic
+            below the AnimatedBeam breakpoint. */}
         <Reveal delay={160}>
-          <ol className="mt-12 grid gap-4 lg:mt-16 lg:grid-cols-4">
-            {ESCROW_FLOW.map((step) => (
-              <li
-                key={step.step}
-                className="relative flex flex-col rounded-2xl border border-border/60 bg-background p-8"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-3xl font-medium tracking-[-0.02em] text-primary">
-                    {step.step}
-                  </span>
-                  <step.icon
-                    className="h-5 w-5 text-foreground/40 lg:hidden"
+          <ol className="mt-12 flex flex-col gap-0 lg:mt-16 lg:grid lg:grid-cols-4 lg:gap-4">
+            {ESCROW_FLOW.map((step, i) => (
+              <Fragment key={step.step}>
+                <li className="relative flex flex-col rounded-2xl border border-border/60 bg-background p-8">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-3xl font-medium tracking-[-0.02em] text-primary">
+                      {step.step}
+                    </span>
+                    <step.icon
+                      className="h-5 w-5 text-foreground/40 lg:hidden"
+                      aria-hidden
+                    />
+                  </div>
+                  <h3 className="mt-4 text-lg font-medium tracking-[-0.015em] text-foreground">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground/70">
+                    {step.body}
+                  </p>
+                </li>
+                {i < ESCROW_FLOW.length - 1 ? (
+                  <li
                     aria-hidden
-                  />
-                </div>
-                <h3 className="mt-4 text-lg font-medium tracking-[-0.015em] text-foreground">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-foreground/70">
-                  {step.body}
-                </p>
-              </li>
+                    className="flex justify-center py-4 text-foreground/30 lg:hidden"
+                  >
+                    <ChevronDown className="h-5 w-5" />
+                  </li>
+                ) : null}
+              </Fragment>
             ))}
           </ol>
         </Reveal>

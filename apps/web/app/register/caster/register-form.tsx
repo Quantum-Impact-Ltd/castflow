@@ -187,7 +187,9 @@ export function RegisterCasterForm() {
         />
       </AuthField>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Password + Confirm stack until md — at sm (640px) the two fields plus
+          inline error text get cramped, so wait until 768px to go 2-col. */}
+      <div className="grid gap-4 md:grid-cols-2">
         <AuthField
           label="Password"
           htmlFor="password"

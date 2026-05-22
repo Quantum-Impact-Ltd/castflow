@@ -323,7 +323,7 @@ function FilterBar({
       </div>
 
       {/* Scroll-row of pill filters on mobile, inline on lg */}
-      <div className="-mx-6 flex items-center gap-2 overflow-x-auto px-6 lg:mx-0 lg:flex-1 lg:overflow-visible lg:px-0">
+      <div className="-mx-6 flex items-center gap-3 overflow-x-auto px-6 pb-1 lg:mx-0 lg:flex-1 lg:overflow-visible lg:px-0 lg:pb-0">
         <PillSelect
           icon={SlidersHorizontal}
           value={category}

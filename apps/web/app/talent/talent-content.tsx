@@ -152,7 +152,7 @@ export function TalentContent() {
           {filtered.length === 0 ? (
             <EmptyState onReset={reset} />
           ) : (
-            <div className="mt-8 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="mt-8 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((artist, i) => (
                 <Reveal key={artist.id} delay={Math.min(i * 40, 200)}>
                   <ArtistCard artist={artist} />

@@ -225,7 +225,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 3 — `/impeccable distill` remove BorderBeam from non-load-bearing surfaces.** Sweep pricing-preview, casters, artists, trust, contact-content, shoots-content, shoot-detail-view, talent-content, legal-layout, how-it-works, hero, pricing page. ✅ Done — all 17 instances stripped across 12 files.
 - [x] **Action 4 — `/impeccable harden` auth/onboarding ban list.** ShimmerButton swap (5 auth forms), `/suspended` CTA gradient + shadow, onboarding StepNav gradient + shadow, rejection-banner glass on `/onboarding/artist`, delete-account button styling (artist + caster). ✅ Done. Instagram href on `/artists/[id]` was already correctly gated — audit P0 was a false positive on re-read.
 - [x] **Action 5 — `/impeccable layout` kill identical card grids on marketing.** Replaced 3-col feature grid (`/casters`), 4-col "Get started" (`/artists`), 4-col "privacy ladder" (`/trust`) with editorial numbered list, vertical timeline, and progressive ladder respectively. ✅ Done.
-- [ ] **Action 6 — `/impeccable adapt` responsive sweep.** Caster comparison table mobile collapse, AnimatedBeam fallback on mobile, `/talent` grid steps, mobile filter row gap, password grid stacking `<sm`, messaging inbox badge alignment.
+- [x] **Action 6 — `/impeccable adapt` responsive sweep.** Caster comparison table mobile collapse, AnimatedBeam fallback on mobile (`/how-it-works` + `/trust/escrow`), `/talent` grid steps, shoots mobile filter gap, password grid stacking until md, messaging inbox badge alignment. ✅ Done.
 - [ ] **Action 7 — `/impeccable polish` eyebrow chip codemod.** Replace every AnimatedShinyText eyebrow with static tracked-label `<Label>` on `surface-50`. Same change across marketing, talent, contact, legal.
 - [ ] **Action 8 — `/impeccable clarify` copy + microcopy fixes.** Remove em dashes ("→ —", "Not specified"), confirm-password label consistency, expand `/caster/settings/notifications` and `/caster/settings/billing` placeholders, `mailto:` precomposition for delete flows.
 - [ ] **Action 9 — `/impeccable optimize` debounce + tighten loops.** `useDebouncedValue(300)` on filter inputs, memoize `calculateDobMax`, replace 1 s `setInterval` with on-tick render only.
@@ -350,3 +350,29 @@ plus `aria-busy={mutation.isPending}` for screen-reader feedback while submittin
 **Pillars section on `/trust` left alone** — the audit's [P1] verdict for that section was "icon cards are inherently a grid; OK at 4 cols" so it stays.
 
 **Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0. The three sections render without any identical-card-grid pattern; mobile collapses cleanly since each replacement was already vertical-first.
+
+### Action 6 — responsive sweep (2026-05-22)
+
+**Caster comparison table mobile collapse** — `app/casters/page.tsx:237–268`
+- Was a `grid-cols-[1.4fr_1fr_1fr]` table at every viewport. At 375 px the 3 columns crushed the value cells.
+- Now: column header `<div>` is `hidden sm:grid` so it only appears at sm+. Each row reflows on `<sm` to: bolded metric label on top, then two prefix-labeled rows ("Agency"/"CastFlow" mono labels left, value right, `justify-between`). At `sm+` the original 3-col grid layout returns via responsive grid utilities — same DOM, no duplication.
+
+**AnimatedBeam mobile fallback** — `app/how-it-works/flow-beam-section.tsx`, `app/trust/escrow-flow-section.tsx`
+- Both sections previously hid the beam on `<lg` and rendered the cards as a 2-col (`md`) or 1-col grid with no progression cue.
+- Now: cards render in a single-column flow at `<lg` with a `ChevronDown` connector (`text-foreground/30`, hidden at `lg+`) between each step. Sequential meaning carries through at every viewport. At `lg+` the AnimatedBeam still drives the visual flow above the 4-col grid.
+- `Fragment` + `aria-hidden` connectors used so the chevrons don't pollute screen-reader output.
+
+**`/talent` grid breakpoints** — `app/talent/talent-content.tsx:155`
+- `xl:grid-cols-4` dropped. Stays `sm:grid-cols-2 lg:grid-cols-3` end-to-end so each artist card gets a portrait-friendly aspect ratio at every viewport, including wide displays.
+
+**Shoots mobile filter row** — `app/shoots/shoots-content.tsx:326`
+- `gap-2` → `gap-3` for the horizontal-scroll pill row at `<lg`. Added `pb-1` so the bottom edge of the pills doesn't kiss the scroll edge. Both adjustments revert at `lg` where the row is inline and overflow-visible.
+
+**Password grid stacking** — `app/register/caster/register-form.tsx:190`
+- `sm:grid-cols-2` → `md:grid-cols-2`. At 640 px (sm) the side-by-side password fields got cramped once inline error text wrapped; deferring to 768 px (md) gives the field full width on small tablets and most landscape phones. Artist form's first/last name grid stays at `sm` since those values are short.
+
+**Messaging inbox badge alignment** — `components/messaging/inbox.tsx:38–58`
+- Was: `<div>` text-row with `ml-2` between date and unread badge — block-context allowed the badge to wrap below the date when the parent row got narrow.
+- Now: right column is `flex shrink-0 items-center gap-2`, with date and badge as flex siblings. Date stays on its line; badge can no longer wrap below it. Left column got `min-w-0` + `truncate` on the display-name and job-title rows so a long display name pushes the date column normally instead of clipping unevenly.
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.

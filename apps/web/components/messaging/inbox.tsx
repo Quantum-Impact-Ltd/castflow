@@ -36,21 +36,23 @@ export function MessagesInbox({ basePath }: InboxProps) {
               <Link href={`${basePath}/${t.id}`}>
                 <Card className="hover:border-primary/40 transition-colors">
                   <CardContent className="flex items-center justify-between gap-3 pt-6">
-                    <div className="space-y-1">
-                      <div className="font-medium text-sm">
+                    <div className="min-w-0 space-y-1">
+                      <div className="font-medium text-sm truncate">
                         {t.counterparty?.displayName ?? 'Conversation'}
                       </div>
-                      <div className="text-muted-foreground text-xs">{t.job?.title ?? 'Job'}</div>
+                      <div className="text-muted-foreground text-xs truncate">{t.job?.title ?? 'Job'}</div>
                       {t.lastMessagePreview ? (
                         <div className="text-muted-foreground line-clamp-1 text-xs">
                           {t.lastMessagePreview}
                         </div>
                       ) : null}
                     </div>
-                    <div className="text-muted-foreground text-xs">
-                      {t.lastMessageAt ? formatDate(t.lastMessageAt) : ''}
+                    {/* Date + unread badge stay inline on every viewport — shrink-0
+                        prevents the badge from wrapping below the date. */}
+                    <div className="flex shrink-0 items-center gap-2 text-muted-foreground text-xs">
+                      {t.lastMessageAt ? <span>{formatDate(t.lastMessageAt)}</span> : null}
                       {t.unreadCount ? (
-                        <span className="bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs">
+                        <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
                           {t.unreadCount}
                         </span>
                       ) : null}
