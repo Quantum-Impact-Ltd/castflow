@@ -58,7 +58,7 @@ export function ArtistProfileView({ id }: Props) {
 
   const ratingDisplay = profile.ratingAvg
     ? Number(profile.ratingAvg).toFixed(1)
-    : '—'
+    : '–'
 
   return (
     <div className="mx-auto w-full max-w-[90rem] px-6 pb-24 pt-10 lg:px-8 lg:pt-14">

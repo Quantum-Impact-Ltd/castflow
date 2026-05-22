@@ -293,7 +293,7 @@ export function ShootDetailView({ shoot }: Props) {
                     Usage rights
                   </h2>
                   <p className="mt-4 text-sm text-foreground/85">
-                    {shoot.usageRights ?? '—'}
+                    {shoot.usageRights ?? 'Not specified.'}
                   </p>
                 </section>
               </TabsContent>

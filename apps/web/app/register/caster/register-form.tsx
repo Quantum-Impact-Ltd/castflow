@@ -214,7 +214,7 @@ export function RegisterCasterForm() {
         </AuthField>
 
         <AuthField
-          label="Confirm"
+          label="Confirm password"
           htmlFor="confirmPassword"
           error={form.formState.errors.confirmPassword?.message}
         >

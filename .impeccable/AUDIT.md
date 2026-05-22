@@ -227,7 +227,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 5 — `/impeccable layout` kill identical card grids on marketing.** Replaced 3-col feature grid (`/casters`), 4-col "Get started" (`/artists`), 4-col "privacy ladder" (`/trust`) with editorial numbered list, vertical timeline, and progressive ladder respectively. ✅ Done.
 - [x] **Action 6 — `/impeccable adapt` responsive sweep.** Caster comparison table mobile collapse, AnimatedBeam fallback on mobile (`/how-it-works` + `/trust/escrow`), `/talent` grid steps, shoots mobile filter gap, password grid stacking until md, messaging inbox badge alignment. ✅ Done.
 - [x] **Action 7 — `/impeccable polish` eyebrow chip codemod.** Replaced every AnimatedShinyText eyebrow (8 consumers) with a static `<span>` carrying the same mono / tracked uppercase styling on `surface-50`. ✅ Done.
-- [ ] **Action 8 — `/impeccable clarify` copy + microcopy fixes.** Remove em dashes ("→ —", "Not specified"), confirm-password label consistency, expand `/caster/settings/notifications` and `/caster/settings/billing` placeholders, `mailto:` precomposition for delete flows.
+- [x] **Action 8 — `/impeccable clarify` copy + microcopy fixes.** Placeholder em dashes replaced on public surfaces; confirm-password label standardized; notifications + billing placeholders expanded; delete-account mailto pre-composed on both artist and caster pages. ✅ Done. Prose em dashes in marketing copy deferred to a focused editorial pass.
 - [ ] **Action 9 — `/impeccable optimize` debounce + tighten loops.** `useDebouncedValue(300)` on filter inputs, memoize `calculateDobMax`, replace 1 s `setInterval` with on-tick render only.
 - [ ] **Action 10 — `/impeccable harden` empty/loading/error coverage.** SSR-fetch first page for skeletons, `action` prop on `<EmptyState>`, save toast on `onSuccess`, tooltips on status badges, portfolio progress bar + 3-photo gate.
 - [ ] **Action 11 — `/impeccable colorize` palette discipline.** Eyebrows `text-ink-600` not `text-primary`, validation errors ink + warning icon (not destructive), stat tiles one surface treatment, hardcoded `bg-amber-500/90` and `text-rose-300` → tokens.
@@ -394,3 +394,35 @@ Each `<AnimatedShinyText shimmerWidth={X} className="font-mono text-[11px] font-
 **Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0. Final grep confirms zero remaining `AnimatedShinyText` references outside the component definition itself.
 
 **Not addressed here:** the `backdrop-blur` class on the shoot-detail-view eyebrow chip wrapper (`shoot-detail-view.tsx:125`) survives — that's a separate glassmorphism finding tracked under a different audit row, deferred to a focused distill pass.
+
+### Action 8 — clarify copy + microcopy (2026-05-22)
+
+**Placeholder em dashes on public surfaces** (only the user-facing null states, not prose):
+- `app/shoots/[id]/shoot-detail-view.tsx:296` — `shoot.usageRights ?? '—'` → `shoot.usageRights ?? 'Not specified.'`
+- `app/talent/talent-content.tsx:244, 251` — Rating + Level fallback `'—'` → `'–'` (en dash, allowed for numeric "no data" placeholders).
+- `app/artists/[id]/artist-profile-view.tsx:61` — `ratingDisplay` fallback `'—'` → `'–'`.
+- Admin surfaces and code comments left alone (out of scope; admin is excluded per PRODUCT.md).
+- **Prose em dashes in marketing copy** (`/casters`, `/artists`, `/contact`, etc.) **not auto-replaced** — the design law bans them in copy, but a sweep risks degrading prose flow. Flagged for a focused editorial pass.
+
+**Confirm-password label consistency** — `app/register/caster/register-form.tsx:215`
+- Caster form said `"Confirm"`; artist form already said `"Confirm password"`. Caster updated to match → `"Confirm password"` everywhere.
+
+**Expanded notifications placeholder** — `app/(caster)/caster/settings/notifications/page.tsx`
+- Previously: one sentence saying "Notification toggles are coming soon. For now, every key event triggers both an email and an in-app notification."
+- Now: bulleted breakdown of the current delivery model:
+  - Job matches → daily 9am UK digest (not per-event).
+  - Bids / shortlists / bookings / contract signatures / payouts / messages → real time.
+  - Disputes + admin actions → always email regardless of in-app status.
+
+**Expanded billing placeholder** — `app/(caster)/caster/settings/billing/page.tsx`
+- Previously: two short lines.
+- Now: bulleted booking-charge breakdown — agreed rate to artist (100%), platform fee added on top, Stripe processing (2.2% + £0.30 UK) added on top, escrow hold-and-release behavior. Closing line on itemised invoices stays.
+
+**Delete-account mailto pre-composition** — `app/(caster)/caster/settings/delete/page.tsx`, `app/(artist)/artist/settings/delete/page.tsx`
+- Both pages previously rendered a plain `mailto:support@...` link with no subject or body.
+- Now: each page builds a pre-composed `mailto:` URL with:
+  - Subject: "Delete my caster account" / "Delete my artist account"
+  - Body: pre-filled with the request line + a starter fields list ("Account email: …", "Company name:" or "First name:") + sign-off
+- Both URL parts encoded with `encodeURIComponent` so newlines + punctuation survive. CTA rendered as a primary `<Button>` instead of a bare underlined link. Fallback hint added below: "Or copy `support@castflow.co.uk` if your mail client doesn't open from the button."
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.

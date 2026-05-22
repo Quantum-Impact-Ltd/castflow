@@ -241,14 +241,14 @@ function Hero({ count, featured }: { count: number; featured: PublicArtistProfil
               <div className="grid grid-cols-3 divide-x divide-border/60 bg-background">
                 <HeroMeta
                   label="Rating"
-                  value={featured.ratingAvg != null ? Number(featured.ratingAvg).toFixed(1) : '—'}
+                  value={featured.ratingAvg != null ? Number(featured.ratingAvg).toFixed(1) : '–'}
                   accent
                 />
                 <HeroMeta label="Booked" value={`${featured.jobsCompleted ?? 0} jobs`} />
                 <HeroMeta
                   label="Level"
                   value={
-                    featured.experienceLevel ? EXPERIENCE_LABEL[featured.experienceLevel] : '—'
+                    featured.experienceLevel ? EXPERIENCE_LABEL[featured.experienceLevel] : '–'
                   }
                 />
               </div>
