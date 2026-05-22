@@ -22,7 +22,7 @@ export function FinalCtaSection() {
 
       <div className="relative mx-auto w-full max-w-4xl px-6 text-center lg:px-8">
         <Reveal>
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
             Start casting
           </p>
           <h2 className="mt-6 text-balance text-5xl font-medium leading-[1.02] tracking-[-0.025em] text-foreground sm:text-6xl lg:text-[6rem]">

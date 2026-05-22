@@ -146,7 +146,7 @@ function HeroSection() {
       />
       <div className="relative mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+          <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
             How it works
           </p>
           <h1 className="mt-6 max-w-4xl text-balance text-5xl font-medium leading-[1.04] tracking-[-0.02em] text-foreground sm:text-6xl lg:text-7xl">
@@ -256,7 +256,7 @@ function BentoFeaturesSection() {
       <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <div className="max-w-3xl">
-            <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+            <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
               Built into every step
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
@@ -333,7 +333,7 @@ function LiveActivitySection() {
         <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-24">
           <Reveal>
             <div>
-              <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+              <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                 Live activity
               </p>
               <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">

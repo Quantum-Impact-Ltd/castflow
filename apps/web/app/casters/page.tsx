@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/button'
 import { Marquee } from '@/components/ui/marquee'
 import { AvatarCircles } from '@/components/ui/avatar-circles'
 import { ShimmerButtonLink } from './shimmer-button-link'
-import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'For casters — CastFlow',
@@ -176,7 +175,7 @@ export default function CastersPage() {
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <Reveal>
               <div className="max-w-3xl">
-                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                   What you get
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
@@ -219,7 +218,7 @@ export default function CastersPage() {
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <Reveal>
               <div className="max-w-3xl">
-                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                   vs. traditional casting
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
@@ -308,8 +307,8 @@ export default function CastersPage() {
                 <div className="grid grid-cols-2 gap-4 lg:col-span-5">
                   <Stat label="Time saved per shoot" value="11 hrs" />
                   <Stat label="Bookings via CastFlow" value="47" />
-                  <Stat label="Casting director fees" value="£0" tint />
-                  <Stat label="Avg artist rating" value="4.9" tint />
+                  <Stat label="Casting director fees" value="£0" />
+                  <Stat label="Avg artist rating" value="4.9" />
                 </div>
               </div>
             </Reveal>
@@ -364,14 +363,9 @@ export default function CastersPage() {
   )
 }
 
-function Stat({ label, value, tint = false }: { label: string; value: string; tint?: boolean }) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      className={cn(
-        'rounded-2xl border border-border/60 p-6',
-        tint ? 'bg-[var(--surface-50)]' : 'bg-background'
-      )}
-    >
+    <div className="rounded-2xl border border-border/60 bg-background p-6">
       <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/55">
         {label}
       </p>

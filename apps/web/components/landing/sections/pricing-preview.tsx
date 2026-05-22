@@ -68,7 +68,7 @@ export function PricingPreviewSection() {
         <Reveal>
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
             <div className="lg:col-span-7">
-              <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+              <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                 Pricing
               </p>
               <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl lg:text-6xl">

@@ -152,7 +152,7 @@ export function PortfolioClient() {
                 >
                   <img src={p.url} alt={p.caption ?? ''} className="size-full object-cover" />
                   {!p.isApproved ? (
-                    <div className="absolute bottom-1 left-1 bg-amber-500/90 text-white rounded px-1.5 py-0.5 text-xs">
+                    <div className="absolute bottom-1 left-1 rounded bg-amber-500 px-1.5 py-0.5 text-xs text-amber-50">
                       Pending review
                     </div>
                   ) : null}

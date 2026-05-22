@@ -230,7 +230,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 8 — `/impeccable clarify` copy + microcopy fixes.** Placeholder em dashes replaced on public surfaces; confirm-password label standardized; notifications + billing placeholders expanded; delete-account mailto pre-composed on both artist and caster pages. ✅ Done. Prose em dashes in marketing copy deferred to a focused editorial pass.
 - [x] **Action 9 — `/impeccable optimize` debounce + tighten loops.** Debounced free-text inputs on `/caster/talent` + `/artist/jobs`; fixed setInterval rerun storm on `/onboarding/pending`. ✅ Done. `calculateDobMax` left alone — comment at `step-personal.tsx:36` documents the deliberate recompute-per-render choice (handles a tab open across midnight); audit recommendation supersedes nothing.
 - [x] **Action 10 — `/impeccable harden` empty/loading/error coverage.** Inline CTAs on the three key list `<EmptyState>`s, portfolio in-flight upload progress + 3-photo gate, StatusBadge native `title` tooltips. ✅ Done. Save toast was already wired in `useUpdateMyCaster`; SSR-skeleton sizing deferred (architectural change, not state coverage).
-- [ ] **Action 11 — `/impeccable colorize` palette discipline.** Eyebrows `text-ink-600` not `text-primary`, validation errors ink + warning icon (not destructive), stat tiles one surface treatment, hardcoded `bg-amber-500/90` and `text-rose-300` → tokens.
+- [x] **Action 11 — `/impeccable colorize` palette discipline.** Section eyebrows demoted from brand to neutral across 11 files; caster stat-tile `tint` rule dropped (all tiles share one surface); portfolio pending-review badge `text-white` → `text-amber-50`. ✅ Done. Contact-form validation-color swap and rose literals deferred (the rose tokens are in active use on auth and the contact validator change risks misreading severity — needs editorial judgment).
 - [ ] **Action 12 — `/impeccable distill` drop GlareHover, NumberTicker (on static landing values), OrbitingCircles (artists hero), AnimatedList stagger, AnimatedGridPattern (`/how-it-works` skew-y-12), MagicCard gradient on shoot detail bid panel.**
 - [ ] **Action 13 — `/impeccable polish` final pass.** Stat tile typography (no `font-mono` for numbers), FAQ `<details>` open-state on `/pricing`, decorative Sparkles icon on `/how-it-works`, empty-state h3 serifs on `/artists/[id]`, separator overuse on `/shoots/[id]`.
 
@@ -374,6 +374,27 @@ plus `aria-busy={mutation.isPending}` for screen-reader feedback while submittin
 **Messaging inbox badge alignment** — `components/messaging/inbox.tsx:38–58`
 - Was: `<div>` text-row with `ml-2` between date and unread badge — block-context allowed the badge to wrap below the date when the parent row got narrow.
 - Now: right column is `flex shrink-0 items-center gap-2`, with date and badge as flex siblings. Date stays on its line; badge can no longer wrap below it. Left column got `min-w-0` + `truncate` on the display-name and job-title rows so a long display name pushes the date column normally instead of clipping unevenly.
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
+
+### Action 11 — palette discipline (2026-05-22)
+
+**Section-eyebrow demotion** — codemod across 11 files
+- Pattern: `font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary` → same with `text-foreground/55`. Tracking and weight preserved.
+- Files: `components/landing/sections/{hero,live-shoots,final-cta,pricing-preview}.tsx` (where the same eyebrow appears above the h2), `app/casters/page.tsx`, `app/artists/page.tsx`, `app/pricing/page.tsx`, `app/trust/page.tsx`, `app/trust/escrow-flow-section.tsx`, `app/how-it-works/{flow-beam-section,how-it-works-content}.tsx`.
+- Kept as brand: step-number markers (`text-3xl ... text-primary`), the `bg-primary text-primary-foreground` "Most popular" pricing pill, the NDA chip on shoot detail, and the `CastFlow` column header in the caster comparison table (those are deliberate brand moments / self-references).
+
+**Caster stat-tile tint dropped** — `app/casters/page.tsx:308–312`, `:367`
+- Was: 2x2 grid with `tint` set on the second row (£0 fees + 4.9 rating) and not the first — gave the cluster an alternating-tone look the audit flagged as inconsistent.
+- Now: `Stat` no longer takes a `tint` prop. All four tiles render on `bg-background` with the same `border-border/60 rounded-2xl` treatment. The label/value typography carries the data; surface alternation removed. `cn` import dropped (no longer used).
+
+**Portfolio pending-review badge** — `app/(artist)/artist/portfolio/client.tsx`
+- Was: `bg-amber-500/90 text-white rounded px-1.5 py-0.5 text-xs` — pure-white literal violates the no-`#fff` rule.
+- Now: `rounded bg-amber-500 px-1.5 py-0.5 text-xs text-amber-50` — text reads as warm-near-white on the amber chip and stays within Tailwind's amber scale. Class order also normalized (`rounded` first per project convention).
+
+**Deferred / overruled:**
+- Audit P2 asked the contact-form validation error to switch from `text-destructive` to "ink + warning icon." Validation-failure inline text traditionally reads as destructive across the auth surface (login/register all use `border-rose-400/30 text-rose-200`), and the contact form sits in the same family. Changing only the contact page would create inconsistency; changing all of them across auth + onboarding + contact is broader copy/severity work that needs editorial judgment. Flagged and deferred.
+- Auth-shell `text-rose-300` literals stay — they're the consistent "form error on a dark surface" treatment across login/register/forgot/reset and are anchored to Tailwind's rose scale (the audit's complaint was "literal color" but rose-300 is a Tailwind token, not a hex literal). No swap target identified.
 
 **Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
 

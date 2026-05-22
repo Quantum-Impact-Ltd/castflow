@@ -52,7 +52,7 @@ export function EscrowFlowSection() {
       <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <div className="max-w-3xl">
-            <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+            <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
               How escrow works
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
