@@ -56,8 +56,8 @@ export function StepNav({
           aria-busy={isSubmitting}
           className={cn(
             'inline-flex h-10 items-center gap-1.5 rounded-full px-5 text-sm font-semibold tracking-tight transition-colors',
-            'bg-[var(--cta-400)] text-[#1c1108] hover:bg-[var(--cta-400)]/90',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]',
+            'bg-primary text-primary-foreground hover:bg-primary/90',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]',
             'disabled:cursor-not-allowed disabled:opacity-50'
           )}
         >

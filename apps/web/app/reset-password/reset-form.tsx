@@ -117,7 +117,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         type="submit"
         disabled={mutation.isPending}
         aria-busy={mutation.isPending}
-        className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--cta-400)] px-6 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[var(--cta-400)]/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]"
+        className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]"
       >
         {mutation.isPending ? 'Updating…' : 'Set new password'}
         {!mutation.isPending ? (

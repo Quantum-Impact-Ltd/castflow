@@ -104,7 +104,7 @@ export default function OnboardingPendingPage() {
             <div className="mt-8 flex flex-col items-center gap-3">
               <Link
                 href="/onboarding/artist"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--cta-400)] px-5 py-2.5 text-sm font-semibold text-[var(--ink-900)] transition hover:bg-[#fab17f]"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
               >
                 Edit profile & resubmit
                 <ArrowRight className="h-4 w-4" />
@@ -128,7 +128,7 @@ export default function OnboardingPendingPage() {
             <div className="mt-8">
               <Link
                 href="/artist/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--cta-400)] px-5 py-2.5 text-sm font-semibold text-[var(--ink-900)] transition hover:bg-[#fab17f]"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
               >
                 Go to dashboard
                 <ArrowRight className="h-4 w-4" />
