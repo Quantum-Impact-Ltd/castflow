@@ -53,12 +53,12 @@ export function StepNav({
           type={nextType}
           onClick={onNext}
           disabled={isSubmitting || nextDisabled}
+          aria-busy={isSubmitting}
           className={cn(
-            'inline-flex h-10 items-center gap-1.5 rounded-xl px-5 text-sm font-semibold tracking-tight transition',
-            'bg-gradient-to-br from-[var(--cta-400)] to-[var(--cta-500)] text-[var(--ink-900)]',
-            'shadow-[0_10px_30px_-12px_rgba(249,162,108,0.55)]',
-            'hover:from-[#fab17f] hover:to-[#e88a4b]',
-            'disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
+            'inline-flex h-10 items-center gap-1.5 rounded-full px-5 text-sm font-semibold tracking-tight transition-colors',
+            'bg-[var(--cta-400)] text-[#1c1108] hover:bg-[var(--cta-400)]/90',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]',
+            'disabled:cursor-not-allowed disabled:opacity-50'
           )}
         >
           {isSubmitting ? 'Saving…' : nextLabel}

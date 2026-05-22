@@ -319,7 +319,7 @@ export default function ArtistOnboardingPage() {
           to fix before resubmitting — avoids resubmit-and-get-rejected
           loops. (Audit H15.) */}
       {profile.approvalStatus === 'rejected' && (
-        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-400/30 bg-rose-400/[0.06] p-4 backdrop-blur-xl">
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-400/30 bg-rose-400/[0.08] p-4">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
           <div className="space-y-1 text-sm">
             <p className="font-medium text-white">

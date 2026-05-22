@@ -13,7 +13,6 @@ import {
   AuthInput,
 } from '@/components/auth/auth-form-fields'
 import { PasswordInput } from '@/components/auth/password-input'
-import { ShimmerButton } from '@/components/ui/shimmer-button'
 import { useLogin } from '@/lib/hooks/use-auth'
 import { postLoginPath } from '@/lib/auth-redirect'
 import { authClient } from '@/lib/auth-client'
@@ -149,18 +148,17 @@ export function LoginForm() {
           </p>
         ) : null}
 
-        <ShimmerButton
+        <button
           type="submit"
           disabled={mutation.isPending}
-          background="linear-gradient(135deg, var(--cta-400) 0%, var(--cta-500) 100%)"
-          shimmerColor="#ffffff"
-          className="h-12 w-full px-6 text-sm font-semibold"
+          aria-busy={mutation.isPending}
+          className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--cta-400)] px-6 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[var(--cta-400)]/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]"
         >
           {mutation.isPending ? 'Logging in…' : 'Log in'}
           {!mutation.isPending ? (
-            <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
+            <ArrowRight className="h-4 w-4" aria-hidden />
           ) : null}
-        </ShimmerButton>
+        </button>
       </form>
 
       <AuthDivider />

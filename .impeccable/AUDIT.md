@@ -223,7 +223,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 1 — `/impeccable distill` strip auth-shell + onboarding-shell.** Remove `AnimatedGridPattern`, `Particles`, `AnimatedShinyText`, `backdrop-blur-xl`, form-card drop-shadow. Affects 11+ routes. ✅ Done.
 - [x] **Action 2 — `/impeccable typeset` codemod the gradient italic-serif `<span>` across all h1s.** Strip the `bg-gradient-to-br ... bg-clip-text font-serif italic text-transparent` wrapper. Keep at most one Instrument Serif italic per page (zero on auth, legal, product UI). ✅ Done (auth + legal). Marketing per-page trimming deferred to action 7.
 - [x] **Action 3 — `/impeccable distill` remove BorderBeam from non-load-bearing surfaces.** Sweep pricing-preview, casters, artists, trust, contact-content, shoots-content, shoot-detail-view, talent-content, legal-layout, how-it-works, hero, pricing page. ✅ Done — all 17 instances stripped across 12 files.
-- [ ] **Action 4 — `/impeccable harden` auth/onboarding ban list.** Strip ShimmerButton from auth CTAs (replace with solid pill `<Button>`), remove gradient + shadow from `/suspended` CTA, fix rejection-banner glass on `/onboarding/artist`, conditionally render Instagram `href` on `/artists/[id]` only when caster, add confirmation dialog to artist Delete account.
+- [x] **Action 4 — `/impeccable harden` auth/onboarding ban list.** ShimmerButton swap (5 auth forms), `/suspended` CTA gradient + shadow, onboarding StepNav gradient + shadow, rejection-banner glass on `/onboarding/artist`, delete-account button styling (artist + caster). ✅ Done. Instagram href on `/artists/[id]` was already correctly gated — audit P0 was a false positive on re-read.
 - [ ] **Action 5 — `/impeccable layout` kill identical card grids on marketing.** Replace 3-col feature grid (`/casters`), 4-col "Get started" (`/artists`), 4-col "privacy ladder" (`/trust`) with editorial bento / numbered timelines.
 - [ ] **Action 6 — `/impeccable adapt` responsive sweep.** Caster comparison table mobile collapse, AnimatedBeam fallback on mobile, `/talent` grid steps, mobile filter row gap, password grid stacking `<sm`, messaging inbox badge alignment.
 - [ ] **Action 7 — `/impeccable polish` eyebrow chip codemod.** Replace every AnimatedShinyText eyebrow with static tracked-label `<Label>` on `surface-50`. Same change across marketing, talent, contact, legal.
@@ -289,3 +289,41 @@ All imports of `BorderBeam` also removed from the same 12 files. The component f
 **Verification:** `bunx tsc --noEmit` exit 0. Final grep confirms zero remaining `BorderBeam` references outside the component definition itself.
 
 **What this clears:** all the "pulsing animated border on hero / CTA / pricing / SLA / featured-artist / legal-footer" instances called out as P0/P1 throughout the audit. Cards revert to their flat hairline-ring + tonal-lift styling per the no-shadow, hairline-only design rules.
+
+### Action 4 — harden auth/onboarding ban list (2026-05-22)
+
+**ShimmerButton → solid pill button** across 5 auth forms:
+- `app/login/login-form.tsx`
+- `app/register/caster/register-form.tsx`
+- `app/register/artist/register-form.tsx`
+- `app/forgot-password/forgot-form.tsx`
+- `app/reset-password/reset-form.tsx`
+
+Each ShimmerButton replaced with native `<button>`:
+```
+inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-full
+bg-[var(--cta-400)] px-6 text-sm font-semibold text-[#1c1108] transition-colors
+hover:bg-[var(--cta-400)]/90 disabled:cursor-not-allowed disabled:opacity-60
+focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/60
+focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]
+```
+plus `aria-busy={mutation.isPending}` for screen-reader feedback while submitting. Imports of `ShimmerButton` removed from all 5 files.
+
+**`/suspended` CTA + icon wrapper** — `app/suspended/page.tsx`:
+- CTA `<a>` lost `bg-gradient-to-br from-cta-400 to-cta-500`, lost `shadow-[0_10px_30px_-12px_rgba(249,162,108,0.55)]`, lost the literal `#fab17f`/`#e88a4b` hover stops. Now solid `bg-[var(--cta-400)]` with hover-darken + focus-ring matching the auth pill style. `rounded-xl` → `rounded-full`.
+- ShieldAlert icon wrapper lost `backdrop-blur-xl`.
+
+**Onboarding StepNav button** — `components/onboarding/step-nav.tsx`:
+- Lost `bg-gradient-to-br from-cta-400 to-cta-500`, lost `shadow-[0_10px_30px_-12px_...]`, lost the literal hex hover gradient. Now solid pill (`rounded-full`, `bg-[var(--cta-400)]`, hover-darken, focus-ring, `aria-busy`). `disabled:shadow-none` line removed (no shadow anymore).
+
+**Onboarding rejection banner** — `app/onboarding/artist/page.tsx:322`:
+- Lost `backdrop-blur-xl` on the alert. Bumped fill from `bg-rose-400/[0.06]` → `bg-rose-400/[0.08]` so the panel still reads clearly without the blur.
+
+**Delete-account button styling** — `app/(artist)/artist/settings/page.tsx`, `app/(caster)/caster/settings/client.tsx`:
+- The destructive `<Button>` was a `<Link>` to an info page that explains manual email-based deletion. Not actually destructive. Changed variant `destructive` → `outline` so the visual matches behavior. Confirm dialog not added — would be theater for a navigation-only button (no client-side delete action exists).
+
+**Instagram href on `/artists/[id]`** — false positive:
+- Audit P0 claimed the Instagram handle leaked in the DOM for non-casters. On re-read, the conditional at lines 170–188 already correctly gates rendering: casters see the `<a href=...>` link, non-casters see a `<Link>` to login with a Lock icon and no handle. ProfileCard `handle` prop at line 88–92 also uses `isCaster && profile.instagramHandle` with a `firstName.toLowerCase()` fallback. No code change required.
+- Caveat: the mock data still ships `profile.instagramHandle` to the client as JS state regardless of role. Real fix lives server-side once `/talent/:id` becomes public; tracked separately.
+
+**Verification:** `bunx tsc --noEmit` exit 0. Remaining `ShimmerButton` consumers are the two marketing `shimmer-button-link.tsx` wrappers (homepage hero, `/casters` hero) — out of action 4 scope, deferred to a later marketing pass.

@@ -21,7 +21,7 @@ export default function ArtistSettingsPage() {
               </Link>{' '}
               flows for now.
             </p>
-            <Button asChild variant="destructive">
+            <Button asChild variant="outline">
               <Link href="/artist/settings/delete">Delete account</Link>
             </Button>
           </CardContent>

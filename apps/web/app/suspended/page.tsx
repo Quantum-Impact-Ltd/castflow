@@ -32,7 +32,7 @@ export default async function SuspendedPage() {
       />
 
       <div className="relative z-10 mx-auto max-w-md text-center">
-        <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-rose-400/30 bg-rose-400/[0.10] backdrop-blur-xl">
+        <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-rose-400/30 bg-rose-400/[0.10]">
           <ShieldAlert className="h-6 w-6 text-rose-300" />
         </div>
         <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
@@ -54,7 +54,7 @@ export default async function SuspendedPage() {
         <div className="mt-8 flex flex-col items-center gap-3">
           <a
             href="mailto:trust@castflow.co.uk?subject=Account%20appeal"
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-br from-[var(--cta-400)] to-[var(--cta-500)] px-5 text-sm font-semibold text-[var(--ink-900)] shadow-[0_10px_30px_-12px_rgba(249,162,108,0.55)] transition hover:from-[#fab17f] hover:to-[#e88a4b]"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--cta-400)] px-5 text-sm font-semibold text-[#1c1108] transition-colors hover:bg-[var(--cta-400)]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-400)]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]"
           >
             <Mail className="h-4 w-4" />
             Contact Trust &amp; Safety

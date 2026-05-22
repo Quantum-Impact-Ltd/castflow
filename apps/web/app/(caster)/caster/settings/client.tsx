@@ -99,7 +99,7 @@ export function CasterSettingsClient() {
             <Button asChild variant="outline" size="sm">
               <Link href="/caster/settings/notifications">Notifications</Link>
             </Button>
-            <Button asChild variant="destructive" size="sm">
+            <Button asChild variant="outline" size="sm">
               <Link href="/caster/settings/delete">Delete account</Link>
             </Button>
           </CardContent>
