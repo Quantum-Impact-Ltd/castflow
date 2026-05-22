@@ -13,8 +13,7 @@ export function FinalCtaSection() {
             Start casting
           </p>
           <h2 className="mt-6 text-balance text-5xl font-medium leading-[1.02] tracking-[-0.025em] text-foreground sm:text-6xl lg:text-[6rem]">
-            Ready to post your{' '}
-            <span className="font-serif font-normal italic">first</span> shoot?
+            Ready to post your first shoot?
           </h2>
           <p className="mt-8 text-lg text-muted-foreground sm:text-xl">
             Browse talent free. No card required to sign up.

@@ -56,10 +56,7 @@ export function EscrowFlowSection() {
               How escrow works
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-              Money moves only when{' '}
-              <span className="font-serif font-normal italic">
-                the shoot does.
-              </span>
+              Money moves only when the shoot does.
             </h2>
             <p className="mt-6 text-lg leading-relaxed text-foreground/75">
               Stripe holds the caster&apos;s payment from booking confirmation

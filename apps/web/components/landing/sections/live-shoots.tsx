@@ -242,10 +242,7 @@ export function LiveShootsSection() {
                 This week on CastFlow
               </p>
               <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl lg:text-6xl">
-                Real shoots,{' '}
-                <span className="font-serif font-normal italic">
-                  posted by real brands.
-                </span>
+                Real shoots, posted by real brands.
               </h2>
             </div>
             <Link

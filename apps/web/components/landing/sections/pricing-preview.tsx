@@ -72,10 +72,7 @@ export function PricingPreviewSection() {
                 Pricing
               </p>
               <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl lg:text-6xl">
-                Casters pay.{' '}
-                <span className="font-serif font-normal italic">
-                  Artists never do.
-                </span>
+                Casters pay. Artists never do.
               </h2>
             </div>
             <p className="text-lg leading-relaxed text-muted-foreground lg:col-span-5 lg:pt-2">

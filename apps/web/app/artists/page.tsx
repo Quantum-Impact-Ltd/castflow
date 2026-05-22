@@ -216,7 +216,7 @@ export default function ArtistsPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                   Built for the people{' '}
-                  <span className="font-serif font-normal italic">actually doing the work.</span>
+                  actually doing the work.
                 </h2>
               </div>
             </Reveal>
@@ -252,7 +252,7 @@ export default function ArtistsPage() {
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                     The badge you earn{' '}
-                    <span className="font-serif font-normal italic">opens better briefs.</span>
+                    opens better briefs.
                   </h2>
                   <p className="mt-6 max-w-md text-base leading-relaxed text-foreground/75">
                     Every approved artist is hand-reviewed: ID document cross-checked, age verified,
@@ -314,7 +314,7 @@ export default function ArtistsPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                   Four steps from sign-up{' '}
-                  <span className="font-serif font-normal italic">to first payout.</span>
+                  to first payout.
                 </h2>
               </div>
             </Reveal>
@@ -369,7 +369,7 @@ export default function ArtistsPage() {
                     On the platform
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                    A few of the <span className="font-serif font-normal italic">approved</span>{' '}
+                    A few of the approved{' '}
                     artists.
                   </h2>
                 </div>
@@ -443,7 +443,7 @@ export default function ArtistsPage() {
                   FAQ
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                  Questions <span className="font-serif font-normal italic">artists ask.</span>
+                  Questions artists ask.
                 </h2>
                 <p className="mt-6 text-sm text-foreground/70">
                   More questions?{' '}
@@ -493,7 +493,7 @@ export default function ArtistsPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
                   Your next booking is{' '}
-                  <span className="font-serif font-normal italic">one application away.</span>
+                  one application away.
                 </h2>
                 <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
                   Free forever for artists. Apply in 15 minutes — we review every application within

@@ -175,8 +175,7 @@ function Hero({ count, featured }: { count: number; featured: PublicJob }) {
 
             <h1 className="mt-6 max-w-3xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.025em] text-foreground sm:text-6xl lg:text-7xl">
               <span className="text-foreground">{count}</span> live{' '}
-              <span className="font-serif font-normal italic">briefs</span> looking to cast{' '}
-              <span className="font-serif font-normal italic">right now.</span>
+              <span className="font-serif font-normal italic">briefs</span> looking to cast right now.
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-relaxed text-foreground/75">
               Posted in the last seven days by verified UK casters and brands. Filter by city, type,
@@ -505,7 +504,7 @@ function FinalCta() {
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
               Get on the platform —{' '}
-              <span className="font-serif font-normal italic">then bid in seconds.</span>
+              then bid in seconds.
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
               Apply once, get verified, then submit a bid on any open shoot with a rate and cover

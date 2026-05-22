@@ -180,9 +180,9 @@ export default function CastersPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                   The casting director,{' '}
-                  <span className="font-serif font-normal italic">the contract lawyer,</span> and
+                  the contract lawyer, and
                   the accountant —{' '}
-                  <span className="font-serif font-normal italic">one platform.</span>
+                  one platform.
                 </h2>
               </div>
             </Reveal>
@@ -223,7 +223,7 @@ export default function CastersPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                   Faster, safer, and{' '}
-                  <span className="font-serif font-normal italic">a fraction of the cost.</span>
+                  a fraction of the cost.
                 </h2>
               </div>
             </Reveal>
@@ -329,7 +329,7 @@ export default function CastersPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
                   Your next shoot is{' '}
-                  <span className="font-serif font-normal italic">a brief away.</span>
+                  a brief away.
                 </h2>
                 <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
                   14-day free trial on every plan. No card to browse talent.

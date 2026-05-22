@@ -40,14 +40,11 @@ export function FlowSection() {
         <Reveal>
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
             <div className="lg:col-span-5">
-              <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+              <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                 How it works
               </p>
               <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl lg:text-6xl">
-                From posted to paid,{' '}
-                <span className="font-serif font-normal italic">
-                  in six steps.
-                </span>
+                From posted to paid, in six steps.
               </h2>
             </div>
             <p className="text-lg leading-relaxed text-muted-foreground lg:col-span-6 lg:col-start-7 lg:pt-2">

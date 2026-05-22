@@ -175,7 +175,7 @@ export default function TrustPage() {
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                     Personal info{' '}
-                    <span className="font-serif font-normal italic">stays personal</span> until you
+                    stays personal until you
                     book.
                   </h2>
                 </div>
@@ -217,7 +217,7 @@ export default function TrustPage() {
                     Dispute resolution
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                    Humans decide <span className="font-serif font-normal italic">hard cases.</span>
+                    Humans decide hard cases.
                   </h2>
                   <p className="mt-6 text-base leading-relaxed text-foreground/75">
                     A dispute can be raised within 72 hours of the shoot date. Both parties submit
@@ -270,7 +270,7 @@ export default function TrustPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                   The rules{' '}
-                  <span className="font-serif font-normal italic">don&apos;t stop at sign-up.</span>
+                  don&apos;t stop at sign-up.
                 </h2>
               </div>
             </Reveal>
@@ -308,7 +308,7 @@ export default function TrustPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
                   Spot something off?{' '}
-                  <span className="font-serif font-normal italic">Tell us.</span>
+                  Tell us.
                 </h2>
                 <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
                   Every report goes to a human within 24 hours. Identity-related concerns are

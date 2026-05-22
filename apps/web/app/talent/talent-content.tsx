@@ -541,7 +541,7 @@ function FinalCta() {
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
               Shortlist talent,{' '}
-              <span className="font-serif font-normal italic">book in one click.</span>
+              book in one click.
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
               Sign up as a caster to unlock direct messaging, side-by-side bid comparison, and

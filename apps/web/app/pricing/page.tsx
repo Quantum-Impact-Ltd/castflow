@@ -257,7 +257,7 @@ export default function PricingPage() {
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                     The artist sees{' '}
-                    <span className="font-serif font-normal italic">every penny</span> before they
+                    every penny before they
                     bid.
                   </h2>
                 </div>
@@ -318,7 +318,7 @@ export default function PricingPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
                   Pick the plan that{' '}
-                  <span className="font-serif font-normal italic">matches your volume.</span>
+                  matches your volume.
                 </h2>
               </div>
             </Reveal>
@@ -365,7 +365,7 @@ export default function PricingPage() {
                   FAQ
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                  Common <span className="font-serif font-normal italic">questions.</span>
+                  Common questions.
                 </h2>
                 <p className="mt-6 text-sm text-foreground/70">
                   Still unsure?{' '}
@@ -417,7 +417,7 @@ export default function PricingPage() {
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
                   Post your first job{' '}
-                  <span className="font-serif font-normal italic">in minutes.</span>
+                  in minutes.
                 </h2>
                 <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
                   Free 14-day trial on every plan. No credit card needed to browse talent.

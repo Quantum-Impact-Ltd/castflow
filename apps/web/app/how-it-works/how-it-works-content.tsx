@@ -245,7 +245,7 @@ function BentoFeaturesSection() {
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
               The platform{' '}
-              <span className="font-serif font-normal italic">does the boring parts</span> for you.
+              does the boring parts for you.
             </h2>
           </div>
         </Reveal>
@@ -317,7 +317,7 @@ function LiveActivitySection() {
                 Live activity
               </p>
               <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                Bookings happen <span className="font-serif font-normal italic">every minute.</span>
+                Bookings happen every minute.
               </h2>
               <p className="mt-6 max-w-md text-base leading-relaxed text-foreground/75">
                 A glimpse of what flows through CastFlow on a normal weekday — jobs posted, bids
@@ -362,7 +362,7 @@ function FinalCtaSection() {
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
               Your next shoot is{' '}
-              <span className="font-serif font-normal italic">four steps away.</span>
+              four steps away.
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
               No setup fees. No card needed to browse. Free 14-day trial on every caster plan.
