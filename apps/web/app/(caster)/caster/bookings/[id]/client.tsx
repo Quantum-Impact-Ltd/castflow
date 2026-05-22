@@ -101,7 +101,7 @@ export function CasterBookingDetailClient({ id }: { id: string }) {
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 text-sm">
             <Field label="Date" value={formatDate(b.shootDate)} />
-            <Field label="Call time" value={b.callTime ?? '—'} />
+            <Field label="Call time" value={b.callTime ?? '–'} />
             <Field
               label="Location"
               value={

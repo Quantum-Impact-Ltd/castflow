@@ -98,7 +98,7 @@ export function CasterJobDetailClient({ id }: { id: string }) {
                   ? 'Open to bids'
                   : j.rateAmount
                     ? `${formatCurrency(j.rateAmount)}${j.paymentType === 'hourly' ? '/hr' : ''}`
-                    : '—'
+                    : '–'
               }
             />
             <Row label="Visibility" value={j.visibility} />

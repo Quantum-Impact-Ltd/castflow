@@ -20,7 +20,7 @@ export function JobDetailClient({ id }: { id: string }) {
       ? 'Open to bids'
       : j.rateAmount != null
         ? `${formatCurrency(j.rateAmount)}${j.paymentType === 'hourly' ? '/hr' : ''}`
-        : '—'
+        : '–'
 
   return (
     <div className="space-y-6">
@@ -55,10 +55,10 @@ export function JobDetailClient({ id }: { id: string }) {
                 value={j.ageMin && j.ageMax ? `${j.ageMin}–${j.ageMax}` : 'Any'}
               />
               <Field label="Headcount" value={`${j.headcountFilled}/${j.headcountRequired}`} />
-              <Field label="Skills" value={j.skillsRequired?.join(', ') || '—'} />
+              <Field label="Skills" value={j.skillsRequired?.join(', ') || '–'} />
               <Field label="NDA required" value={j.requiresNda ? 'Yes' : 'No'} />
               <Field label="Exclusivity" value={j.exclusivity ? 'Yes' : 'No'} />
-              <Field label="Usage rights" value={j.usageRights || '—'} className="col-span-2" />
+              <Field label="Usage rights" value={j.usageRights || '–'} className="col-span-2" />
             </CardContent>
           </Card>
         </div>

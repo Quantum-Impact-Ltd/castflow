@@ -86,10 +86,10 @@ export function EarningsClient() {
                           {p ? formatCurrency(p.grossAmount) : formatCurrency(b.totalAmount)}
                         </td>
                         <td className="py-3 text-muted-foreground">
-                          {p ? `−${formatCurrency(p.platformCommissionAmount)}` : '—'}
+                          {p ? `−${formatCurrency(p.platformCommissionAmount)}` : '–'}
                         </td>
                         <td className="py-3 font-medium">
-                          {p ? formatCurrency(p.netArtistAmount) : '—'}
+                          {p ? formatCurrency(p.netArtistAmount) : '–'}
                         </td>
                         <td className="py-3 text-right">
                           {p ? (

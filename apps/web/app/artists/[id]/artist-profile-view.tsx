@@ -125,7 +125,7 @@ export function ArtistProfileView({ id }: Props) {
                 value={
                   profile.responseRate != null
                     ? `${Math.round(Number(profile.responseRate) * 100)}%`
-                    : '—'
+                    : '–'
                 }
                 sub="reply rate"
               />

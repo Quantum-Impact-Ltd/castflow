@@ -90,7 +90,7 @@ export function JobFeed() {
                         ? 'Open to bids'
                         : job.rateAmount
                           ? formatCurrency(job.rateAmount)
-                          : '—'}
+                          : '–'}
                     </span>
                     <span className="text-muted-foreground">
                       {job.headcountFilled}/{job.headcountRequired} filled

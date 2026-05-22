@@ -97,7 +97,7 @@ export function CasterTalentClient() {
                         {a.firstName} {a.lastName ?? ''}
                       </div>
                       <div className="text-muted-foreground text-xs capitalize">
-                        {a.artistType} · {a.city ?? '—'}
+                        {a.artistType} · {a.city ?? '–'}
                       </div>
                       <div className="pt-1">
                         <StatusBadge status={a.availabilityStatus} />

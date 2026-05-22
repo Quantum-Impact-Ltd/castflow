@@ -16,7 +16,7 @@ export function ProfileViewClient() {
     <div className="space-y-6">
       <PageHeader
         title={`${p.firstName} ${p.lastName}`}
-        description={`${p.artistType === 'model' ? 'Model' : 'Actor'} · ${p.city ?? '—'}`}
+        description={`${p.artistType === 'model' ? 'Model' : 'Actor'} · ${p.city ?? '–'}`}
         actions={
           <>
             <Button asChild variant="outline">
@@ -43,15 +43,15 @@ export function ProfileViewClient() {
           </div>
           <div>
             <div className="text-muted-foreground text-xs">DOB</div>
-            <div>{p.dob ? formatDate(p.dob) : '—'}</div>
+            <div>{p.dob ? formatDate(p.dob) : '–'}</div>
           </div>
           <div>
             <div className="text-muted-foreground text-xs">Experience</div>
-            <div className="capitalize">{p.experienceLevel?.replace(/_/g, ' ') ?? '—'}</div>
+            <div className="capitalize">{p.experienceLevel?.replace(/_/g, ' ') ?? '–'}</div>
           </div>
           <div className="col-span-2">
             <div className="text-muted-foreground text-xs">Bio</div>
-            <p className="whitespace-pre-wrap">{p.bio ?? '—'}</p>
+            <p className="whitespace-pre-wrap">{p.bio ?? '–'}</p>
           </div>
         </CardContent>
       </Card>
