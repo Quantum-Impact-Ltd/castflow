@@ -22,14 +22,7 @@ export default async function VerifyEmailTokenPage({ params }: PageProps) {
   return (
     <AuthShell
       eyebrow="One last step"
-      heading={
-        <>
-          Confirm your{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            email.
-          </span>
-        </>
-      }
+      heading="Confirm your email."
       subhead="We just need to confirm it was really you who signed up."
       width="sm"
     >

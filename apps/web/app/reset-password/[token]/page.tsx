@@ -15,14 +15,7 @@ export default async function ResetPasswordTokenPage({ params }: PageProps) {
   return (
     <AuthShell
       eyebrow="Almost there"
-      heading={
-        <>
-          Choose a new{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            password.
-          </span>
-        </>
-      }
+      heading="Choose a new password."
       subhead="Pick a strong one you don't use elsewhere."
       width="sm"
       footer={

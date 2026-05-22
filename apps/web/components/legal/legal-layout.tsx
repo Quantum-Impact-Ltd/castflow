@@ -131,8 +131,7 @@ function Hero({
           </div>
 
           <h1 className="mt-6 max-w-4xl text-balance text-5xl font-medium leading-[1.04] tracking-[-0.02em] text-foreground sm:text-6xl lg:text-7xl">
-            {title}{' '}
-            <span className="font-serif font-normal italic">{titleAccent}</span>
+            {title} {titleAccent}
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground/75">
             {intro}
@@ -162,8 +161,7 @@ function FinalCta() {
               Questions?
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
-              Talk to a human{' '}
-              <span className="font-serif font-normal italic">anytime.</span>
+              Talk to a human anytime.
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
               Anything unclear in this document? Send us a note — we reply

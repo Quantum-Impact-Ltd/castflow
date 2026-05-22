@@ -47,14 +47,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
     <AuthShell
       eyebrow="Join CastFlow"
       topAccessory={<RegisterProgress current={0} />}
-      heading={
-        <>
-          Pick the side you&apos;re{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            on.
-          </span>
-        </>
-      }
+      heading="Pick the side you're on."
       subhead="Two roles. Your choice is permanent — it shapes the whole platform from here."
       width="lg"
       footer={

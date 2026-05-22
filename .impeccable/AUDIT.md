@@ -221,7 +221,7 @@ Yes, these pages look AI-generated. Six template tells repeat across the codebas
 Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 
 - [x] **Action 1 — `/impeccable distill` strip auth-shell + onboarding-shell.** Remove `AnimatedGridPattern`, `Particles`, `AnimatedShinyText`, `backdrop-blur-xl`, form-card drop-shadow. Affects 11+ routes. ✅ Done.
-- [ ] **Action 2 — `/impeccable typeset` codemod the gradient italic-serif `<span>` across all h1s.** Strip the `bg-gradient-to-br ... bg-clip-text font-serif italic text-transparent` wrapper. Keep at most one Instrument Serif italic per page (zero on auth, legal, product UI).
+- [x] **Action 2 — `/impeccable typeset` codemod the gradient italic-serif `<span>` across all h1s.** Strip the `bg-gradient-to-br ... bg-clip-text font-serif italic text-transparent` wrapper. Keep at most one Instrument Serif italic per page (zero on auth, legal, product UI). ✅ Done (auth + legal). Marketing per-page trimming deferred to action 7.
 - [ ] **Action 3 — `/impeccable distill` remove BorderBeam from non-load-bearing surfaces.** Sweep pricing-preview, casters, artists, trust, contact-content, shoots-content, shoot-detail-view, talent-content, legal-layout.
 - [ ] **Action 4 — `/impeccable harden` auth/onboarding ban list.** Strip ShimmerButton from auth CTAs (replace with solid pill `<Button>`), remove gradient + shadow from `/suspended` CTA, fix rejection-banner glass on `/onboarding/artist`, conditionally render Instagram `href` on `/artists/[id]` only when caster, add confirmation dialog to artist Delete account.
 - [ ] **Action 5 — `/impeccable layout` kill identical card grids on marketing.** Replace 3-col feature grid (`/casters`), 4-col "Get started" (`/artists`), 4-col "privacy ladder" (`/trust`) with editorial bento / numbered timelines.
@@ -249,3 +249,21 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 **Downstream impact:** every auth route (`/login`, `/register`, `/register/{caster,artist}`, `/forgot-password`, `/reset-password`, `/reset-password/[token]`, `/verify-email`, `/verify-email/[token]`, `/suspended`) and every onboarding step (`/onboarding/{caster,artist,pending}`) now renders without the three banned layers and without the form-card drop-shadow.
 
 **Not addressed (scheduled):** auth headings still contain gradient italic-serif spans (action 2); ShimmerButton still wired into form CTAs (action 4); `/suspended` CTA gradient + shadow (action 4); rejection-banner glass on `/onboarding/artist` (action 4); StepNav gradient button (action 4).
+
+### Action 2 — gradient italic-serif span codemod (2026-05-22)
+
+**Files touched:**
+- `apps/web/app/login/page.tsx` — heading collapsed to plain string "Sign in to CastFlow."
+- `apps/web/app/register/page.tsx` — "Pick the side you're on."
+- `apps/web/app/register/caster/page.tsx` — "Open your caster account."
+- `apps/web/app/register/artist/page.tsx` — "Apply as an artist."
+- `apps/web/app/forgot-password/page.tsx` — "Forgot your password?"
+- `apps/web/app/reset-password/page.tsx` — "Reset link missing."
+- `apps/web/app/reset-password/[token]/page.tsx` — "Choose a new password."
+- `apps/web/app/verify-email/page.tsx` — "Check your inbox."
+- `apps/web/app/verify-email/[token]/page.tsx` — "Confirm your email."
+- `apps/web/components/legal/legal-layout.tsx` — hero h1 renders `{title} {titleAccent}` as plain text; FinalCta h2 "Talk to a human anytime." stripped of the trailing italic-serif span.
+
+**Verification:** `bunx tsc --noEmit` exit 0. No regressions; the 9 auth pages and 2 legal pages render their headings as plain Geist Sans semibold with no gradient, no italic, no serif.
+
+**Scope policy:** action 2's narrow codemod targets the `bg-gradient-to-br ... bg-clip-text font-serif italic text-transparent` pattern (auth-only in this codebase) plus the split-line italic-serif accent on legal-layout (zero serif on legal per policy). Marketing-page Instrument Serif italic abuse (multiple moments per page on `/casters`, `/artists`, `/pricing`, `/trust`, `/contact`, `/shoots`, `/talent`) is per-page judgment work and is deferred to action 7. Section h2 `font-serif` (non-italic) on legal-layout left as-is for now — action 13 polish covers it.

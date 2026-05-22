@@ -32,14 +32,7 @@ export default async function VerifyEmailPage() {
     <AuthShell
       eyebrow="One more step"
       topAccessory={<RegisterProgress current={2} />}
-      heading={
-        <>
-          Check your{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            inbox.
-          </span>
-        </>
-      }
+      heading="Check your inbox."
       subhead="We've sent you a verification link. Click it to activate your account."
       width="sm"
       footer={

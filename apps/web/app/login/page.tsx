@@ -41,14 +41,7 @@ export default async function LoginPage() {
   return (
     <AuthShell
       eyebrow="Welcome back"
-      heading={
-        <>
-          Sign in to{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            CastFlow.
-          </span>
-        </>
-      }
+      heading="Sign in to CastFlow."
       subhead="Pick up where you left off."
       footer={
         <>

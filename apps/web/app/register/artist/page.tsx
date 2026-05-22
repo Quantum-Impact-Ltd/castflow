@@ -15,14 +15,7 @@ export default async function RegisterArtistPage() {
     <AuthShell
       eyebrow="For models & actors"
       topAccessory={<RegisterProgress current={1} />}
-      heading={
-        <>
-          Apply as an{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            artist.
-          </span>
-        </>
-      }
+      heading="Apply as an artist."
       subhead="Create your account. You'll build your portfolio in the next step."
       backHref="/register"
       backLabel="Pick a different role"

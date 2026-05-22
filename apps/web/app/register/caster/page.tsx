@@ -15,14 +15,7 @@ export default async function RegisterCasterPage() {
     <AuthShell
       eyebrow="For brands & agencies"
       topAccessory={<RegisterProgress current={1} />}
-      heading={
-        <>
-          Open your{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            caster account.
-          </span>
-        </>
-      }
+      heading="Open your caster account."
       subhead="Account first. We'll do a quick welcome tour right after you verify your email."
       width="lg"
       backHref="/register"

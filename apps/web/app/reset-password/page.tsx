@@ -13,14 +13,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthShell
       eyebrow="Reset password"
-      heading={
-        <>
-          Reset link{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            missing.
-          </span>
-        </>
-      }
+      heading="Reset link missing."
       subhead="Your reset link is incomplete or expired. Request a new one to continue."
       width="sm"
       footer={

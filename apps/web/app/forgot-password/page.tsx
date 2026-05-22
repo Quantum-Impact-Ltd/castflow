@@ -11,14 +11,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthShell
       eyebrow="Reset password"
-      heading={
-        <>
-          Forgot your{' '}
-          <span className="bg-gradient-to-br from-[var(--brand-300)] to-[var(--brand-700)] bg-clip-text font-serif italic text-transparent">
-            password?
-          </span>
-        </>
-      }
+      heading="Forgot your password?"
       subhead="Enter your email and we'll send a reset link if an account exists."
       width="sm"
       footer={
