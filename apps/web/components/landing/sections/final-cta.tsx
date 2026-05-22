@@ -2,24 +2,11 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Reveal } from '../reveal'
-import { AnimatedGridPattern } from '@/components/ui/animated-grid-pattern'
 import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
-import { cn } from '@/lib/utils'
 
 export function FinalCtaSection() {
   return (
     <section className="relative w-full overflow-hidden bg-background py-28 lg:py-44">
-      <AnimatedGridPattern
-        numSquares={32}
-        maxOpacity={0.08}
-        duration={5}
-        repeatDelay={1}
-        className={cn(
-          'pointer-events-none [mask-image:radial-gradient(700px_circle_at_center,white,transparent)]',
-          'inset-x-0 inset-y-[-30%] h-[160%] skew-y-6',
-        )}
-      />
-
       <div className="relative mx-auto w-full max-w-4xl px-6 text-center lg:px-8">
         <Reveal>
           <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
