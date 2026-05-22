@@ -269,36 +269,54 @@ export default function ArtistsPage() {
               </Reveal>
 
               <Reveal delay={120}>
-                {/* Static verification visual — concentric brand-tinted discs
-                    behind a single BadgeCheck centerpiece, plus a static row
-                    of the six icons that used to orbit. No motion. */}
-                <div className="relative mx-auto aspect-square w-full max-w-[420px]">
+                {/* Static verification halo — concentric brand-tinted discs
+                    behind a BadgeCheck centerpiece, with the six verification
+                    icons fixed at evenly-spaced positions around the ring. */}
+                <div className="relative mx-auto aspect-square w-full max-w-[380px]">
                   <div
                     aria-hidden
-                    className="absolute inset-[18%] rounded-full bg-[var(--brand-50)]"
+                    className="absolute inset-[10%] rounded-full bg-[var(--brand-50)]"
                   />
                   <div
                     aria-hidden
-                    className="absolute inset-[34%] rounded-full bg-[var(--brand-100)]"
+                    className="absolute inset-[28%] rounded-full bg-[var(--brand-100)]"
                   />
+                  {/* Centerpiece */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative z-10 flex h-28 w-28 items-center justify-center rounded-full bg-foreground text-background">
-                      <BadgeCheck className="h-12 w-12" aria-hidden />
+                    <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-full bg-foreground text-background">
+                      <BadgeCheck className="h-10 w-10" aria-hidden />
                     </div>
                   </div>
-                </div>
-                <ul className="mx-auto mt-8 grid max-w-[420px] grid-cols-3 gap-4 sm:grid-cols-6">
-                  {[IdCard, Shield, Camera, Star, Wallet, CalendarCheck].map(
-                    (Icon, i) => (
-                      <li
-                        key={i}
-                        className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background text-foreground/65"
+                  {/* Halo — six icons placed at 60° intervals via transform.
+                      `translate(-50%, -50%)` centers each icon on the
+                      midpoint, then a rotate→translateY→counter-rotate trick
+                      pushes it out along the angle while keeping it upright. */}
+                  {[
+                    { Icon: IdCard, angle: -90 },
+                    { Icon: Shield, angle: -30 },
+                    { Icon: Camera, angle: 30 },
+                    { Icon: Star, angle: 90 },
+                    { Icon: Wallet, angle: 150 },
+                    { Icon: CalendarCheck, angle: 210 },
+                  ].map(({ Icon, angle }) => {
+                    const rad = (angle * Math.PI) / 180
+                    // Position each icon on a 42%-radius circle, centered on
+                    // 50%/50% of the aspect-square container. left/top are
+                    // percentages of the container, so this scales fluidly.
+                    const left = 50 + Math.cos(rad) * 42
+                    const top = 50 + Math.sin(rad) * 42
+                    return (
+                      <span
+                        key={angle}
+                        aria-hidden
+                        className="absolute z-10 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground/65"
+                        style={{ left: `${left}%`, top: `${top}%` }}
                       >
-                        <Icon className="h-5 w-5" aria-hidden />
-                      </li>
-                    ),
-                  )}
-                </ul>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                    )
+                  })}
+                </div>
               </Reveal>
             </div>
           </div>
@@ -321,22 +339,29 @@ export default function ArtistsPage() {
 
             {/* Vertical numbered timeline — sequential workflow reads as a single
                 editorial flow, not a 4-up identical card grid. */}
-            <ol className="mt-16 relative ml-2">
+            <ol className="relative mt-16">
               {STEPS.map((s, i) => {
                 const isLast = i === STEPS.length - 1
                 return (
-                  <li key={s.n} className="relative pl-12 pb-12 last:pb-0 sm:pl-16">
-                    {/* Connecting rail between numbers — hairline, no flourish */}
+                  <li
+                    key={s.n}
+                    className="relative pb-12 pl-14 last:pb-0 sm:pl-20"
+                  >
+                    {/* Connecting rail between numbers — hairline. Sits behind
+                        the number badge via z-index so it tucks neatly. */}
                     {!isLast ? (
                       <span
                         aria-hidden
-                        className="absolute left-[18px] top-12 h-[calc(100%-2.5rem)] w-px bg-border sm:left-[22px]"
+                        className="absolute left-[18px] top-9 h-[calc(100%-2.25rem)] w-px bg-border sm:left-[22px] sm:top-11 sm:h-[calc(100%-2.75rem)]"
                       />
                     ) : null}
+                    {/* Number marker — anchored to the <li> (its positioned
+                        ancestor), NOT inside <Reveal>, so its absolute
+                        coordinates aren't shifted by the reveal transform. */}
+                    <span className="absolute left-0 top-0 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background font-mono text-xs font-semibold tracking-[0.04em] text-foreground sm:h-11 sm:w-11 sm:text-sm">
+                      {s.n}
+                    </span>
                     <Reveal delay={i * 70}>
-                      <span className="absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background font-mono text-xs font-semibold tracking-[0.04em] text-foreground sm:h-11 sm:w-11 sm:text-sm">
-                        {s.n}
-                      </span>
                       <div className="max-w-2xl">
                         <div className="flex items-center gap-3">
                           <h3 className="text-2xl font-medium tracking-[-0.01em] text-foreground sm:text-3xl">
