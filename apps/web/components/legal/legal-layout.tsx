@@ -4,7 +4,6 @@ import { Nav } from '@/components/landing/nav'
 import { Footer } from '@/components/landing/footer'
 import { Reveal } from '@/components/landing/reveal'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
-import { BorderBeam } from '@/components/ui/border-beam'
 import { Button } from '@/components/ui/button'
 
 export interface LegalSection {
@@ -151,12 +150,6 @@ function FinalCta() {
       <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-foreground px-10 py-20 text-center text-background lg:px-16">
-            <BorderBeam
-              duration={10}
-              size={160}
-              colorFrom="#ffffff"
-              colorTo="#ffffff"
-            />
             <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-background/60">
               Questions?
             </p>

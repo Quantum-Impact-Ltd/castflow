@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/button'
 import { Marquee } from '@/components/ui/marquee'
 import { AvatarCircles } from '@/components/ui/avatar-circles'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
-import { BorderBeam } from '@/components/ui/border-beam'
 import { ShimmerButtonLink } from './shimmer-button-link'
 import { cn } from '@/lib/utils'
 
@@ -303,7 +302,6 @@ export default function CastersPage() {
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <Reveal>
               <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-foreground px-10 py-20 text-center text-background lg:px-16">
-                <BorderBeam duration={10} size={100} colorFrom="#ffffff" colorTo="#ffffff" />
                 <Lock
                   className="absolute -right-10 -top-10 h-48 w-48 text-background/[0.04]"
                   aria-hidden

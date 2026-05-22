@@ -26,7 +26,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
-import { BorderBeam } from '@/components/ui/border-beam'
 import { cn } from '@/lib/utils'
 
 type Topic = 'sales' | 'support' | 'safety' | 'press' | 'other'
@@ -306,7 +305,6 @@ function SlaCard({ topic }: { topic: Topic }) {
   const meta = TOPICS.find((t) => t.value === topic)
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-foreground p-7 text-background">
-      <BorderBeam duration={10} size={30} colorFrom="#ffffff" colorTo="#ffffff" />
       <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-background/60">
         Response time
       </p>
@@ -443,7 +441,6 @@ function FinalCta() {
       <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-foreground px-10 py-20 text-center text-background lg:px-16">
-            <BorderBeam duration={10} size={100} colorFrom="#ffffff" colorTo="#ffffff" />
             <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-background/60">
               While you wait
             </p>

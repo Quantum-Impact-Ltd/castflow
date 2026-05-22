@@ -222,7 +222,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 
 - [x] **Action 1 — `/impeccable distill` strip auth-shell + onboarding-shell.** Remove `AnimatedGridPattern`, `Particles`, `AnimatedShinyText`, `backdrop-blur-xl`, form-card drop-shadow. Affects 11+ routes. ✅ Done.
 - [x] **Action 2 — `/impeccable typeset` codemod the gradient italic-serif `<span>` across all h1s.** Strip the `bg-gradient-to-br ... bg-clip-text font-serif italic text-transparent` wrapper. Keep at most one Instrument Serif italic per page (zero on auth, legal, product UI). ✅ Done (auth + legal). Marketing per-page trimming deferred to action 7.
-- [ ] **Action 3 — `/impeccable distill` remove BorderBeam from non-load-bearing surfaces.** Sweep pricing-preview, casters, artists, trust, contact-content, shoots-content, shoot-detail-view, talent-content, legal-layout.
+- [x] **Action 3 — `/impeccable distill` remove BorderBeam from non-load-bearing surfaces.** Sweep pricing-preview, casters, artists, trust, contact-content, shoots-content, shoot-detail-view, talent-content, legal-layout, how-it-works, hero, pricing page. ✅ Done — all 17 instances stripped across 12 files.
 - [ ] **Action 4 — `/impeccable harden` auth/onboarding ban list.** Strip ShimmerButton from auth CTAs (replace with solid pill `<Button>`), remove gradient + shadow from `/suspended` CTA, fix rejection-banner glass on `/onboarding/artist`, conditionally render Instagram `href` on `/artists/[id]` only when caster, add confirmation dialog to artist Delete account.
 - [ ] **Action 5 — `/impeccable layout` kill identical card grids on marketing.** Replace 3-col feature grid (`/casters`), 4-col "Get started" (`/artists`), 4-col "privacy ladder" (`/trust`) with editorial bento / numbered timelines.
 - [ ] **Action 6 — `/impeccable adapt` responsive sweep.** Caster comparison table mobile collapse, AnimatedBeam fallback on mobile, `/talent` grid steps, mobile filter row gap, password grid stacking `<sm`, messaging inbox badge alignment.
@@ -267,3 +267,25 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 **Verification:** `bunx tsc --noEmit` exit 0. No regressions; the 9 auth pages and 2 legal pages render their headings as plain Geist Sans semibold with no gradient, no italic, no serif.
 
 **Scope policy:** action 2's narrow codemod targets the `bg-gradient-to-br ... bg-clip-text font-serif italic text-transparent` pattern (auth-only in this codebase) plus the split-line italic-serif accent on legal-layout (zero serif on legal per policy). Marketing-page Instrument Serif italic abuse (multiple moments per page on `/casters`, `/artists`, `/pricing`, `/trust`, `/contact`, `/shoots`, `/talent`) is per-page judgment work and is deferred to action 7. Section h2 `font-serif` (non-italic) on legal-layout left as-is for now — action 13 polish covers it.
+
+### Action 3 — BorderBeam sweep (2026-05-22)
+
+**Files touched (17 instances across 12 files):**
+- `apps/web/components/landing/sections/hero.tsx` — hero photo column (brand-300→brand-700 beam).
+- `apps/web/components/landing/sections/pricing-preview.tsx` — two beams on the "Most popular" tier card; fragment collapsed since only the badge `<span>` remained.
+- `apps/web/app/casters/page.tsx` — final-CTA panel beam.
+- `apps/web/app/artists/page.tsx` — hero "This month" stat card beam + final-CTA panel beam.
+- `apps/web/app/how-it-works/how-it-works-content.tsx` — final-CTA panel beam.
+- `apps/web/app/shoots/shoots-content.tsx` — featured-hero card beam + final-CTA panel beam.
+- `apps/web/app/shoots/[id]/shoot-detail-view.tsx` — hero image beam.
+- `apps/web/app/talent/talent-content.tsx` — featured-artist hero beam + final-CTA panel beam.
+- `apps/web/app/trust/page.tsx` — final-CTA panel beam.
+- `apps/web/app/pricing/page.tsx` — final-CTA panel beam.
+- `apps/web/app/contact/contact-content.tsx` — SLA card beam + final-CTA panel beam.
+- `apps/web/components/legal/legal-layout.tsx` — FinalCta beam.
+
+All imports of `BorderBeam` also removed from the same 12 files. The component file at `components/ui/border-beam.tsx` is kept (no live consumers but cheap to leave for now; can be deleted in a later cleanup if no consumer reappears).
+
+**Verification:** `bunx tsc --noEmit` exit 0. Final grep confirms zero remaining `BorderBeam` references outside the component definition itself.
+
+**What this clears:** all the "pulsing animated border on hero / CTA / pricing / SLA / featured-artist / legal-footer" instances called out as P0/P1 throughout the audit. Cards revert to their flat hairline-ring + tonal-lift styling per the no-shadow, hairline-only design rules.

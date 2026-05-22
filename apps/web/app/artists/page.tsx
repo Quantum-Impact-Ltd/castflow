@@ -20,7 +20,6 @@ import { Footer } from '@/components/landing/footer'
 import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { BorderBeam } from '@/components/ui/border-beam'
 import { OrbitingCircles } from '@/components/ui/orbiting-circles'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { NumberTicker } from '@/components/ui/number-ticker'
@@ -156,15 +155,8 @@ export default function ArtistsPage() {
                 </div>
               </Reveal>
 
-              {/* Hero card with BorderBeam */}
               <Reveal delay={120} className="lg:col-span-5">
                 <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-3xl border border-border/60 bg-[var(--surface-50)] p-8 shadow-sm">
-                  <BorderBeam
-                    duration={8}
-                    size={120}
-                    colorFrom="hsl(var(--primary))"
-                    colorTo="hsl(var(--primary))"
-                  />
                   <div className="flex items-center justify-between">
                     <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
                       This month
@@ -474,7 +466,6 @@ export default function ArtistsPage() {
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <Reveal>
               <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-foreground px-10 py-20 text-center text-background lg:px-16">
-                <BorderBeam duration={10} size={100} colorFrom="#ffffff" colorTo="#ffffff" />
                 <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-background/60">
                   Join the platform
                 </p>

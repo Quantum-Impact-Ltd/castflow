@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
-import { BorderBeam } from '@/components/ui/border-beam'
 import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
 
 const easeOutExpo = '[animation-timing-function:cubic-bezier(0.16,1,0.3,1)]'
@@ -103,13 +102,6 @@ export function Hero() {
         <div
           className={`relative order-first min-h-[60vw] sm:min-h-[55vw] lg:order-last lg:min-h-[min(46rem,80vh)] animate-in fade-in fill-mode-both duration-[1200ms] [animation-delay:0ms] ${easeOutExpo} ${motionGuard}`}
         >
-          <BorderBeam
-            size={180}
-            duration={14}
-            colorFrom="var(--brand-300)"
-            colorTo="var(--brand-700)"
-            borderWidth={2}
-          />
           <Image
             src={HERO_PHOTO}
             alt="Studio camera and lighting rig on a working set"

@@ -21,7 +21,6 @@ import { Button } from '@/components/ui/button'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { AnimatedList } from '@/components/ui/animated-list'
 import { AnimatedGridPattern } from '@/components/ui/animated-grid-pattern'
-import { BorderBeam } from '@/components/ui/border-beam'
 import { cn } from '@/lib/utils'
 import { FlowBeamSection } from './flow-beam-section'
 
@@ -378,7 +377,6 @@ function FinalCtaSection() {
       <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-foreground px-10 py-20 text-center text-background lg:px-16">
-            <BorderBeam duration={10} size={100} colorFrom="#ffffff" colorTo="#ffffff" />
             <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-background/60">
               Start now
             </p>

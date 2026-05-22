@@ -22,7 +22,6 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
-import { BorderBeam } from '@/components/ui/border-beam'
 import { GlareHover } from '@/components/ui/glare-hover'
 import { MagicCard } from '@/components/ui/magic-card'
 import { NumberTicker } from '@/components/ui/number-ticker'
@@ -107,13 +106,6 @@ export function ShootDetailView({ shoot }: Props) {
       {/* HERO */}
       <Reveal>
         <div className="relative mt-8 overflow-hidden rounded-3xl border border-border/60 bg-foreground">
-          <BorderBeam
-            duration={11}
-            size={15}
-            colorFrom="var(--brand-300)"
-            colorTo="var(--brand-700)"
-            borderWidth={2}
-          />
           <div className="relative aspect-[16/9] w-full overflow-hidden lg:aspect-[21/9]">
             <Image
               src={shoot.imageUrl}

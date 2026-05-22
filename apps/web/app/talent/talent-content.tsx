@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { NumberTicker } from '@/components/ui/number-ticker'
-import { BorderBeam } from '@/components/ui/border-beam'
 import { GlareHover } from '@/components/ui/glare-hover'
 import { MOCK_ARTISTS } from '@/lib/mock/artists'
 import type { PublicArtistProfile } from '@/lib/api/talent'
@@ -213,12 +212,6 @@ function Hero({ count, featured }: { count: number; featured: PublicArtistProfil
               href={`/artists/${featured.id}`}
               className="group relative block overflow-hidden rounded-3xl border border-border/60 bg-background shadow-sm"
             >
-              <BorderBeam
-                duration={9}
-                size={160}
-                colorFrom="hsl(var(--primary))"
-                colorTo="hsl(var(--primary))"
-              />
               <div className="relative aspect-[4/5] overflow-hidden">
                 {heroImg && (
                   <Image
@@ -547,7 +540,6 @@ function FinalCta() {
       <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-foreground px-10 py-20 text-center text-background lg:px-16">
-            <BorderBeam duration={10} size={100} colorFrom="#ffffff" colorTo="#ffffff" />
             <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-background/60">
               Cast in days
             </p>
