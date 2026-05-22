@@ -18,7 +18,7 @@ import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
 import { Marquee } from '@/components/ui/marquee'
 import { AvatarCircles } from '@/components/ui/avatar-circles'
-import { ShimmerButtonLink } from './shimmer-button-link'
+import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
 
 export const metadata: Metadata = {
   title: 'For casters — CastFlow',
@@ -337,9 +337,7 @@ export default function CastersPage() {
                 <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
                   <ShimmerButtonLink
                     href="/register?role=caster"
-                    background="rgba(255,255,255,1)"
-                    shimmerColor="#000000"
-                    className="text-foreground"
+                    variant="inverse"
                   >
                     Post your first shoot
                     <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />

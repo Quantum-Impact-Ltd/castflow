@@ -237,7 +237,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 ### Re-audit follow-ups (post 12 → 18/20)
 
 - [x] **R1 — strip onboarding step glass.** Codemod `backdrop-blur-xl` across 7 step components + 3 `/onboarding/pending` icon wrappers. ✅ Done.
-- [ ] **R2 — marketing ShimmerButton → solid pill.** Rewrite `ShimmerButtonLink` so 4 marketing CTAs lose the shimmer.
+- [x] **R2 — marketing ShimmerButton → solid pill.** `ShimmerButtonLink` rewritten to render a plain `<Link>` styled as a solid pill (default + `inverse` variant for dark panels). Duplicate `app/casters/shimmer-button-link.tsx` deleted. ✅ Done.
 - [ ] **R3 — `/artists` eyebrow codemod.** 5 missed `text-primary` section eyebrows on `/artists/page.tsx`.
 - [ ] **R4 — contact topic pill focus ring.** `focus-visible:ring-2 ring-primary` on `/contact` topic pills.
 
