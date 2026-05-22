@@ -211,7 +211,7 @@ export default function ArtistsPage() {
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <Reveal>
               <div className="max-w-3xl">
-                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                   Why CastFlow
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
@@ -247,7 +247,7 @@ export default function ArtistsPage() {
             <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-24">
               <Reveal>
                 <div>
-                  <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+                  <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                     Verified by humans
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
@@ -309,7 +309,7 @@ export default function ArtistsPage() {
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <Reveal>
               <div className="max-w-3xl">
-                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                   Get started
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
@@ -365,7 +365,7 @@ export default function ArtistsPage() {
             <Reveal>
               <div className="flex flex-wrap items-end justify-between gap-6">
                 <div className="max-w-2xl">
-                  <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+                  <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                     On the platform
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
@@ -439,7 +439,7 @@ export default function ArtistsPage() {
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
               <Reveal className="lg:col-span-4">
-                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-primary">
+                <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
                   FAQ
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">

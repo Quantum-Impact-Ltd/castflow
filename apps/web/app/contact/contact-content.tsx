@@ -135,8 +135,10 @@ export function ContactContent() {
                             setTopic(t.value)
                             setValue('topic', t.value, { shouldDirty: true })
                           }}
+                          aria-pressed={active}
                           className={cn(
                             'inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                             active
                               ? 'border-foreground bg-foreground text-background'
                               : 'border-border/60 bg-[var(--surface-50)] text-foreground/75 hover:border-foreground/40 hover:text-foreground'
