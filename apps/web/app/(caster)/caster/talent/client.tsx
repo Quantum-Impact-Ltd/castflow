@@ -20,17 +20,23 @@ import {
   StatusBadge,
 } from '@/components/dashboard'
 import { useTalentSearch } from '@/lib/hooks/use-talent'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 
 export function CasterTalentClient() {
   const [q, setQ] = useState('')
   const [type, setType] = useState<'model' | 'actor' | 'any'>('any')
   const [city, setCity] = useState('')
 
+  // Debounce free-text inputs so the talent-search query doesn't fire on
+  // every keystroke. The select stays sync — discrete choices don't burst.
+  const debouncedQ = useDebouncedValue(q, 300)
+  const debouncedCity = useDebouncedValue(city, 300)
+
   const filters: Parameters<typeof useTalentSearch>[0] = {
     limit: 50,
-    ...(q ? { q } : {}),
+    ...(debouncedQ ? { q: debouncedQ } : {}),
     ...(type !== 'any' ? { artistType: type } : {}),
-    ...(city ? { city } : {}),
+    ...(debouncedCity ? { city: debouncedCity } : {}),
   }
   const talent = useTalentSearch(filters)
 

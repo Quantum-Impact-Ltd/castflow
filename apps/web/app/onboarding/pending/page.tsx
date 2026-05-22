@@ -24,11 +24,18 @@ export default function OnboardingPendingPage() {
   const [cooldownUntil, setCooldownUntil] = useState(0)
   const [now, setNow] = useState(() => Date.now())
 
+  // One interval per cooldown — previously `now` was in the deps array, so
+  // every 1s tick tore down and re-created the timer. Self-clears when the
+  // cooldown expires so the timer doesn't keep ticking forever once it's done.
   useEffect(() => {
-    if (cooldownUntil <= now) return
-    const id = setInterval(() => setNow(Date.now()), 1000)
+    if (cooldownUntil <= Date.now()) return
+    const id = setInterval(() => {
+      const t = Date.now()
+      setNow(t)
+      if (t >= cooldownUntil) clearInterval(id)
+    }, 1000)
     return () => clearInterval(id)
-  }, [cooldownUntil, now])
+  }, [cooldownUntil])
 
   const remaining = Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
   const onCooldown = remaining > 0

@@ -14,14 +14,19 @@ import {
 } from '@/components/ui/select'
 import { EmptyState, ErrorState, LoadingState, StatusBadge } from '@/components/dashboard'
 import { usePublicJobs } from '@/lib/hooks/use-jobs'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 export function JobFeed() {
   const [city, setCity] = useState('')
   const [category, setCategory] = useState<string>('')
 
+  // Debounce the free-text city filter; category is a Select (discrete), so
+  // it can hit the API immediately on change.
+  const debouncedCity = useDebouncedValue(city, 300)
+
   const jobs = usePublicJobs({
-    ...(city ? { city } : {}),
+    ...(debouncedCity ? { city: debouncedCity } : {}),
     ...(category ? { category } : {}),
     limit: 50,
   })

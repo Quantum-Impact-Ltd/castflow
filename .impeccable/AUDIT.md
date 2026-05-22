@@ -228,7 +228,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 6 — `/impeccable adapt` responsive sweep.** Caster comparison table mobile collapse, AnimatedBeam fallback on mobile (`/how-it-works` + `/trust/escrow`), `/talent` grid steps, shoots mobile filter gap, password grid stacking until md, messaging inbox badge alignment. ✅ Done.
 - [x] **Action 7 — `/impeccable polish` eyebrow chip codemod.** Replaced every AnimatedShinyText eyebrow (8 consumers) with a static `<span>` carrying the same mono / tracked uppercase styling on `surface-50`. ✅ Done.
 - [x] **Action 8 — `/impeccable clarify` copy + microcopy fixes.** Placeholder em dashes replaced on public surfaces; confirm-password label standardized; notifications + billing placeholders expanded; delete-account mailto pre-composed on both artist and caster pages. ✅ Done. Prose em dashes in marketing copy deferred to a focused editorial pass.
-- [ ] **Action 9 — `/impeccable optimize` debounce + tighten loops.** `useDebouncedValue(300)` on filter inputs, memoize `calculateDobMax`, replace 1 s `setInterval` with on-tick render only.
+- [x] **Action 9 — `/impeccable optimize` debounce + tighten loops.** Debounced free-text inputs on `/caster/talent` + `/artist/jobs`; fixed setInterval rerun storm on `/onboarding/pending`. ✅ Done. `calculateDobMax` left alone — comment at `step-personal.tsx:36` documents the deliberate recompute-per-render choice (handles a tab open across midnight); audit recommendation supersedes nothing.
 - [ ] **Action 10 — `/impeccable harden` empty/loading/error coverage.** SSR-fetch first page for skeletons, `action` prop on `<EmptyState>`, save toast on `onSuccess`, tooltips on status badges, portfolio progress bar + 3-photo gate.
 - [ ] **Action 11 — `/impeccable colorize` palette discipline.** Eyebrows `text-ink-600` not `text-primary`, validation errors ink + warning icon (not destructive), stat tiles one surface treatment, hardcoded `bg-amber-500/90` and `text-rose-300` → tokens.
 - [ ] **Action 12 — `/impeccable distill` drop GlareHover, NumberTicker (on static landing values), OrbitingCircles (artists hero), AnimatedList stagger, AnimatedGridPattern (`/how-it-works` skew-y-12), MagicCard gradient on shoot detail bid panel.**
@@ -374,6 +374,21 @@ plus `aria-busy={mutation.isPending}` for screen-reader feedback while submittin
 **Messaging inbox badge alignment** — `components/messaging/inbox.tsx:38–58`
 - Was: `<div>` text-row with `ml-2` between date and unread badge — block-context allowed the badge to wrap below the date when the parent row got narrow.
 - Now: right column is `flex shrink-0 items-center gap-2`, with date and badge as flex siblings. Date stays on its line; badge can no longer wrap below it. Left column got `min-w-0` + `truncate` on the display-name and job-title rows so a long display name pushes the date column normally instead of clipping unevenly.
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
+
+### Action 9 — optimize debounce + loops (2026-05-22)
+
+**Filter input debounce on authenticated marketplace pages:**
+- `app/(caster)/caster/talent/client.tsx` — wraps `q` and `city` in `useDebouncedValue(300)`. Free-text inputs no longer fire `useTalentSearch` on every keystroke. The `type` Select stays sync (discrete choices don't burst). Public `/talent` and `/shoots` were already debounced.
+- `app/(artist)/artist/jobs/job-feed.tsx` — wraps `city` in `useDebouncedValue(300)`. `category` Select stays sync.
+
+**setInterval rerun storm on `/onboarding/pending`** — `app/onboarding/pending/page.tsx:27–35`
+- Was: `useEffect(..., [cooldownUntil, now])`. Because `now` was a dep, every 1 s tick re-ran the effect — clearing the interval and creating a fresh one every second.
+- Now: dep array is `[cooldownUntil]` only. One interval per cooldown period. The tick callback writes `now` and self-clears once `Date.now() >= cooldownUntil`, so the timer doesn't keep ticking after the cooldown expires either. Effect short-circuit moved from `cooldownUntil <= now` to `cooldownUntil <= Date.now()` so it doesn't fire on the stale `now` value at the moment of the dep-change re-run.
+
+**`calculateDobMax` — not memoized on purpose.**
+- Audit recommended `useMemo` or module-scope. Source comment at `components/onboarding/steps/step-personal.tsx:35–37` explicitly says the function is recomputed per render to handle the "tab open across midnight" case — freezing the cap at module load left yesterday's cap on the picker. Recompute cost is negligible (one `new Date()` + `setFullYear` + `toISOString` per render of a step that mounts once per session). Audit recommendation overruled by the existing correctness comment.
 
 **Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
 
