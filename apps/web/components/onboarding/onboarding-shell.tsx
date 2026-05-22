@@ -4,9 +4,6 @@ import { AnimatePresence, motion } from 'motion/react'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { type ReactNode } from 'react'
-import { Particles } from '@/components/ui/particles'
-import { AnimatedGridPattern } from '@/components/ui/animated-grid-pattern'
-import { cn } from '@/lib/utils'
 import { OnboardingStepper, type StepDef } from './onboarding-stepper'
 
 interface OnboardingShellProps {
@@ -51,7 +48,7 @@ export function OnboardingShell({
     // to their dark theme tokens. We then layer the ink-900 atmosphere on
     // top so the visual language matches the AuthShell used for register.
     <div className="dark relative isolate min-h-screen w-full overflow-hidden bg-[var(--ink-900)] text-white">
-      {/* Atmospheric layers — soft color washes, grid pattern, particles */}
+      {/* Atmospheric color washes — tonal depth only, no grid/particles. */}
       <div
         aria-hidden
         className="pointer-events-none absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-[var(--brand-700)] opacity-[0.22] blur-[140px]"
@@ -60,27 +57,9 @@ export function OnboardingShell({
         aria-hidden
         className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[var(--cta-400)] opacity-[0.14] blur-[140px]"
       />
-      <AnimatedGridPattern
-        numSquares={28}
-        maxOpacity={0.05}
-        duration={6}
-        repeatDelay={1.2}
-        className={cn(
-          'pointer-events-none [mask-image:radial-gradient(900px_circle_at_center,white,transparent)]',
-          'inset-x-0 inset-y-[-20%] h-[140%] -skew-y-12 fill-white/30 stroke-white/30'
-        )}
-      />
-      <Particles
-        className="absolute inset-0"
-        quantity={45}
-        ease={80}
-        color="#f9a26c"
-        staticity={50}
-        size={0.5}
-      />
 
       {/* Header: brand + exit + stepper rail */}
-      <header className="relative z-10 border-b border-white/8 backdrop-blur-sm">
+      <header className="relative z-10 border-b border-white/8">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 lg:px-6">
           <Link
             href="/"
@@ -158,7 +137,7 @@ export function OnboardingShell({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.25 }}
-                    className="relative overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04] p-6 backdrop-blur-xl shadow-[0_28px_90px_-30px_rgba(0,0,0,0.7)]"
+                    className="relative overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04] p-6"
                   >
                     {tips}
                   </motion.div>

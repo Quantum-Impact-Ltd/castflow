@@ -1,9 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import { Particles } from '@/components/ui/particles'
-import { AnimatedGridPattern } from '@/components/ui/animated-grid-pattern'
-import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { cn } from '@/lib/utils'
 
 interface AuthShellProps {
@@ -39,7 +36,7 @@ export function AuthShell({
 }: AuthShellProps) {
   return (
     <div className="relative isolate min-h-screen w-full overflow-hidden bg-[var(--ink-900)] text-white">
-      {/* Atmospheric layers — soft color washes, grid pattern, particles */}
+      {/* Atmospheric color washes — tonal depth only, no grid/particles. */}
       <div
         aria-hidden
         className="pointer-events-none absolute -left-40 -top-40 h-[36rem] w-[36rem] rounded-full bg-[var(--brand-700)] opacity-[0.22] blur-[140px]"
@@ -47,24 +44,6 @@ export function AuthShell({
       <div
         aria-hidden
         className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[var(--cta-400)] opacity-[0.16] blur-[140px]"
-      />
-      <AnimatedGridPattern
-        numSquares={34}
-        maxOpacity={0.06}
-        duration={6}
-        repeatDelay={1.2}
-        className={cn(
-          'pointer-events-none [mask-image:radial-gradient(900px_circle_at_center,white,transparent)]',
-          'inset-x-0 inset-y-[-20%] h-[140%] -skew-y-12 fill-white/30 stroke-white/30',
-        )}
-      />
-      <Particles
-        className="absolute inset-0"
-        quantity={70}
-        ease={80}
-        color="#f9a26c"
-        staticity={45}
-        size={0.5}
       />
 
       {/* Top-left brand mark */}
@@ -93,17 +72,14 @@ export function AuthShell({
         <div className={cn('w-full', WIDTH_MAP[width])}>
           {eyebrow ? (
             <div className="mb-6 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.03] px-3.5 py-1.5 backdrop-blur">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-3.5 py-1.5">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--cta-400)] opacity-60" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--cta-400)]" />
                 </span>
-                <AnimatedShinyText
-                  shimmerWidth={130}
-                  className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-white/85"
-                >
+                <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-white/85">
                   {eyebrow}
-                </AnimatedShinyText>
+                </span>
               </div>
             </div>
           ) : null}
@@ -119,8 +95,8 @@ export function AuthShell({
             </p>
           ) : null}
 
-          {/* Card — frosted glass over the atmospheric bg, single soft border */}
-          <div className="relative mt-10 overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04] backdrop-blur-xl shadow-[0_28px_90px_-30px_rgba(0,0,0,0.7)]">
+          {/* Card — flat tonal lift, single hairline ring. No blur, no shadow. */}
+          <div className="relative mt-10 overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04]">
             <div className="relative p-7 sm:p-9">{children}</div>
           </div>
 
