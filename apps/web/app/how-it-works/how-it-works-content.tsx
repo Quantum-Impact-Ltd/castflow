@@ -18,9 +18,6 @@ import {
 } from 'lucide-react'
 import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
-import { NumberTicker } from '@/components/ui/number-ticker'
-import { AnimatedList } from '@/components/ui/animated-list'
-import { AnimatedGridPattern } from '@/components/ui/animated-grid-pattern'
 import { cn } from '@/lib/utils'
 import { FlowBeamSection } from './flow-beam-section'
 
@@ -134,16 +131,6 @@ export function HowItWorksContent() {
 function HeroSection() {
   return (
     <section className="relative w-full overflow-hidden pb-20 pt-20 lg:pb-28 lg:pt-28">
-      <AnimatedGridPattern
-        numSquares={28}
-        maxOpacity={0.18}
-        duration={3}
-        repeatDelay={1}
-        className={cn(
-          '[mask-image:radial-gradient(720px_circle_at_center,white,transparent)]',
-          'inset-x-0 inset-y-[-30%] h-[160%] skew-y-12'
-        )}
-      />
       <div className="relative mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
@@ -229,11 +216,9 @@ function StatsStripSection() {
                   {s.prefix && (
                     <span className="text-2xl text-foreground/60 sm:text-3xl">{s.prefix}</span>
                   )}
-                  <NumberTicker
-                    value={s.value}
-                    decimalPlaces={s.decimals ?? 0}
-                    className="text-5xl text-foreground sm:text-6xl lg:text-[5.25rem]"
-                  />
+                  <span className="text-5xl text-foreground sm:text-6xl lg:text-[5.25rem]">
+                    {s.value.toFixed(s.decimals ?? 0)}
+                  </span>
                   {s.suffix && (
                     <span className="text-2xl text-foreground/60 sm:text-3xl lg:text-4xl">
                       {s.suffix}
@@ -358,11 +343,11 @@ function LiveActivitySection() {
                 className="pointer-events-none absolute inset-x-0 top-0 z-10 h-32 bg-gradient-to-b from-[var(--surface-50)] to-transparent"
                 aria-hidden
               />
-              <AnimatedList delay={1600} className="w-full max-w-md">
+              <ul className="w-full max-w-md space-y-3">
                 {ACTIVITY.map((item) => (
                   <ActivityRow key={item.id} item={item} />
                 ))}
-              </AnimatedList>
+              </ul>
             </div>
           </Reveal>
         </div>

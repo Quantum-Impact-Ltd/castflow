@@ -231,7 +231,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 9 — `/impeccable optimize` debounce + tighten loops.** Debounced free-text inputs on `/caster/talent` + `/artist/jobs`; fixed setInterval rerun storm on `/onboarding/pending`. ✅ Done. `calculateDobMax` left alone — comment at `step-personal.tsx:36` documents the deliberate recompute-per-render choice (handles a tab open across midnight); audit recommendation supersedes nothing.
 - [x] **Action 10 — `/impeccable harden` empty/loading/error coverage.** Inline CTAs on the three key list `<EmptyState>`s, portfolio in-flight upload progress + 3-photo gate, StatusBadge native `title` tooltips. ✅ Done. Save toast was already wired in `useUpdateMyCaster`; SSR-skeleton sizing deferred (architectural change, not state coverage).
 - [x] **Action 11 — `/impeccable colorize` palette discipline.** Section eyebrows demoted from brand to neutral across 11 files; caster stat-tile `tint` rule dropped (all tiles share one surface); portfolio pending-review badge `text-white` → `text-amber-50`. ✅ Done. Contact-form validation-color swap and rose literals deferred (the rose tokens are in active use on auth and the contact validator change risks misreading severity — needs editorial judgment).
-- [ ] **Action 12 — `/impeccable distill` drop GlareHover, NumberTicker (on static landing values), OrbitingCircles (artists hero), AnimatedList stagger, AnimatedGridPattern (`/how-it-works` skew-y-12), MagicCard gradient on shoot detail bid panel.**
+- [x] **Action 12 — `/impeccable distill` drop leftover decoration.** GlareHover (all 4 consumers), OrbitingCircles dual orbits on `/artists`, AnimatedList stagger on `/how-it-works`, AnimatedGridPattern skew-y-12 on `/how-it-works`, MagicCard gradient on shoot-detail bid panel, NumberTicker on all static landing values. ✅ Done.
 - [ ] **Action 13 — `/impeccable polish` final pass.** Stat tile typography (no `font-mono` for numbers), FAQ `<details>` open-state on `/pricing`, decorative Sparkles icon on `/how-it-works`, empty-state h3 serifs on `/artists/[id]`, separator overuse on `/shoots/[id]`.
 
 ---
@@ -376,6 +376,45 @@ plus `aria-busy={mutation.isPending}` for screen-reader feedback while submittin
 - Now: right column is `flex shrink-0 items-center gap-2`, with date and badge as flex siblings. Date stays on its line; badge can no longer wrap below it. Left column got `min-w-0` + `truncate` on the display-name and job-title rows so a long display name pushes the date column normally instead of clipping unevenly.
 
 **Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
+
+### Action 12 — distill leftover decoration (2026-05-22)
+
+**GlareHover** — 4 consumers, all dropped
+- `app/talent/talent-content.tsx` — wrapper around each ArtistCard collapsed to a plain `<div>` with the same surface tint + radius.
+- `app/shoots/[id]/shoot-detail-view.tsx` — wrapper around SimilarCard collapsed; the two nested divs merged into one.
+- `components/landing/sections/featured-artists.tsx` — wrapper around FeaturedArtistCard collapsed to `<div>`.
+- `components/landing/sections/artist-band.tsx` — wrapper around PortraitBlock removed (PortraitBlock now renders directly inside the grid).
+
+**OrbitingCircles** — `/artists` "Verified by humans" centerpiece
+- Was: nested `<OrbitingCircles>` with 4 inner + 5 outer animated icons.
+- Now: static centerpiece — two concentric `bg-brand-50` / `bg-brand-100` discs behind the existing BadgeCheck node, with a single static `<ul>` row of 6 icons (IdCard, Shield, Camera, Star, Wallet, CalendarCheck) beneath. Iconography meaning preserved; motion removed.
+- The local `OrbitIcon` helper (uses `cn`) deleted since it had no remaining callers.
+
+**AnimatedList stagger** — `app/how-it-works/how-it-works-content.tsx:361`
+- Was: `<AnimatedList delay={1600}>` reveal-on-scroll list of activity rows.
+- Now: plain `<ul className="space-y-3">` rendering the same rows. Users can read immediately instead of waiting for the stagger.
+
+**AnimatedGridPattern skew-y-12** — `how-it-works-content.tsx:137`
+- Removed entirely from the page hero section. Other AnimatedGridPattern consumers (`why-castflow`, `final-cta`, `artist-band`) deliberately kept — they're load-bearing on those drenched sections.
+
+**MagicCard gradient on bid panel** — `app/shoots/[id]/shoot-detail-view.tsx:368–462`
+- Was: `<MagicCard className="rounded-3xl" gradientFrom="var(--brand-300)" gradientTo="var(--brand-700)" gradientColor="rgba(42,107,150,0.06)" gradientSize={280}>`.
+- Now: flat `<div className="rounded-3xl border border-border/60 bg-background">`. Brand gradient gone; hairline ring + tonal lift only.
+
+**NumberTicker on static landing values** — 7 sites, all replaced with plain text:
+- `components/landing/sections/numbers-strip.tsx` — homepage "Live" stats panel (the comment already flagged the values as "honest pre-launch numbers").
+- `app/artists/page.tsx` — `£4,280` "Net to bank" hero stat, plus the StatTile component used 3× in the hero stats panel.
+- `app/talent/talent-content.tsx` — eyebrow count + hero h1 count.
+- `app/shoots/shoots-content.tsx` — filter count + hero h1 count.
+- `app/shoots/[id]/shoot-detail-view.tsx` — `remainingSpots / headcountRequired` Hero meta + CasterStat shootsPosted.
+- `app/how-it-works/how-it-works-content.tsx` — StatTile-style stat strip.
+- `app/pricing/page.tsx` — commission breakdown step card.
+- All NumberTicker imports removed from the touched files.
+
+**Imports cleaned up:**
+- `GlareHover`, `MagicCard`, `NumberTicker`, `OrbitingCircles`, `AnimatedGridPattern`, `AnimatedList` removed from every consumer touched. Component files in `components/ui/` are kept for now (no live consumers but cheap to leave; can be deleted in a later cleanup if no use case reappears).
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0. Final grep confirms zero remaining live consumers of the six dropped components outside `components/ui/`.
 
 ### Action 11 — palette discipline (2026-05-22)
 

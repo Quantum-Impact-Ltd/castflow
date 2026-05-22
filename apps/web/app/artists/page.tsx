@@ -20,8 +20,6 @@ import { Footer } from '@/components/landing/footer'
 import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { OrbitingCircles } from '@/components/ui/orbiting-circles'
-import { NumberTicker } from '@/components/ui/number-ticker'
 import { MOCK_ARTISTS } from '@/lib/mock/artists'
 import { cn } from '@/lib/utils'
 
@@ -163,8 +161,7 @@ export default function ArtistsPage() {
                     </span>
                   </div>
                   <p className="mt-6 font-mono text-6xl font-medium tracking-[-0.04em] text-foreground">
-                    £
-                    <NumberTicker value={4280} className="text-foreground" />
+                    £4,280
                   </p>
                   <p className="mt-2 text-sm text-foreground/70">Net to bank · 4 bookings</p>
 
@@ -244,7 +241,7 @@ export default function ArtistsPage() {
           </div>
         </section>
 
-        {/* Verified by humans — OrbitingCircles centerpiece */}
+        {/* Verified by humans */}
         <section className="w-full overflow-hidden bg-[var(--surface-50)] py-24 lg:py-32">
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-24">
@@ -272,26 +269,36 @@ export default function ArtistsPage() {
               </Reveal>
 
               <Reveal delay={120}>
+                {/* Static verification visual — concentric brand-tinted discs
+                    behind a single BadgeCheck centerpiece, plus a static row
+                    of the six icons that used to orbit. No motion. */}
                 <div className="relative mx-auto aspect-square w-full max-w-[420px]">
+                  <div
+                    aria-hidden
+                    className="absolute inset-[18%] rounded-full bg-[var(--brand-50)]"
+                  />
+                  <div
+                    aria-hidden
+                    className="absolute inset-[34%] rounded-full bg-[var(--brand-100)]"
+                  />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative z-10 flex h-28 w-28 items-center justify-center rounded-full bg-foreground text-background shadow-xl">
+                    <div className="relative z-10 flex h-28 w-28 items-center justify-center rounded-full bg-foreground text-background">
                       <BadgeCheck className="h-12 w-12" aria-hidden />
                     </div>
                   </div>
-                  <OrbitingCircles radius={120} duration={20} iconSize={44}>
-                    <OrbitIcon Icon={IdCard} />
-                    <OrbitIcon Icon={Shield} />
-                    <OrbitIcon Icon={Camera} />
-                    <OrbitIcon Icon={Star} />
-                  </OrbitingCircles>
-                  <OrbitingCircles radius={185} duration={28} reverse iconSize={36}>
-                    <OrbitIcon Icon={Wallet} subtle />
-                    <OrbitIcon Icon={MessageSquare} subtle />
-                    <OrbitIcon Icon={CalendarCheck} subtle />
-                    <OrbitIcon Icon={Globe2} subtle />
-                    <OrbitIcon Icon={Coins} subtle />
-                  </OrbitingCircles>
                 </div>
+                <ul className="mx-auto mt-8 grid max-w-[420px] grid-cols-3 gap-4 sm:grid-cols-6">
+                  {[IdCard, Shield, Camera, Star, Wallet, CalendarCheck].map(
+                    (Icon, i) => (
+                      <li
+                        key={i}
+                        className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background text-foreground/65"
+                      >
+                        <Icon className="h-5 w-5" aria-hidden />
+                      </li>
+                    ),
+                  )}
+                </ul>
               </Reveal>
             </div>
           </div>
@@ -573,11 +580,9 @@ function StatTile({
         {eyebrow}
       </p>
       <p className="flex items-baseline gap-0.5 font-medium leading-none tracking-[-0.04em] text-foreground">
-        <NumberTicker
-          value={value}
-          decimalPlaces={decimals ?? 0}
-          className="text-5xl text-foreground sm:text-6xl lg:text-[5.25rem]"
-        />
+        <span className="text-5xl text-foreground sm:text-6xl lg:text-[5.25rem]">
+          {value.toFixed(decimals ?? 0)}
+        </span>
         {suffix && (
           <span className="text-2xl text-foreground/60 sm:text-3xl lg:text-4xl">{suffix}</span>
         )}
@@ -596,21 +601,3 @@ function Check({ children }: { children: React.ReactNode }) {
   )
 }
 
-function OrbitIcon({
-  Icon,
-  subtle = false,
-}: {
-  Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
-  subtle?: boolean
-}) {
-  return (
-    <span
-      className={cn(
-        'flex h-full w-full items-center justify-center rounded-full border border-border/60 bg-background shadow-sm',
-        subtle && 'opacity-80'
-      )}
-    >
-      <Icon className={cn('h-5 w-5', subtle ? 'text-foreground/60' : 'text-primary')} aria-hidden />
-    </span>
-  )
-}

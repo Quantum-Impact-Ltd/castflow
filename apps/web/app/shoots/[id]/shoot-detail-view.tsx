@@ -21,9 +21,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { GlareHover } from '@/components/ui/glare-hover'
-import { MagicCard } from '@/components/ui/magic-card'
-import { NumberTicker } from '@/components/ui/number-ticker'
 import { Reveal } from '@/components/landing/reveal'
 import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
 import { formatCurrency, cn } from '@/lib/utils'
@@ -186,11 +183,7 @@ export function ShootDetailView({ shoot }: Props) {
               label="Spots"
               value={
                 <>
-                  <NumberTicker
-                    value={remainingSpots}
-                    className="font-medium text-foreground"
-                  />{' '}
-                  of {shoot.headcountRequired}
+                  {remainingSpots} of {shoot.headcountRequired}
                 </>
               }
               sub="open right now"
@@ -365,13 +358,7 @@ export function ShootDetailView({ shoot }: Props) {
         {/* RIGHT — sticky bid panel */}
         <Reveal delay={160}>
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <MagicCard
-              className="rounded-3xl"
-              gradientFrom="var(--brand-300)"
-              gradientTo="var(--brand-700)"
-              gradientColor="rgba(42, 107, 150, 0.06)"
-              gradientSize={280}
-            >
+            <div className="rounded-3xl border border-border/60 bg-background">
               <div className="p-8">
                 <div className="flex items-baseline justify-between">
                   <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/60">
@@ -459,7 +446,7 @@ export function ShootDetailView({ shoot }: Props) {
                   booking is confirmed.
                 </p>
               </div>
-            </MagicCard>
+            </div>
           </aside>
         </Reveal>
       </div>
@@ -602,7 +589,7 @@ function CasterCard({ shoot }: { shoot: Shoot }) {
       <dl className="grid grid-cols-3 gap-4">
         <CasterStat
           label="Shoots posted"
-          value={<NumberTicker value={shoot.casterMeta.shootsPosted} />}
+          value={shoot.casterMeta.shootsPosted}
         />
         <CasterStat
           label="Rating"
@@ -654,8 +641,7 @@ function CasterStat({
 function SimilarCard({ shoot }: { shoot: PublicJob }) {
   return (
     <Link href={`/shoots/${shoot.id}`} className="group block">
-      <GlareHover className="aspect-[4/5] w-full rounded-2xl">
-        <div className="relative h-full w-full overflow-hidden rounded-2xl bg-[var(--surface-50)]">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[var(--surface-50)]">
           <Image
             src={shoot.imageUrl}
             alt={shoot.title}
@@ -686,8 +672,7 @@ function SimilarCard({ shoot }: { shoot: PublicJob }) {
               <span>{formatRate(shoot)}</span>
             </p>
           </div>
-        </div>
-      </GlareHover>
+      </div>
     </Link>
   )
 }

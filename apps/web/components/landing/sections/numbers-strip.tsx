@@ -1,5 +1,3 @@
-import { NumberTicker } from '@/components/ui/number-ticker'
-
 interface Stat {
   value: number
   prefix?: string
@@ -58,10 +56,7 @@ export function NumbersStripSection() {
             >
               <p className="text-5xl font-medium tracking-[-0.03em] text-foreground lg:text-6xl">
                 {stat.prefix ? <span>{stat.prefix}</span> : null}
-                <NumberTicker
-                  value={stat.value}
-                  className="font-medium text-foreground"
-                />
+                <span className="font-medium text-foreground">{stat.value}</span>
                 {stat.suffix ? <span>{stat.suffix}</span> : null}
               </p>
               <dt className="text-base font-medium text-foreground">

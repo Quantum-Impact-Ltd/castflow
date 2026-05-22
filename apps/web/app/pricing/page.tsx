@@ -5,7 +5,6 @@ import { Nav } from '@/components/landing/nav'
 import { Footer } from '@/components/landing/footer'
 import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
-import { NumberTicker } from '@/components/ui/number-ticker'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
@@ -489,10 +488,9 @@ function BreakdownCard({
         )}
       >
         <span>{prefix}</span>
-        <NumberTicker
-          value={value}
-          className={cn(highlight ? 'text-primary' : 'text-foreground', amountClassName)}
-        />
+        <span className={cn(highlight ? 'text-primary' : 'text-foreground', amountClassName)}>
+          {value}
+        </span>
       </p>
       <p className="mt-4 text-sm leading-relaxed text-foreground/70">{note}</p>
     </div>

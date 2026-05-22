@@ -2,7 +2,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, MapPin, Star } from 'lucide-react'
 import { Reveal } from '../reveal'
-import { GlareHover } from '@/components/ui/glare-hover'
 import { cn } from '@/lib/utils'
 
 // Editorial portrait photography — real images sourced from Unsplash.
@@ -142,14 +141,9 @@ function FeaturedArtistCard({
   const nameClass = size === 'xl' ? 'text-[40px] lg:text-[44px]' : 'text-[26px]'
   return (
     <Link href={`/artists/${artist.id}`} className="group block">
-      <GlareHover
-        color="#ffffff"
-        opacity={0.18}
-        angle={-35}
-        size={220}
-        duration={800}
+      <div
         className={cn(
-          'w-full overflow-hidden rounded-2xl bg-[var(--surface-50)]',
+          'relative w-full overflow-hidden rounded-2xl bg-[var(--surface-50)]',
           aspect,
           size === 'xl' && 'h-full',
         )}
@@ -208,7 +202,7 @@ function FeaturedArtistCard({
             {artist.rating.toFixed(1)}
           </span>
         </div>
-      </GlareHover>
+      </div>
     </Link>
   )
 }

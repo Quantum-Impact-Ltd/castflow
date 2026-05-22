@@ -3,7 +3,6 @@ import { ArrowRight } from 'lucide-react'
 import { Reveal } from '../reveal'
 import { PortraitBlock } from '../portrait-block'
 import { AnimatedGridPattern } from '@/components/ui/animated-grid-pattern'
-import { GlareHover } from '@/components/ui/glare-hover'
 import { cn } from '@/lib/utils'
 
 const PORTRAIT_ROW = [
@@ -77,21 +76,15 @@ export function ArtistBandSection() {
         <Reveal delay={120}>
           <div className="mt-20 grid grid-cols-2 gap-4 sm:gap-5 lg:mt-28 lg:grid-cols-4">
             {PORTRAIT_ROW.map((artist) => (
-              <GlareHover
+              <PortraitBlock
                 key={artist.name}
-                color="#85bcda"
-                opacity={0.25}
+                name={artist.name}
+                meta={artist.meta}
+                src={artist.src}
+                variant="dark"
+                size="md"
                 className="aspect-[4/5] w-full rounded-xl"
-              >
-                <PortraitBlock
-                  name={artist.name}
-                  meta={artist.meta}
-                  src={artist.src}
-                  variant="dark"
-                  size="md"
-                  className="aspect-[4/5] w-full"
-                />
-              </GlareHover>
+              />
             ))}
           </div>
         </Reveal>

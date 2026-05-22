@@ -8,7 +8,6 @@ import { Reveal } from '@/components/landing/reveal'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { NumberTicker } from '@/components/ui/number-ticker'
 import { MOCK_SHOOTS, type PublicJob } from '@/lib/mock/shoots'
 import { formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -116,7 +115,7 @@ export function ShootsContent() {
         <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/60">
-              <NumberTicker value={filtered.length} className="text-foreground" />{' '}
+              <span className="text-foreground">{filtered.length}</span>{' '}
               {filtered.length === 1 ? 'shoot' : 'shoots'} · sorted by{' '}
               {SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase()}
             </p>
@@ -175,7 +174,7 @@ function Hero({ count, featured }: { count: number; featured: PublicJob }) {
             </div>
 
             <h1 className="mt-6 max-w-3xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.025em] text-foreground sm:text-6xl lg:text-7xl">
-              <NumberTicker value={count} className="text-foreground" /> live{' '}
+              <span className="text-foreground">{count}</span> live{' '}
               <span className="font-serif font-normal italic">briefs</span> looking to cast{' '}
               <span className="font-serif font-normal italic">right now.</span>
             </h1>

@@ -8,8 +8,6 @@ import { Reveal } from '@/components/landing/reveal'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { NumberTicker } from '@/components/ui/number-ticker'
-import { GlareHover } from '@/components/ui/glare-hover'
 import { MOCK_ARTISTS } from '@/lib/mock/artists'
 import type { PublicArtistProfile } from '@/lib/api/talent'
 import { cn } from '@/lib/utils'
@@ -132,7 +130,7 @@ export function TalentContent() {
         <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/60">
-              <NumberTicker value={filtered.length} className="text-foreground" />{' '}
+              {filtered.length}{' '}
               {filtered.length === 1 ? 'artist' : 'artists'} · sorted by{' '}
               {SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase()}
             </p>
@@ -186,7 +184,7 @@ function Hero({ count, featured }: { count: number; featured: PublicArtistProfil
             </div>
 
             <h1 className="mt-6 max-w-3xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.025em] text-foreground sm:text-6xl lg:text-7xl">
-              <NumberTicker value={count} className="text-foreground" /> approved{' '}
+              {count} approved{' '}
               <span className="font-serif font-normal italic">models and actors</span> on the
               platform.
             </h1>
@@ -432,14 +430,7 @@ function ArtistCard({ artist }: { artist: PublicArtistProfile }) {
 
   return (
     <Link href={`/artists/${artist.id}`} className="group block">
-      <GlareHover
-        color="#ffffff"
-        opacity={0.18}
-        angle={-35}
-        size={220}
-        duration={800}
-        className="aspect-[4/5] w-full rounded-2xl bg-[var(--surface-50)]"
-      >
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[var(--surface-50)]">
         {hero && (
           <Image
             src={hero}
@@ -493,7 +484,7 @@ function ArtistCard({ artist }: { artist: PublicArtistProfile }) {
             </span>
           )}
         </div>
-      </GlareHover>
+      </div>
 
       <div className="mt-4 flex items-center justify-between px-1">
         <p className="text-sm text-foreground">
