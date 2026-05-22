@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { EmptyState, ErrorState, LoadingState, StatusBadge } from '@/components/dashboard'
 import { useMyBookings } from '@/lib/hooks/use-bookings'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -15,7 +16,12 @@ export function ArtistBookingsList() {
     return (
       <EmptyState
         title="No bookings yet"
-        description="When a caster accepts one of your bids, the booking appears here."
+        description="When a caster accepts one of your bids, the booking appears here. Start by bidding on open jobs."
+        action={
+          <Button asChild>
+            <Link href="/artist/jobs">Browse open jobs</Link>
+          </Button>
+        }
       />
     )
   }

@@ -9,23 +9,33 @@ import { useMyArtistProfile } from '@/lib/hooks/use-artist'
 import { uploadFile } from '@/lib/api/uploads'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query-keys'
+import { cn } from '@/lib/utils'
+
+const MIN_PHOTOS = 3
 
 export function PortfolioClient() {
   const profile = useMyArtistProfile()
   const qc = useQueryClient()
   const [uploading, setUploading] = useState(false)
+  // 0–100 progress on the in-flight R2 PUT. Surfaces as an inline bar +
+  // percentage label so the artist knows the upload isn't stuck.
+  const [progress, setProgress] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function handleFile(file: File) {
     setUploading(true)
+    setProgress(0)
     try {
-      await uploadFile(file, 'portfolio_photo')
+      await uploadFile(file, 'portfolio_photo', {
+        onProgress: (p) => setProgress(p),
+      })
       void qc.invalidateQueries({ queryKey: queryKeys.artist.me() })
       toast.success('Photo uploaded')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Upload failed')
     } finally {
       setUploading(false)
+      setProgress(0)
     }
   }
 
@@ -39,6 +49,10 @@ export function PortfolioClient() {
     isPrimary?: boolean
     isApproved?: boolean
   }>
+
+  const count = items.length
+  const gateMet = count >= MIN_PHOTOS
+  const gatePct = Math.min(100, Math.round((count / MIN_PHOTOS) * 100))
 
   return (
     <div className="space-y-6">
@@ -59,11 +73,66 @@ export function PortfolioClient() {
               }}
             />
             <Button onClick={() => inputRef.current?.click()} disabled={uploading}>
-              {uploading ? 'Uploading…' : 'Upload photo'}
+              {uploading ? `Uploading ${progress}%` : 'Upload photo'}
             </Button>
           </>
         }
       />
+
+      {/* In-flight upload progress — slim hairline bar so it doesn't shout. */}
+      {uploading ? (
+        <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
+          aria-label="Uploading photo"
+          className="h-1 w-full overflow-hidden rounded-full bg-muted"
+        >
+          <div
+            className="h-full bg-primary transition-[width] duration-150 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      ) : null}
+
+      {/* Minimum-photo gate — shows progress to 3, gates the rest of onboarding. */}
+      <Card>
+        <CardContent className="space-y-3 pt-6">
+          <div className="flex items-center justify-between text-sm">
+            <p className="font-medium">
+              {gateMet
+                ? 'You meet the portfolio minimum'
+                : `Add ${MIN_PHOTOS - count} more ${
+                    MIN_PHOTOS - count === 1 ? 'photo' : 'photos'
+                  } to meet the minimum`}
+            </p>
+            <span className="text-muted-foreground text-xs tabular-nums">
+              {count} / {MIN_PHOTOS}
+            </span>
+          </div>
+          <div
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={MIN_PHOTOS}
+            aria-valuenow={Math.min(count, MIN_PHOTOS)}
+            aria-label="Portfolio minimum progress"
+            className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          >
+            <div
+              className={cn(
+                'h-full transition-[width] duration-300 ease-out',
+                gateMet ? 'bg-emerald-500' : 'bg-primary',
+              )}
+              style={{ width: `${gatePct}%` }}
+            />
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Casters need at least one headshot and one full-body shot. Aim for {MIN_PHOTOS}+ photos
+            that show your range.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -72,7 +141,7 @@ export function PortfolioClient() {
         <CardContent>
           {items.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              You need at least 3 photos including a headshot and a full-body shot.
+              No photos yet. Upload your first one with the button above.
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

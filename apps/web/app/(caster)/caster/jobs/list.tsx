@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { EmptyState, ErrorState, LoadingState, StatusBadge } from '@/components/dashboard'
 import { useMyJobs } from '@/lib/hooks/use-jobs'
 import { formatDate } from '@/lib/utils'
@@ -11,7 +12,17 @@ export function CasterJobsList() {
   if (jobs.isPending) return <LoadingState rows={5} />
   if (jobs.isError) return <ErrorState onRetry={() => jobs.refetch()} />
   if (!jobs.data?.length)
-    return <EmptyState title="No jobs posted yet" description="Post your first job to begin." />
+    return (
+      <EmptyState
+        title="No jobs posted yet"
+        description="Post your first job to begin."
+        action={
+          <Button asChild>
+            <Link href="/caster/jobs/new">Post a job</Link>
+          </Button>
+        }
+      />
+    )
   return (
     <ul className="space-y-3">
       {jobs.data.map((j) => (

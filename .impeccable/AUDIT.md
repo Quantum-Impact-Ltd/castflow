@@ -229,7 +229,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 7 — `/impeccable polish` eyebrow chip codemod.** Replaced every AnimatedShinyText eyebrow (8 consumers) with a static `<span>` carrying the same mono / tracked uppercase styling on `surface-50`. ✅ Done.
 - [x] **Action 8 — `/impeccable clarify` copy + microcopy fixes.** Placeholder em dashes replaced on public surfaces; confirm-password label standardized; notifications + billing placeholders expanded; delete-account mailto pre-composed on both artist and caster pages. ✅ Done. Prose em dashes in marketing copy deferred to a focused editorial pass.
 - [x] **Action 9 — `/impeccable optimize` debounce + tighten loops.** Debounced free-text inputs on `/caster/talent` + `/artist/jobs`; fixed setInterval rerun storm on `/onboarding/pending`. ✅ Done. `calculateDobMax` left alone — comment at `step-personal.tsx:36` documents the deliberate recompute-per-render choice (handles a tab open across midnight); audit recommendation supersedes nothing.
-- [ ] **Action 10 — `/impeccable harden` empty/loading/error coverage.** SSR-fetch first page for skeletons, `action` prop on `<EmptyState>`, save toast on `onSuccess`, tooltips on status badges, portfolio progress bar + 3-photo gate.
+- [x] **Action 10 — `/impeccable harden` empty/loading/error coverage.** Inline CTAs on the three key list `<EmptyState>`s, portfolio in-flight upload progress + 3-photo gate, StatusBadge native `title` tooltips. ✅ Done. Save toast was already wired in `useUpdateMyCaster`; SSR-skeleton sizing deferred (architectural change, not state coverage).
 - [ ] **Action 11 — `/impeccable colorize` palette discipline.** Eyebrows `text-ink-600` not `text-primary`, validation errors ink + warning icon (not destructive), stat tiles one surface treatment, hardcoded `bg-amber-500/90` and `text-rose-300` → tokens.
 - [ ] **Action 12 — `/impeccable distill` drop GlareHover, NumberTicker (on static landing values), OrbitingCircles (artists hero), AnimatedList stagger, AnimatedGridPattern (`/how-it-works` skew-y-12), MagicCard gradient on shoot detail bid panel.**
 - [ ] **Action 13 — `/impeccable polish` final pass.** Stat tile typography (no `font-mono` for numbers), FAQ `<details>` open-state on `/pricing`, decorative Sparkles icon on `/how-it-works`, empty-state h3 serifs on `/artists/[id]`, separator overuse on `/shoots/[id]`.
@@ -374,6 +374,33 @@ plus `aria-busy={mutation.isPending}` for screen-reader feedback while submittin
 **Messaging inbox badge alignment** — `components/messaging/inbox.tsx:38–58`
 - Was: `<div>` text-row with `ml-2` between date and unread badge — block-context allowed the badge to wrap below the date when the parent row got narrow.
 - Now: right column is `flex shrink-0 items-center gap-2`, with date and badge as flex siblings. Date stays on its line; badge can no longer wrap below it. Left column got `min-w-0` + `truncate` on the display-name and job-title rows so a long display name pushes the date column normally instead of clipping unevenly.
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
+
+### Action 10 — empty / loading / error coverage (2026-05-22)
+
+**EmptyState inline CTAs on the three lists the audit flagged:**
+- `app/(caster)/caster/jobs/list.tsx` — "No jobs posted yet" gains a primary `<Button>` linking to `/caster/jobs/new` ("Post a job").
+- `app/(caster)/caster/bookings/list.tsx` — copy expanded to clarify the bid → accept → booking lifecycle, plus an outline button linking back to `/caster/jobs`.
+- `app/(artist)/artist/bookings/list.tsx` — copy expanded to nudge bidding, plus a primary button linking to `/artist/jobs`.
+- Other `<EmptyState>` consumers (filter-result emptiness on `/caster/talent`, `/artist/jobs`; admin tables; placeholders) deliberately left without CTAs — they're either filter-empty (no inline CTA makes sense) or out of scope (admin).
+
+**Portfolio in-flight upload progress + 3-photo gate** — `app/(artist)/artist/portfolio/client.tsx`
+- `uploadFile` already exposed `onProgress`; wire it. New `progress` state drives:
+  - A hairline `role="progressbar"` bar with proper ARIA values sliding between 0–100 while the R2 PUT runs.
+  - The upload button label flips to `Uploading {n}%` while the upload is mid-flight.
+- New `MIN_PHOTOS = 3` constant + a gate card surfaces "Add N more photos" / "You meet the portfolio minimum", a `count / 3` tabular-num counter, and a second `role="progressbar"` filling toward 3. Bar turns emerald-500 once the gate is met. Old advisory line removed and re-purposed.
+- Empty-state copy updated since the old "you need at least 3" hint is now in the gate card.
+
+**StatusBadge native tooltips** — `components/dashboard/status-badge.tsx`
+- Added a `tooltip` map mirroring `mapping` — every status the codebase renders gets a one-sentence plain-English description ("Accepting bids from artists", "Both parties have signed. Shoot location is now revealed.", "Cancelled. A cancellation fee may apply if under 48 hours of the shoot.", etc.).
+- The description is passed as the native `title` HTML attribute on the underlying `<Badge>`, which spreads `{...props}` to the DOM. No new tooltip primitive or provider needed — browser-native, accessible, zero-dependency. Hovers on every status badge across artist + caster + admin lists now reveal what the status actually means.
+
+**Settings save toast — already wired.**
+- Audit P2 recommended `toast.success(...)` on `onSuccess`. `lib/hooks/use-caster.ts:22` already calls `toast.success('Profile updated')` and `toast.error(errorMessage(err))` on error. No code change required.
+
+**SSR-skeleton sizing deferred.**
+- Audit P2 also recommended SSR-fetching the first page to size the loading skeleton to actual row count. That's an architectural pattern change across many list pages (move data fetch from client hook to server component, pass `initialData` down). Not state coverage — deferred to a focused refactor pass.
 
 **Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
 
