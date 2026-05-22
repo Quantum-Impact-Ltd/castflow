@@ -21,7 +21,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { GlareHover } from '@/components/ui/glare-hover'
 import { MagicCard } from '@/components/ui/magic-card'
 import { NumberTicker } from '@/components/ui/number-ticker'
@@ -127,12 +126,9 @@ export function ShootDetailView({ shoot }: Props) {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 </span>
-                <AnimatedShinyText
-                  shimmerWidth={120}
-                  className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-white"
-                >
+                <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-white">
                   Live brief · accepting bids
-                </AnimatedShinyText>
+                </span>
               </div>
               {shoot.requiresNda ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/95 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-950">

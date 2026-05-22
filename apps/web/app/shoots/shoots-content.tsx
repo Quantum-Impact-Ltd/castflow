@@ -8,7 +8,6 @@ import { Reveal } from '@/components/landing/reveal'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { MOCK_SHOOTS, type PublicJob } from '@/lib/mock/shoots'
 import { formatCurrency } from '@/lib/utils'
@@ -170,12 +169,9 @@ function Hero({ count, featured }: { count: number; featured: PublicJob }) {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </span>
-              <AnimatedShinyText
-                shimmerWidth={110}
-                className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]"
-              >
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]">
                 Live shoots · updated minutes ago
-              </AnimatedShinyText>
+              </span>
             </div>
 
             <h1 className="mt-6 max-w-3xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.025em] text-foreground sm:text-6xl lg:text-7xl">

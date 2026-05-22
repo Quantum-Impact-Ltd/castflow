@@ -2,7 +2,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
 
 const easeOutExpo = '[animation-timing-function:cubic-bezier(0.16,1,0.3,1)]'
@@ -27,12 +26,9 @@ export function Hero() {
               className={`mb-8 inline-flex items-center gap-2 rounded-full border border-border/60 bg-[var(--surface-50)] px-4 py-1.5 animate-in fade-in slide-in-from-bottom-2 fill-mode-both duration-[700ms] ${easeOutQuart} ${motionGuard}`}
             >
               <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-              <AnimatedShinyText
-                shimmerWidth={120}
-                className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]"
-              >
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]">
                 Live · UK casting marketplace
-              </AnimatedShinyText>
+              </span>
             </div>
             <h1
               className="font-medium tracking-[-0.035em] text-foreground"

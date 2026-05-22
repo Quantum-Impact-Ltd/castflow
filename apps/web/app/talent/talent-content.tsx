@@ -8,7 +8,6 @@ import { Reveal } from '@/components/landing/reveal'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { GlareHover } from '@/components/ui/glare-hover'
 import { MOCK_ARTISTS } from '@/lib/mock/artists'
@@ -181,12 +180,9 @@ function Hero({ count, featured }: { count: number; featured: PublicArtistProfil
           <Reveal className="lg:col-span-7">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-[var(--surface-50)] px-4 py-1.5">
               <BadgeCheck className="h-3.5 w-3.5 text-primary" aria-hidden />
-              <AnimatedShinyText
-                shimmerWidth={110}
-                className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]"
-              >
+              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]">
                 Verified UK talent
-              </AnimatedShinyText>
+              </span>
             </div>
 
             <h1 className="mt-6 max-w-3xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.025em] text-foreground sm:text-6xl lg:text-7xl">

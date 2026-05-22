@@ -21,7 +21,6 @@ import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { OrbitingCircles } from '@/components/ui/orbiting-circles'
-import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { MOCK_ARTISTS } from '@/lib/mock/artists'
 import { cn } from '@/lib/utils'
@@ -119,12 +118,9 @@ export default function ArtistsPage() {
               <Reveal className="lg:col-span-7">
                 <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-[var(--surface-50)] px-4 py-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-                  <AnimatedShinyText
-                    shimmerWidth={120}
-                    className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]"
-                  >
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]">
                     For models and actors
-                  </AnimatedShinyText>
+                  </span>
                 </div>
 
                 <h1 className="mt-8 text-balance text-5xl font-medium leading-[1.04] tracking-[-0.02em] text-foreground sm:text-6xl lg:text-7xl">

@@ -3,7 +3,6 @@ import { ArrowRight } from 'lucide-react'
 import { Nav } from '@/components/landing/nav'
 import { Footer } from '@/components/landing/footer'
 import { Reveal } from '@/components/landing/reveal'
-import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { Button } from '@/components/ui/button'
 
 export interface LegalSection {
@@ -121,12 +120,9 @@ function Hero({
       <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
         <Reveal>
           <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-[var(--surface-50)] px-4 py-1.5">
-            <AnimatedShinyText
-              shimmerWidth={120}
-              className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]"
-            >
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]">
               {eyebrow}
-            </AnimatedShinyText>
+            </span>
           </div>
 
           <h1 className="mt-6 max-w-4xl text-balance text-5xl font-medium leading-[1.04] tracking-[-0.02em] text-foreground sm:text-6xl lg:text-7xl">

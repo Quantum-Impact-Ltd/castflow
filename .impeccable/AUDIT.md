@@ -226,7 +226,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 4 — `/impeccable harden` auth/onboarding ban list.** ShimmerButton swap (5 auth forms), `/suspended` CTA gradient + shadow, onboarding StepNav gradient + shadow, rejection-banner glass on `/onboarding/artist`, delete-account button styling (artist + caster). ✅ Done. Instagram href on `/artists/[id]` was already correctly gated — audit P0 was a false positive on re-read.
 - [x] **Action 5 — `/impeccable layout` kill identical card grids on marketing.** Replaced 3-col feature grid (`/casters`), 4-col "Get started" (`/artists`), 4-col "privacy ladder" (`/trust`) with editorial numbered list, vertical timeline, and progressive ladder respectively. ✅ Done.
 - [x] **Action 6 — `/impeccable adapt` responsive sweep.** Caster comparison table mobile collapse, AnimatedBeam fallback on mobile (`/how-it-works` + `/trust/escrow`), `/talent` grid steps, shoots mobile filter gap, password grid stacking until md, messaging inbox badge alignment. ✅ Done.
-- [ ] **Action 7 — `/impeccable polish` eyebrow chip codemod.** Replace every AnimatedShinyText eyebrow with static tracked-label `<Label>` on `surface-50`. Same change across marketing, talent, contact, legal.
+- [x] **Action 7 — `/impeccable polish` eyebrow chip codemod.** Replaced every AnimatedShinyText eyebrow (8 consumers) with a static `<span>` carrying the same mono / tracked uppercase styling on `surface-50`. ✅ Done.
 - [ ] **Action 8 — `/impeccable clarify` copy + microcopy fixes.** Remove em dashes ("→ —", "Not specified"), confirm-password label consistency, expand `/caster/settings/notifications` and `/caster/settings/billing` placeholders, `mailto:` precomposition for delete flows.
 - [ ] **Action 9 — `/impeccable optimize` debounce + tighten loops.** `useDebouncedValue(300)` on filter inputs, memoize `calculateDobMax`, replace 1 s `setInterval` with on-tick render only.
 - [ ] **Action 10 — `/impeccable harden` empty/loading/error coverage.** SSR-fetch first page for skeletons, `action` prop on `<EmptyState>`, save toast on `onSuccess`, tooltips on status badges, portfolio progress bar + 3-photo gate.
@@ -376,3 +376,21 @@ plus `aria-busy={mutation.isPending}` for screen-reader feedback while submittin
 - Now: right column is `flex shrink-0 items-center gap-2`, with date and badge as flex siblings. Date stays on its line; badge can no longer wrap below it. Left column got `min-w-0` + `truncate` on the display-name and job-title rows so a long display name pushes the date column normally instead of clipping unevenly.
 
 **Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0.
+
+### Action 7 — AnimatedShinyText eyebrow codemod (2026-05-22)
+
+**Files touched (8 consumers, all replaced + imports removed):**
+- `components/landing/sections/hero.tsx` — "Live · UK casting marketplace"
+- `app/casters/page.tsx` — "For casters and brands"
+- `app/artists/page.tsx` — "For models and actors"
+- `app/talent/talent-content.tsx` — "Verified UK talent"
+- `app/shoots/shoots-content.tsx` — "Live shoots · updated minutes ago"
+- `app/shoots/[id]/shoot-detail-view.tsx` — "Live brief · accepting bids"
+- `app/contact/contact-content.tsx` — "Contact"
+- `components/legal/legal-layout.tsx` — `{eyebrow}` slot used by `/terms` + `/privacy`
+
+Each `<AnimatedShinyText shimmerWidth={X} className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] [text-white]">…</AnimatedShinyText>` collapses to a plain `<span className="…">…</span>` carrying the same typography. The surrounding chip wrappers (`rounded-full border border-border/60 bg-[var(--surface-50)] px-4 py-1.5`) are preserved, so each eyebrow chip still reads as an institutional tracked-label tag — just without the shimmer-sweep animation that triggered the "AI marketing template" reflex on every page.
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0. Final grep confirms zero remaining `AnimatedShinyText` references outside the component definition itself.
+
+**Not addressed here:** the `backdrop-blur` class on the shoot-detail-view eyebrow chip wrapper (`shoot-detail-view.tsx:125`) survives — that's a separate glassmorphism finding tracked under a different audit row, deferred to a focused distill pass.

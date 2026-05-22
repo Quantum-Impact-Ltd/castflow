@@ -25,7 +25,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { cn } from '@/lib/utils'
 
 type Topic = 'sales' | 'support' | 'safety' | 'press' | 'other'
@@ -280,12 +279,9 @@ function Hero() {
         <Reveal>
           <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-[var(--surface-50)] px-4 py-1.5">
             <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-            <AnimatedShinyText
-              shimmerWidth={120}
-              className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]"
-            >
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]">
               Contact
-            </AnimatedShinyText>
+            </span>
           </div>
 
           <h1 className="mt-6 max-w-4xl text-balance text-5xl font-medium leading-[1.04] tracking-[-0.02em] text-foreground sm:text-6xl lg:text-7xl">
