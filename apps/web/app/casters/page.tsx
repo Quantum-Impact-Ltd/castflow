@@ -192,17 +192,25 @@ export default function CastersPage() {
               </div>
             </Reveal>
 
-            <div className="mt-16 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* Editorial numbered list — each feature is its own row, no card grid */}
+            <div className="mt-16 divide-y divide-border/60 border-y border-border/60">
               {FEATURES.map((f, i) => (
-                <Reveal key={f.title} delay={i * 60}>
-                  <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-background p-8 transition-all hover:shadow-md">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+                <Reveal key={f.title} delay={i * 50}>
+                  <div className="grid grid-cols-[auto_1fr] items-start gap-x-6 gap-y-3 py-10 sm:gap-x-10 sm:py-12 lg:grid-cols-[140px_1fr_auto] lg:gap-x-16">
+                    <span className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-foreground/45">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <div className="max-w-2xl">
+                      <h3 className="text-2xl font-medium tracking-[-0.01em] text-foreground sm:text-3xl">
+                        {f.title}
+                      </h3>
+                      <p className="mt-3 text-base leading-relaxed text-foreground/70">
+                        {f.body}
+                      </p>
+                    </div>
+                    <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary lg:inline-flex">
                       <f.icon className="h-5 w-5" aria-hidden />
                     </span>
-                    <h3 className="mt-6 text-xl font-medium tracking-[-0.015em] text-foreground">
-                      {f.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-relaxed text-foreground/70">{f.body}</p>
                   </div>
                 </Reveal>
               ))}

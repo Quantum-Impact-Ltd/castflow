@@ -316,24 +316,43 @@ export default function ArtistsPage() {
               </div>
             </Reveal>
 
-            <div className="mt-16 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {STEPS.map((s, i) => (
-                <Reveal key={s.n} delay={i * 70}>
-                  <div className="flex h-full flex-col rounded-2xl border border-border/60 bg-background p-8">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-3xl font-medium tracking-[-0.02em] text-primary">
+            {/* Vertical numbered timeline — sequential workflow reads as a single
+                editorial flow, not a 4-up identical card grid. */}
+            <ol className="mt-16 relative ml-2">
+              {STEPS.map((s, i) => {
+                const isLast = i === STEPS.length - 1
+                return (
+                  <li key={s.n} className="relative pl-12 pb-12 last:pb-0 sm:pl-16">
+                    {/* Connecting rail between numbers — hairline, no flourish */}
+                    {!isLast ? (
+                      <span
+                        aria-hidden
+                        className="absolute left-[18px] top-12 h-[calc(100%-2.5rem)] w-px bg-border sm:left-[22px]"
+                      />
+                    ) : null}
+                    <Reveal delay={i * 70}>
+                      <span className="absolute left-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background font-mono text-xs font-semibold tracking-[0.04em] text-foreground sm:h-11 sm:w-11 sm:text-sm">
                         {s.n}
                       </span>
-                      <s.icon className="h-5 w-5 text-foreground/40" aria-hidden />
-                    </div>
-                    <h3 className="mt-6 text-lg font-medium tracking-[-0.015em] text-foreground">
-                      {s.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-foreground/70">{s.body}</p>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
+                      <div className="max-w-2xl">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-2xl font-medium tracking-[-0.01em] text-foreground sm:text-3xl">
+                            {s.title}
+                          </h3>
+                          <s.icon
+                            className="hidden h-5 w-5 text-foreground/40 sm:inline-block"
+                            aria-hidden
+                          />
+                        </div>
+                        <p className="mt-3 text-base leading-relaxed text-foreground/70">
+                          {s.body}
+                        </p>
+                      </div>
+                    </Reveal>
+                  </li>
+                )
+              })}
+            </ol>
           </div>
         </section>
 

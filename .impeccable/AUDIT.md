@@ -224,7 +224,7 @@ Ordered by impact-per-effort. First three actions unblock ~60% of P0/P1.
 - [x] **Action 2 — `/impeccable typeset` codemod the gradient italic-serif `<span>` across all h1s.** Strip the `bg-gradient-to-br ... bg-clip-text font-serif italic text-transparent` wrapper. Keep at most one Instrument Serif italic per page (zero on auth, legal, product UI). ✅ Done (auth + legal). Marketing per-page trimming deferred to action 7.
 - [x] **Action 3 — `/impeccable distill` remove BorderBeam from non-load-bearing surfaces.** Sweep pricing-preview, casters, artists, trust, contact-content, shoots-content, shoot-detail-view, talent-content, legal-layout, how-it-works, hero, pricing page. ✅ Done — all 17 instances stripped across 12 files.
 - [x] **Action 4 — `/impeccable harden` auth/onboarding ban list.** ShimmerButton swap (5 auth forms), `/suspended` CTA gradient + shadow, onboarding StepNav gradient + shadow, rejection-banner glass on `/onboarding/artist`, delete-account button styling (artist + caster). ✅ Done. Instagram href on `/artists/[id]` was already correctly gated — audit P0 was a false positive on re-read.
-- [ ] **Action 5 — `/impeccable layout` kill identical card grids on marketing.** Replace 3-col feature grid (`/casters`), 4-col "Get started" (`/artists`), 4-col "privacy ladder" (`/trust`) with editorial bento / numbered timelines.
+- [x] **Action 5 — `/impeccable layout` kill identical card grids on marketing.** Replaced 3-col feature grid (`/casters`), 4-col "Get started" (`/artists`), 4-col "privacy ladder" (`/trust`) with editorial numbered list, vertical timeline, and progressive ladder respectively. ✅ Done.
 - [ ] **Action 6 — `/impeccable adapt` responsive sweep.** Caster comparison table mobile collapse, AnimatedBeam fallback on mobile, `/talent` grid steps, mobile filter row gap, password grid stacking `<sm`, messaging inbox badge alignment.
 - [ ] **Action 7 — `/impeccable polish` eyebrow chip codemod.** Replace every AnimatedShinyText eyebrow with static tracked-label `<Label>` on `surface-50`. Same change across marketing, talent, contact, legal.
 - [ ] **Action 8 — `/impeccable clarify` copy + microcopy fixes.** Remove em dashes ("→ —", "Not specified"), confirm-password label consistency, expand `/caster/settings/notifications` and `/caster/settings/billing` placeholders, `mailto:` precomposition for delete flows.
@@ -327,3 +327,26 @@ plus `aria-busy={mutation.isPending}` for screen-reader feedback while submittin
 - Caveat: the mock data still ships `profile.instagramHandle` to the client as JS state regardless of role. Real fix lives server-side once `/talent/:id` becomes public; tracked separately.
 
 **Verification:** `bunx tsc --noEmit` exit 0. Remaining `ShimmerButton` consumers are the two marketing `shimmer-button-link.tsx` wrappers (homepage hero, `/casters` hero) — out of action 4 scope, deferred to a later marketing pass.
+
+### Action 5 — kill identical card grids (2026-05-22)
+
+**`/casters` feature grid → editorial numbered list** — `app/casters/page.tsx:195–209`
+- Was: `grid gap-4 md:grid-cols-2 lg:grid-cols-3` of 6 identical `rounded-2xl border` icon + heading + body cards.
+- Now: a divider-separated vertical list. Each feature gets a row with `01–06` mono number on the left, oversized title (`text-2xl sm:text-3xl`) and body in the middle, and the icon chip pushed to the right column on `lg+` only. Top + bottom hairline framing the block; rows separated by `divide-y divide-border/60`. No cards.
+
+**`/artists` "Get started" → vertical numbered timeline** — `app/artists/page.tsx:319–336`
+- Was: `grid gap-4 md:grid-cols-2 lg:grid-cols-4` of 4 identical card tiles.
+- Now: an `<ol>` rendering each step with a circular `01–04` marker on the left rail, a hairline `bg-border` connector dropping from each marker to the next, and the step title + body running to the right. Oversized titles (`text-2xl sm:text-3xl`), icon appears inline next to the title on `sm+`. Genuinely sequential reads as a flow, not four parallel tiles.
+
+**`/trust` privacy ladder → progressive ladder** — `app/trust/page.tsx:190–197`, `:340–`
+- Was: `grid gap-4 lg:grid-cols-4` of 4 identical `PrivacyStageCard` tiles, with the final stage given a `border-primary shadow-md` accent (the only thing differentiating them).
+- Now: `PrivacyStageCard` replaced by `PrivacyStageRow`. Vertical `<ol>` with stage markers that *intensify* down the ladder via `STAGE_DOT_BG`:
+  - `public` → empty `bg-background` with `border-border`
+  - `shortlist` → `bg-primary/10`
+  - `booking` → `bg-primary/25`
+  - `signed` → solid `bg-primary` with `text-primary-foreground`
+  Connecting rail switches to `bg-primary/60` between the signed marker and what came before. The visual now reads "data unlocks progressively," which was the conceptual point the four flat cards never communicated. `PrivacyList` left intact — moved into a 2-col sub-grid so each row shows "Caster sees / Artist sees" side by side at `sm+`.
+
+**Pillars section on `/trust` left alone** — the audit's [P1] verdict for that section was "icon cards are inherently a grid; OK at 4 cols" so it stays.
+
+**Verification:** `bunx tsc --noEmit` (from `apps/web/`) exit 0. The three sections render without any identical-card-grid pattern; mobile collapses cleanly since each replacement was already vertical-first.

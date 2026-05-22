@@ -188,11 +188,18 @@ export default function TrustPage() {
             </Reveal>
 
             <Reveal delay={120}>
-              <div className="mt-16 grid gap-4 lg:grid-cols-4">
+              {/* Progressive ladder — left rail intensifies stage by stage so the
+                  visual reads as "data unlocks as you progress," not four flat cards. */}
+              <ol className="mt-16 relative">
                 {PRIVACY_STAGES.map((stage, i) => (
-                  <PrivacyStageCard key={stage.stage} index={i} stage={stage} />
+                  <PrivacyStageRow
+                    key={stage.stage}
+                    index={i}
+                    stage={stage}
+                    isLast={i === PRIVACY_STAGES.length - 1}
+                  />
                 ))}
-              </div>
+              </ol>
             </Reveal>
           </div>
         </section>
@@ -337,42 +344,65 @@ export default function TrustPage() {
   )
 }
 
-function PrivacyStageCard({ index, stage }: { index: number; stage: PrivacyStage }) {
+// Stage-by-stage opacity ramp: each row of the ladder steps brand-color presence
+// up so the page reads "data unlocks progressively" without identical cards.
+const STAGE_DOT_BG: Record<PrivacyStage['tone'], string> = {
+  public: 'bg-background border-border text-foreground/55',
+  shortlist: 'bg-primary/10 border-primary/20 text-primary',
+  booking: 'bg-primary/25 border-primary/40 text-primary',
+  signed: 'bg-primary border-primary text-primary-foreground',
+}
+
+function PrivacyStageRow({
+  index,
+  stage,
+  isLast,
+}: {
+  index: number
+  stage: PrivacyStage
+  isLast: boolean
+}) {
   const isPublic = stage.tone === 'public'
   return (
-    <div
-      className={cn(
-        'flex h-full flex-col rounded-2xl border bg-background p-7',
-        stage.tone === 'signed' ? 'border-primary shadow-md' : 'border-border/60'
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/60">
-          Stage {String(index + 1).padStart(2, '0')}
-        </span>
+    <li className="relative grid grid-cols-[auto_1fr] gap-x-6 pb-12 last:pb-0 sm:gap-x-10">
+      {/* Vertical rail — connects each stage dot, dims for the locked stage. */}
+      {!isLast ? (
         <span
+          aria-hidden
           className={cn(
-            'inline-flex h-7 w-7 items-center justify-center rounded-full',
-            stage.tone === 'signed'
-              ? 'bg-primary/10 text-primary'
-              : 'bg-foreground/5 text-foreground/60'
+            'absolute left-[19px] top-12 h-[calc(100%-3rem)] w-px sm:left-[23px]',
+            stage.tone === 'signed' ? 'bg-primary/60' : 'bg-border'
           )}
-        >
-          {isPublic ? (
-            <EyeOff className="h-3.5 w-3.5" aria-hidden />
-          ) : (
-            <Eye className="h-3.5 w-3.5" aria-hidden />
-          )}
-        </span>
+        />
+      ) : null}
+
+      {/* Stage marker — intensifies brand color stage by stage */}
+      <span
+        className={cn(
+          'relative z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border sm:h-12 sm:w-12',
+          STAGE_DOT_BG[stage.tone]
+        )}
+      >
+        {isPublic ? (
+          <EyeOff className="h-4 w-4" aria-hidden />
+        ) : (
+          <Eye className="h-4 w-4" aria-hidden />
+        )}
+      </span>
+
+      <div className="pt-1">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
+          Stage {String(index + 1).padStart(2, '0')}
+        </p>
+        <h3 className="mt-2 text-2xl font-medium tracking-[-0.01em] text-foreground sm:text-3xl">
+          {stage.stage}
+        </h3>
+        <div className="mt-6 grid gap-6 sm:grid-cols-2 sm:gap-10">
+          <PrivacyList label="Caster sees" items={stage.casterSees} />
+          <PrivacyList label="Artist sees" items={stage.artistSees} />
+        </div>
       </div>
-      <h3 className="mt-4 text-lg font-medium tracking-[-0.015em] text-foreground">
-        {stage.stage}
-      </h3>
-      <div className="mt-6 space-y-4 text-sm">
-        <PrivacyList label="Caster sees" items={stage.casterSees} />
-        <PrivacyList label="Artist sees" items={stage.artistSees} />
-      </div>
-    </div>
+    </li>
   )
 }
 
