@@ -96,3 +96,4 @@ export type ArtistExperienceInput = z.infer<typeof artistExperienceSchema>
 export type ArtistSkillInput = z.infer<typeof artistSkillSchema>
 export type UpdateArtistTypeInput = z.infer<typeof updateArtistTypeSchema>
 export type ReplaceSkillsInput = z.infer<typeof replaceSkillsSchema>
+export type UpdateAvailabilityInput = z.infer<typeof updateAvailabilitySchema>

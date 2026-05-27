@@ -6,8 +6,14 @@ import type { Init } from './types'
 export interface JobListFilters {
   city?: string
   category?: string
+  status?: string
   cursor?: string
   limit?: number
+}
+
+/** A caster's own job, carrying the bid count the API includes via `_count`. */
+export interface JobWithCounts extends Job {
+  _count?: { bids: number }
 }
 
 export function listPublicJobs(filters: JobListFilters = {}, init?: Init) {
@@ -18,8 +24,11 @@ export function getJob(id: string, init?: Init) {
   return fetcher<Job>(`/jobs/${id}`, init)
 }
 
-export function listMyJobs(filters: { cursor?: string; limit?: number } = {}, init?: Init) {
-  return fetcher<Job[]>('/jobs/me/list', { params: { ...filters }, ...init })
+export function listMyJobs(
+  filters: { status?: string; cursor?: string; limit?: number } = {},
+  init?: Init
+) {
+  return fetcher<JobWithCounts[]>('/jobs/me/list', { params: { ...filters }, ...init })
 }
 
 export function createJob(input: CreateJobInput) {

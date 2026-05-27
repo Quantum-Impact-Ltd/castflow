@@ -1,10 +1,11 @@
 'use client'
 
+import { useMemo } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   ArrowRight,
+  Camera,
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
@@ -17,24 +18,26 @@ import {
   Star,
   Users,
 } from 'lucide-react'
+import type { Job } from '@castflow/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Reveal } from '@/components/landing/reveal'
 import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
+import { RemoteImage } from '@/components/dashboard/remote-image'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useAuthSession } from '@/providers/session-provider'
+import { useJob } from '@/lib/hooks/use-jobs'
 import {
+  getMockShoot,
   getSimilarShoots,
-  type PublicJob,
+  type CasterMeta,
   type ShootDetailExtras,
 } from '@/lib/mock/shoots'
 
-type Shoot = PublicJob & ShootDetailExtras
-
 interface Props {
-  shoot: Shoot
+  id: string
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -44,38 +47,26 @@ const CATEGORY_LABEL: Record<string, string> = {
   extra: 'Extra',
 }
 
-export function ShootDetailView({ shoot }: Props) {
+export function ShootDetailView({ id }: Props) {
   const router = useRouter()
-  // Real session — replaces prior `isAuthed = false`/`isArtist = false`
-  // hardcodes so logged-in users see the actual gated UI rather than the
-  // public anonymous view. (Audit H11.)
+  // Live job detail first; fall back to mock when the id isn't a real job
+  // (e.g. the seeded demo shoots) so the page still renders richly.
+  const { data: realJob, isLoading } = useJob(id)
+  const mock = useMemo(() => getMockShoot(id), [id])
+
+  // Real jobs render the same layout but with no enrichment extras (caster
+  // stats, wardrobe, perks, cancellation policy, similar shoots). Those are
+  // mock-only and gated on `extras` below.
+  const shoot: Job | null = realJob ?? mock
+  const extras: ShootDetailExtras | null = realJob ? null : mock
+
+  // Real session — a logged-in artist sees the actual bid CTA. (Audit H11.)
   const { session } = useAuthSession()
   const isAuthed = Boolean(session?.user)
   const isArtist = session?.user.role === 'artist'
 
-  const remainingSpots = Math.max(
-    shoot.headcountRequired - shoot.headcountFilled,
-    0,
-  )
-  const similar = getSimilarShoots(shoot.similarShootIds)
-  const rateLabel = formatRate(shoot)
-  const shootWhen = formatShootDate(shoot.shootDate, shoot.shootEndDate)
-  const applicationDeadline = new Date(
-    shoot.applicationDeadline,
-  ).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-  const daysToApply = Math.max(
-    Math.ceil(
-      (new Date(shoot.applicationDeadline).getTime() - Date.now()) /
-        (1000 * 60 * 60 * 24),
-    ),
-    0,
-  )
-
   const handleApply = () => {
+    if (!shoot) return
     if (!isAuthed) {
       router.push(`/login?redirect=${encodeURIComponent(`/shoots/${shoot.id}`)}`)
       return
@@ -86,6 +77,45 @@ export function ShootDetailView({ shoot }: Props) {
     }
     router.push(`/artist/jobs/${shoot.id}/bid`)
   }
+
+  if (!shoot) {
+    if (isLoading) {
+      return (
+        <div className="mx-auto w-full max-w-[90rem] px-6 py-24 lg:px-8">
+          <p className="text-sm text-foreground/60">Loading shoot…</p>
+        </div>
+      )
+    }
+    return (
+      <div className="mx-auto w-full max-w-[90rem] px-6 py-24 text-center lg:px-8">
+        <h1 className="font-serif text-3xl text-foreground">Shoot not found</h1>
+        <p className="mt-3 text-sm text-foreground/60">
+          This brief may have closed, filled, or passed its application deadline.
+        </p>
+        <Link
+          href="/shoots"
+          className="mt-6 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden /> Back to live shoots
+        </Link>
+      </div>
+    )
+  }
+
+  const remainingSpots = Math.max(shoot.headcountRequired - shoot.headcountFilled, 0)
+  const similar = extras ? getSimilarShoots(extras.similarShootIds) : []
+  const rateLabel = formatRate(shoot)
+  const shootWhen = formatShootDate(shoot.shootDate, shoot.shootEndDate)
+  const applicationDeadline = new Date(shoot.applicationDeadline).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+  const daysToApply = Math.max(
+    Math.ceil((new Date(shoot.applicationDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+    0
+  )
+  const casterName = shoot.caster?.companyName ?? 'A verified caster'
 
   return (
     <div className="mx-auto w-full max-w-[90rem] px-6 pb-24 pt-10 lg:px-8 lg:pt-14">
@@ -103,14 +133,7 @@ export function ShootDetailView({ shoot }: Props) {
       <Reveal>
         <div className="relative mt-8 overflow-hidden rounded-3xl border border-border/60 bg-foreground">
           <div className="relative aspect-[16/9] w-full overflow-hidden lg:aspect-[21/9]">
-            <Image
-              src={shoot.imageUrl}
-              alt={shoot.title}
-              fill
-              sizes="100vw"
-              className="object-cover"
-              priority
-            />
+            <DetailCover url={shoot.coverImageUrl} alt={shoot.title} />
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"
@@ -144,8 +167,8 @@ export function ShootDetailView({ shoot }: Props) {
                 {shoot.title}
               </h1>
               <p className="mt-4 text-base font-medium text-white/85 lg:text-lg">
-                Posted by {shoot.caster.companyName}
-                {shoot.casterMeta.verified ? (
+                Posted by {casterName}
+                {extras?.casterMeta.verified ? (
                   <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-white backdrop-blur">
                     <CheckCircle2 className="h-3 w-3" aria-hidden /> Verified
                   </span>
@@ -171,11 +194,7 @@ export function ShootDetailView({ shoot }: Props) {
               icon={<Clock className="h-4 w-4" aria-hidden />}
               label="Rate"
               value={rateLabel}
-              sub={
-                shoot.shootDurationHours
-                  ? `${shoot.shootDurationHours}h call`
-                  : undefined
-              }
+              sub={shoot.shootDurationHours ? `${shoot.shootDurationHours}h call` : undefined}
               accent
             />
             <HeroMeta
@@ -286,35 +305,28 @@ export function ShootDetailView({ shoot }: Props) {
                     Usage rights
                   </h2>
                   <p className="mt-4 text-sm text-foreground/85">
-                    {shoot.usageRights ?? 'Not specified.'}
+                    {shoot.usageRights || 'Not specified.'}
                   </p>
                 </section>
               </TabsContent>
 
               <TabsContent value="details" className="mt-8 space-y-6">
-                <DetailRow
-                  label="Call time"
-                  locked={!isAuthed}
-                  {...(isAuthed ? { value: shoot.callTime } : {})}
-                />
+                {/* Call time + exact address are gated until a booking is
+                    confirmed (CLAUDE.md non-negotiable) — always locked on the
+                    public page, never rendered into the DOM. */}
+                <DetailRow label="Call time" locked lockHint="Shared with the booked artist" />
                 <DetailRow
                   label="Shoot address"
-                  locked={!isAuthed}
-                  // Sensitive: never pass the address into the client tree
-                  // when the user isn't entitled to it. Defence-in-depth on
-                  // top of the API-side rule (CLAUDE.md).
-                  {...(isAuthed ? { value: shoot.shootLocationDetail } : {})}
+                  locked
                   lockHint="Released after booking confirmed"
                 />
-                <DetailRow label="Wardrobe" value={shoot.wardrobe} />
-                <DetailRow
-                  label="On-set perks"
-                  value={shoot.perks.join(' · ')}
-                />
-                <DetailRow
-                  label="Cancellation policy"
-                  value={shoot.cancellationPolicy}
-                />
+                {extras ? <DetailRow label="Wardrobe" value={extras.wardrobe} /> : null}
+                {extras ? (
+                  <DetailRow label="On-set perks" value={extras.perks.join(' · ')} />
+                ) : null}
+                {extras ? (
+                  <DetailRow label="Cancellation policy" value={extras.cancellationPolicy} />
+                ) : null}
                 <DetailRow
                   label="Application deadline"
                   value={`${applicationDeadline} — ${daysToApply} days left`}
@@ -322,17 +334,16 @@ export function ShootDetailView({ shoot }: Props) {
               </TabsContent>
 
               <TabsContent value="caster" className="mt-8">
-                <CasterCard shoot={shoot} />
+                <CasterCard companyName={casterName} meta={extras?.casterMeta} />
               </TabsContent>
             </Tabs>
 
-            {/* Similar shoots */}
+            {/* Similar shoots — mock-only (no similar-jobs endpoint yet). */}
             {similar.length > 0 ? (
               <section className="mt-20">
                 <div className="flex items-end justify-between gap-4">
                   <h2 className="text-2xl font-medium tracking-[-0.02em] text-foreground">
-                    Similar live{' '}
-                    <span className="font-serif italic">briefs</span>
+                    Similar live <span className="font-serif italic">briefs</span>
                   </h2>
                   <Link
                     href="/shoots"
@@ -440,14 +451,29 @@ export function ShootDetailView({ shoot }: Props) {
 
                 <p className="mt-4 flex items-start gap-1.5 text-[11px] leading-relaxed text-foreground/55">
                   <Lock className="mt-0.5 h-3 w-3 flex-none" aria-hidden />
-                  Contact details, exact address, and call sheet release after
-                  booking is confirmed.
+                  Contact details, exact address, and call sheet release after booking is confirmed.
                 </p>
               </div>
             </div>
           </aside>
         </Reveal>
       </div>
+    </div>
+  )
+}
+
+/** Hero cover for the detail page. Falls back to a quiet placeholder when the
+ *  job has no `coverImageUrl`. R2-served, so RemoteImage. */
+function DetailCover({ url, alt }: { url: string | null; alt: string }) {
+  if (url) {
+    return <RemoteImage src={url} alt={alt} fill sizes="100vw" className="object-cover" priority />
+  }
+  return (
+    <div
+      className="flex h-full w-full items-center justify-center bg-gradient-to-br from-foreground to-foreground/80"
+      aria-hidden
+    >
+      <Camera className="h-12 w-12 text-background/20" />
     </div>
   )
 }
@@ -466,22 +492,13 @@ function HeroMeta({
   accent?: boolean
 }) {
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-1 px-6 py-5',
-        accent && 'bg-[var(--surface-50)]',
-      )}
-    >
+    <div className={cn('flex flex-col gap-1 px-6 py-5', accent && 'bg-[var(--surface-50)]')}>
       <span className="flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
         <span className="text-foreground/40">{icon}</span>
         {label}
       </span>
-      <span className="truncate text-base font-medium text-foreground">
-        {value}
-      </span>
-      {sub ? (
-        <span className="truncate text-[11px] text-foreground/55">{sub}</span>
-      ) : null}
+      <span className="truncate text-base font-medium text-foreground">{value}</span>
+      {sub ? <span className="truncate text-[11px] text-foreground/55">{sub}</span> : null}
     </div>
   )
 }
@@ -500,10 +517,9 @@ function DetailRow({
 }) {
   const pathname = usePathname()
   // When locked we MUST NOT render the real `value` — CSS blur is presentation
-  // only, the address is still in the DOM for anyone with DevTools. Render an
+  // only, the value is still in the DOM for anyone with DevTools. Render an
   // opaque placeholder so the unauthorised value never leaves the server's
-  // hand. CLAUDE.md non-negotiable rule: shootLocationDetail is never
-  // returned until contract fully signed. (Audit C4.)
+  // hand. CLAUDE.md non-negotiable rule. (Audit C4.)
   return (
     <div className="grid grid-cols-1 gap-2 border-b border-border/60 pb-6 last:border-b-0 sm:grid-cols-[200px_1fr] sm:gap-6">
       <dt className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-foreground/55">
@@ -524,11 +540,7 @@ function DetailRow({
             >
               <Lock className="h-3 w-3" aria-hidden /> Sign in to view
             </Link>
-            {lockHint ? (
-              <span className="text-[11px] text-foreground/50">
-                {lockHint}
-              </span>
-            ) : null}
+            {lockHint ? <span className="text-[11px] text-foreground/50">{lockHint}</span> : null}
           </span>
         ) : (
           value
@@ -538,15 +550,7 @@ function DetailRow({
   )
 }
 
-function KeyFact({
-  icon,
-  label,
-  sub,
-}: {
-  icon: React.ReactNode
-  label: string
-  sub?: string
-}) {
+function KeyFact({ icon, label, sub }: { icon: React.ReactNode; label: string; sub?: string }) {
   return (
     <li className="flex items-start gap-3">
       <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-foreground/5 text-foreground/70">
@@ -560,7 +564,7 @@ function KeyFact({
   )
 }
 
-function CasterCard({ shoot }: { shoot: Shoot }) {
+function CasterCard({ companyName, meta }: { companyName: string; meta?: CasterMeta }) {
   return (
     <div className="rounded-2xl border border-border/60 bg-[var(--surface-50)] p-8">
       <div className="flex items-start justify-between gap-6">
@@ -568,10 +572,10 @@ function CasterCard({ shoot }: { shoot: Shoot }) {
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
             Posted by
           </p>
-          <h3 className="mt-2 text-3xl font-medium tracking-[-0.015em] leading-tight text-foreground">
-            {shoot.caster.companyName}
+          <h3 className="mt-2 text-3xl font-medium leading-tight tracking-[-0.015em] text-foreground">
+            {companyName}
           </h3>
-          {shoot.casterMeta.verified ? (
+          {meta?.verified ? (
             <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
               <CheckCircle2 className="h-4 w-4" aria-hidden /> ID-verified caster
             </p>
@@ -582,31 +586,27 @@ function CasterCard({ shoot }: { shoot: Shoot }) {
         </span>
       </div>
 
-      <dl className="mt-8 grid grid-cols-3 gap-4">
-        <CasterStat
-          label="Shoots posted"
-          value={shoot.casterMeta.shootsPosted}
-        />
-        <CasterStat
-          label="Rating"
-          value={
-            <span className="inline-flex items-center gap-1">
-              {shoot.casterMeta.rating.toFixed(1)}
-              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-            </span>
-          }
-          sub={`${shoot.casterMeta.ratingCount} reviews`}
-        />
-        <CasterStat
-          label="Member since"
-          value={shoot.casterMeta.memberSince}
-        />
-      </dl>
+      {meta ? (
+        <dl className="mt-8 grid grid-cols-3 gap-4">
+          <CasterStat label="Shoots posted" value={meta.shootsPosted} />
+          <CasterStat
+            label="Rating"
+            value={
+              <span className="inline-flex items-center gap-1">
+                {meta.rating.toFixed(1)}
+                <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+              </span>
+            }
+            sub={`${meta.ratingCount} reviews`}
+          />
+          <CasterStat label="Member since" value={meta.memberSince} />
+        </dl>
+      ) : null}
 
       <p className="mt-8 flex items-start gap-2 text-sm leading-relaxed text-foreground/70">
         <FileText className="mt-0.5 h-4 w-4 flex-none text-foreground/50" aria-hidden />
-        All contracts on CastFlow include NDA, usage rights, and exclusivity
-        terms. Both parties sign before shoot address is revealed.
+        All contracts on CastFlow include NDA, usage rights, and exclusivity terms. Both parties
+        sign before the shoot address is revealed.
       </p>
     </div>
   )
@@ -632,46 +632,53 @@ function CasterStat({
   )
 }
 
-function SimilarCard({ shoot }: { shoot: PublicJob }) {
+function SimilarCard({ shoot }: { shoot: Job }) {
   return (
     <Link href={`/shoots/${shoot.id}`} className="group block">
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[var(--surface-50)]">
-          <Image
-            src={shoot.imageUrl}
+        {shoot.coverImageUrl ? (
+          <RemoteImage
+            src={shoot.coverImageUrl}
             alt={shoot.title}
             fill
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           />
+        ) : (
           <div
+            className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[var(--surface-50)] to-foreground/[0.05]"
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"
-          />
-          <div className="absolute left-4 top-4">
-            <span className="inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground backdrop-blur">
-              {CATEGORY_LABEL[shoot.category]}
+          >
+            <Camera className="h-8 w-8 text-foreground/15" />
+          </div>
+        )}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"
+        />
+        <div className="absolute left-4 top-4">
+          <span className="inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground backdrop-blur">
+            {CATEGORY_LABEL[shoot.category]}
+          </span>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-white/70">
+            {shoot.caster?.companyName ?? 'A verified caster'}
+          </p>
+          <p className="mt-1.5 line-clamp-2 text-base font-medium leading-tight">{shoot.title}</p>
+          <p className="mt-2 inline-flex items-center gap-3 text-xs text-white/85">
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="h-3 w-3" aria-hidden /> {shoot.locationCity}
             </span>
-          </div>
-          <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-white/70">
-              {shoot.caster.companyName}
-            </p>
-            <p className="mt-1.5 line-clamp-2 text-base font-medium leading-tight">
-              {shoot.title}
-            </p>
-            <p className="mt-2 inline-flex items-center gap-3 text-xs text-white/85">
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-3 w-3" aria-hidden /> {shoot.locationCity}
-              </span>
-              <span>{formatRate(shoot)}</span>
-            </p>
-          </div>
+            <span>{formatRate(shoot)}</span>
+          </p>
+        </div>
       </div>
     </Link>
   )
 }
 
-function formatRate(shoot: PublicJob): string {
+function formatRate(shoot: Pick<Job, 'rateSetBy' | 'paymentType' | 'rateAmount'>): string {
   if (shoot.rateSetBy === 'open' || shoot.rateAmount == null) {
     return 'Open to bids'
   }
@@ -681,10 +688,9 @@ function formatRate(shoot: PublicJob): string {
   return formatCurrency(shoot.rateAmount)
 }
 
-function formatShootDate(start: string, end: string | null): string {
+function formatShootDate(start: string, end: string | null | undefined): string {
   const d = new Date(start)
-  const fmt = (date: Date) =>
-    date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+  const fmt = (date: Date) => date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
   if (!end) return fmt(d)
   const e = new Date(end)
   if (fmt(d) === fmt(e)) return fmt(d)

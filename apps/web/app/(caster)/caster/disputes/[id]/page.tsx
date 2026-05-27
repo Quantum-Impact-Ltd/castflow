@@ -1,10 +1,11 @@
-import { DisputeDetail } from '@/app/(artist)/artist/disputes/[id]/client'
+import { DisputeDetailClient } from './dispute-detail-client'
 
 export default async function CasterDisputeDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
+  // The route param is the booking id — disputes are keyed by booking.
   const { id } = await params
-  return <DisputeDetail bookingId={id} />
+  return <DisputeDetailClient bookingId={id} />
 }

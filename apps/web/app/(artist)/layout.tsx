@@ -1,42 +1,38 @@
-import { redirect } from 'next/navigation'
+import type { ReactNode } from 'react'
 import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth-server'
 import { postLoginPath } from '@/lib/auth-redirect'
-import { DashboardShell } from '@/components/dashboard'
+import { DashboardShell, Forbidden403 } from '@/components/dashboard'
 
-export default async function ArtistLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Artist panel guard. Authoritative server-side RBAC (the edge middleware only
+ * checks cookie presence):
+ *   - no session            → /login
+ *   - suspended | banned     → /suspended
+ *   - role !== artist        → 403 (rendered in place, not a redirect loop)
+ *   - approvalStatus !== ok  → /onboarding/artist
+ * On success, wraps the panel in the artist DashboardShell.
+ */
+export default async function ArtistLayout({ children }: { children: ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() }).catch(() => null)
 
   if (!session?.user) redirect('/login')
 
-  // Wrong-role users land on THEIR correct destination (not /login). Avoids
-  // a confusing "log in again" loop when someone navigates to the wrong panel.
-  if (session.user.role !== 'artist') {
-    redirect(
-      postLoginPath({
-        role: session.user.role,
-        approvalStatus: session.user.approvalStatus ?? null,
-      })
-    )
-  }
+  const { role, status, approvalStatus, email } = session.user
 
-  // Status guard: suspended/banned users shouldn't reach a dashboard. The
-  // API also rejects their session requests, but redirecting early gives a
-  // cleaner UX than a flood of 401s.
-  const status = (session.user as { status?: string }).status
   if (status === 'suspended' || status === 'banned') redirect('/suspended')
 
-  const approvalStatus = (session.user as { approvalStatus?: string }).approvalStatus
-  if (approvalStatus !== 'approved') {
-    redirect('/onboarding/artist')
+  if (role !== 'artist') {
+    return <Forbidden403 homeHref={postLoginPath({ role, approvalStatus: approvalStatus ?? null })} />
   }
+
+  if (approvalStatus !== 'approved') redirect('/onboarding/artist')
 
   return (
     <DashboardShell
       role="artist"
-      brand="CastFlow"
-      brandHref="/artist/dashboard"
-      user={{ email: session.user.email, role: session.user.role }}
+      user={{ email, role }}
       notificationsHref="/artist/notifications"
     >
       {children}

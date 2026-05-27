@@ -57,6 +57,7 @@ export const queryKeys = {
   talent: {
     search: (filters?: Filters) => ['talent', 'search', filters ?? {}] as const,
     detail: (id: string) => ['talent', 'detail', id] as const,
+    public: (id: string) => ['talent', 'public', id] as const,
   },
   calendar: {
     feed: () => ['calendar', 'feed'] as const,

@@ -7,6 +7,7 @@ export const presignedUrlSchema = z.object({
     'id_document',
     'demo_reel',
     'caster_logo',
+    'job_cover',
   ]),
   contentType: z.string().min(1),
   size: z.number().int().positive(),
@@ -20,6 +21,7 @@ export const confirmUploadSchema = z.object({
     'id_document',
     'demo_reel',
     'caster_logo',
+    'job_cover',
   ]),
   key: z.string().min(1),
   caption: z.string().max(200).optional(),
@@ -46,6 +48,10 @@ export const UPLOAD_LIMITS = {
   caster_logo: {
     types: ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'],
     maxSizeMb: 2,
+  },
+  job_cover: {
+    types: ['image/jpeg', 'image/png', 'image/webp'],
+    maxSizeMb: 10,
   },
 } as const
 

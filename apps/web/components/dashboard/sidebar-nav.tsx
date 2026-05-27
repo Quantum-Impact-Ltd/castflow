@@ -3,53 +3,54 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import type { NavItem } from './nav-config'
+import { isNavItemActive, type NavItem } from './nav-config'
 
 interface SidebarNavProps {
   items: NavItem[]
   brand: string
   brandHref: string
+  /** Called when a link is tapped — used by the mobile sheet to close itself. */
+  onNavigate?: () => void
 }
 
-function isActive(href: string, matchPrefix: boolean | undefined, pathname: string): boolean {
-  if (pathname === href) return true
-  if (matchPrefix && pathname.startsWith(`${href}/`)) return true
-  return false
-}
-
-export function SidebarNav({ items, brand, brandHref }: SidebarNavProps) {
+export function SidebarNav({ items, brand, brandHref, onNavigate }: SidebarNavProps) {
   const pathname = usePathname()
 
   return (
-    <nav className="flex h-full flex-col gap-1 p-4">
+    <div className="flex h-full flex-col gap-6 bg-sidebar p-4">
       <Link
         href={brandHref}
-        className="mb-4 flex h-10 items-center px-2 text-lg font-semibold tracking-tight"
+        onClick={onNavigate}
+        className="px-2 text-lg font-semibold tracking-[-0.02em] text-sidebar-foreground"
       >
         {brand}
       </Link>
-      <ul className="flex flex-col gap-0.5">
-        {items.map((item) => {
-          const active = isActive(item.href, item.matchPrefix, pathname)
-          const Icon = item.icon
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                )}
-              >
-                <Icon className="size-4" />
-                <span>{item.label}</span>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
+      <nav className="flex-1">
+        <ul className="space-y-1">
+          {items.map((item) => {
+            const active = isNavItemActive(item, pathname)
+            const Icon = item.icon
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={onNavigate}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {item.label}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+    </div>
   )
 }

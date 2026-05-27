@@ -1,6 +1,10 @@
-import { ContractClient } from '@/app/(artist)/artist/bookings/[id]/contract/client'
+import { ContractClient } from './contract-client'
 
-export default async function CasterContractPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CasterContractPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   const { id } = await params
-  return <ContractClient bookingId={id} signerRole="caster" />
+  return <ContractClient bookingId={id} />
 }

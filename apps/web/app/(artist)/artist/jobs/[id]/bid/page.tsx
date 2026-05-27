@@ -1,10 +1,6 @@
-import { BidForm } from './form'
+import { BidFormClient } from './bid-form-client'
 
-export default async function ArtistJobBidPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function SubmitBidPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  return <BidForm jobId={id} />
+  return <BidFormClient jobId={id} />
 }

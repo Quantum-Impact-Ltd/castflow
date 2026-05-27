@@ -141,6 +141,9 @@ export interface Job {
   description: string
   category: JobCategory
   subcategory: string | null
+  // Public R2 URL for the job's cover/hero image. Optional — casters may post
+  // without one, in which case the UI falls back to a typographic placeholder.
+  coverImageUrl: string | null
   visibility: JobVisibility
   status: JobStatus
   genderRequired: string

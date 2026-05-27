@@ -1,15 +1,16 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, BadgeCheck, MapPin, Search, SlidersHorizontal, Star } from 'lucide-react'
+import type { PublicArtistProfile } from '@/lib/api/talent'
 import { Reveal } from '@/components/landing/reveal'
+import { RemoteImage } from '@/components/dashboard/remote-image'
+import { useTalentSearch } from '@/lib/hooks/use-talent'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MOCK_ARTISTS } from '@/lib/mock/artists'
-import type { PublicArtistProfile } from '@/lib/api/talent'
 import { cn } from '@/lib/utils'
 
 type TypeFilter = 'all' | 'model' | 'actor'
@@ -48,7 +49,13 @@ const EXPERIENCE_LABEL: Record<Exclude<ExperienceFilter, 'all'>, string> = {
 }
 
 export function TalentContent() {
-  const allArtists = useMemo(() => Object.values(MOCK_ARTISTS), [])
+  // Live public directory first; fall back to mock talent only when the
+  // backend returns nothing so the page still demos richly on a fresh platform.
+  const { data } = useTalentSearch({ limit: 60 })
+  const allArtists = useMemo(
+    () => (data && data.length > 0 ? data : Object.values(MOCK_ARTISTS)),
+    [data]
+  )
   const [query, setQuery] = useState('')
   // Debounce the free-text query so re-filtering doesn't run on every
   // keystroke. Select-based facets below stay synchronous because they
@@ -130,8 +137,7 @@ export function TalentContent() {
         <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/60">
-              {filtered.length}{' '}
-              {filtered.length === 1 ? 'artist' : 'artists'} · sorted by{' '}
+              {filtered.length} {filtered.length === 1 ? 'artist' : 'artists'} · sorted by{' '}
               {SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase()}
             </p>
             <Link
@@ -208,7 +214,7 @@ function Hero({ count, featured }: { count: number; featured: PublicArtistProfil
             >
               <div className="relative aspect-[4/5] overflow-hidden">
                 {heroImg && (
-                  <Image
+                  <RemoteImage
                     src={heroImg}
                     alt={`${featured.firstName} portfolio cover`}
                     fill
@@ -432,7 +438,7 @@ function ArtistCard({ artist }: { artist: PublicArtistProfile }) {
     <Link href={`/artists/${artist.id}`} className="group block">
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[var(--surface-50)]">
         {hero && (
-          <Image
+          <RemoteImage
             src={hero}
             alt={`${artist.firstName} portfolio cover`}
             fill
@@ -450,9 +456,7 @@ function ArtistCard({ artist }: { artist: PublicArtistProfile }) {
           className={cn(
             'absolute right-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1',
             'font-mono text-[10px] font-semibold uppercase tracking-[0.18em]',
-            isAvailable
-              ? 'bg-emerald-500/95 text-emerald-50'
-              : 'bg-foreground/70 text-background'
+            isAvailable ? 'bg-emerald-500/95 text-emerald-50' : 'bg-foreground/70 text-background'
           )}
         >
           <span className="relative flex h-1.5 w-1.5">
@@ -540,8 +544,7 @@ function FinalCta() {
               Cast in days
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
-              Shortlist talent,{' '}
-              book in one click.
+              Shortlist talent, book in one click.
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
               Sign up as a caster to unlock direct messaging, side-by-side bid comparison, and

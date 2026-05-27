@@ -1,48 +1,74 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { ChevronLeft, AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/components/dashboard'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useDeleteArtistAccount } from '@/lib/hooks/use-account'
 
-// Pre-composed mailto — see caster equivalent for rationale.
-const SUPPORT_EMAIL = 'support@castflow.co.uk'
-const DELETE_SUBJECT = 'Delete my artist account'
-const DELETE_BODY = [
-  'Hi CastFlow support,',
-  '',
-  'Please delete my artist account.',
-  '',
-  'Account email: (please send from the email tied to your account)',
-  'First name:',
-  '',
-  'Thanks.',
-].join('\n')
-const DELETE_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-  DELETE_SUBJECT,
-)}&body=${encodeURIComponent(DELETE_BODY)}`
+export default function ArtistDeleteAccountPage() {
+  const del = useDeleteArtistAccount()
+  const [confirmText, setConfirmText] = useState('')
+  const canDelete = confirmText.trim().toUpperCase() === 'DELETE'
 
-export default function ArtistSettingsDeletePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader title="Delete account" />
-      <Card>
-        <CardContent className="text-sm pt-6 space-y-4">
-          <p>
-            Account deletion is processed manually for safety. Active bookings or pending payouts
-            block deletion until they&apos;re resolved.
-          </p>
-          <p className="text-muted-foreground">
-            Send the request from the email address tied to your account so we can verify it&apos;s
-            you. We aim to action deletions within 2 working days.
-          </p>
-          <div>
-            <Button asChild>
-              <a href={DELETE_MAILTO}>Email a deletion request</a>
-            </Button>
+      <Link
+        href="/artist/settings"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft className="h-4 w-4" /> Back to settings
+      </Link>
+
+      <PageHeader title="Delete account" description="This is permanent and cannot be undone." />
+
+      <Card className="space-y-4 border-destructive/30 p-6">
+        <div className="flex items-start gap-3 rounded-lg bg-destructive/5 p-4">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+          <div className="space-y-2 text-sm text-foreground">
+            <p className="font-medium">Deleting your account will:</p>
+            <ul className="list-inside list-disc space-y-1 text-muted-foreground">
+              <li>Remove your public profile, portfolio, and bids</li>
+              <li>Cancel your access to messages and bookings history</li>
+              <li>Be permanent — your data cannot be recovered</li>
+            </ul>
+            <p className="text-muted-foreground">
+              You can’t delete your account while you have active bookings or pending payouts. Resolve
+              those first, or we’ll block the request.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Or copy <code className="rounded bg-muted px-1.5 py-0.5">{SUPPORT_EMAIL}</code> if
-            your mail client doesn&apos;t open from the button.
-          </p>
-        </CardContent>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="confirm">
+            Type <span className="font-mono font-semibold">DELETE</span> to confirm
+          </Label>
+          <Input
+            id="confirm"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="DELETE"
+            autoComplete="off"
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          <Button asChild variant="ghost">
+            <Link href="/artist/settings">Cancel</Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="border-destructive/40 text-destructive hover:bg-destructive/10"
+            disabled={!canDelete || del.isPending}
+            onClick={() => del.mutate()}
+          >
+            {del.isPending ? 'Deleting…' : 'Permanently delete my account'}
+          </Button>
+        </div>
       </Card>
     </div>
   )

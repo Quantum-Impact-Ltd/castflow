@@ -5,7 +5,9 @@ import type {
   ArtistExperienceInput,
   UpdateArtistTypeInput,
   ReplaceSkillsInput,
+  UpdateAvailabilityInput,
 } from '@castflow/validators'
+import type { ModelStats, ActorStats, PortfolioItem, ArtistSkill } from '@castflow/types'
 import { fetcher } from '@/lib/fetcher'
 
 export interface MyArtistProfile {
@@ -21,15 +23,21 @@ export interface MyArtistProfile {
   bio: string | null
   experienceLevel: 'new_face' | 'semi_pro' | 'professional' | null
   instagramHandle: string | null
+  availabilityStatus: 'available' | 'unavailable'
   approvalStatus: 'pending' | 'approved' | 'rejected'
   approvalNotes: string | null
   submittedAt: string | null
   idDocumentUrl: string | null
   idVerified: boolean
-  modelStats: Record<string, unknown> | null
-  actorStats: Record<string, unknown> | null
-  portfolioItems: Array<Record<string, unknown>>
-  skills: Array<Record<string, unknown>>
+  ratingAvg: number | null
+  ratingCount: number
+  jobsCompleted: number
+  responseRate: number | null
+  strikeCount: number
+  modelStats: ModelStats | null
+  actorStats: ActorStats | null
+  portfolioItems: PortfolioItem[]
+  skills: ArtistSkill[]
 }
 
 interface Init {
@@ -103,4 +111,12 @@ export function updateExperience(input: ArtistExperienceInput, init?: Init) {
 
 export function submitForReview(init?: Init) {
   return fetcher<MyArtistProfile>('/artists/me/submit', { method: 'POST', ...init })
+}
+
+export function updateAvailability(input: UpdateAvailabilityInput, init?: Init) {
+  return fetcher<MyArtistProfile>('/artists/me/availability', {
+    method: 'PATCH',
+    body: input,
+    ...init,
+  })
 }

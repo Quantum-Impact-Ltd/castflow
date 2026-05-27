@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
 import { AppError } from '../errors'
 import { NotificationService } from './NotificationService'
+import { broadcastToThread } from '../ws/registry'
 
 interface UserCtx {
   id: string
@@ -99,6 +100,25 @@ export class MessageService {
     })
   }
 
+  /**
+   * Boolean authz check used by the WebSocket upgrade — same rule as
+   * listMessages (participant or admin, AND the thread is unlocked) but
+   * returns false instead of throwing.
+   */
+  static async canAccessThread(user: UserCtx, threadId: string): Promise<boolean> {
+    const thread = await prisma.messageThread.findUnique({ where: { id: threadId } })
+    if (!thread || !thread.unlocked) return false
+    if (user.role === 'admin') return true
+    const { casterProfileId, artistProfileId } = await profileIdForUser(user).catch(() => ({
+      casterProfileId: undefined,
+      artistProfileId: undefined,
+    }))
+    return Boolean(
+      (casterProfileId && thread.casterId === casterProfileId) ||
+      (artistProfileId && thread.artistId === artistProfileId)
+    )
+  }
+
   static async listMessages(user: UserCtx, threadId: string) {
     // Single round-trip: pull thread + messages together, then check authz.
     const { casterProfileId, artistProfileId } = await profileIdForUser(user)
@@ -160,6 +180,11 @@ export class MessageService {
       return row
     })
 
+    // Live fan-out: push the persisted message to every socket on this thread
+    // (the other participant's open thread view appends it in real time). The
+    // sender's optimistic/refetch path dedupes by message id.
+    broadcastToThread(threadId, message)
+
     // Notify the OTHER participant (sender already knows they sent it).
     // We need the recipient's userId — derive from the thread participants.
     const recipientUserId = await resolveRecipientUserId(thread, user.id)
@@ -184,5 +209,24 @@ export class MessageService {
       where: { threadId, senderId: { not: user.id }, readAt: null },
       data: { readAt: new Date() },
     })
+  }
+
+  /**
+   * Report a thread for harassment / off-platform contact / other ToS issues
+   * (PRD §13.3). Only a participant can report. Alerts all admins (deduped) so
+   * the thread surfaces in their review queue within the 24h SLA. A richer
+   * persisted ContentReport model is the follow-up; an admin notification is
+   * the MVP path and keeps moderation actionable today.
+   */
+  static async reportThread(user: UserCtx, threadId: string, reason: string, detail?: string) {
+    await loadThreadForUser(threadId, user)
+    await NotificationService.notifyAdmins({
+      type: 'thread_reported',
+      title: 'A message thread was reported',
+      body: `Reason: ${reason}${detail ? ` — ${detail}` : ''}`,
+      relatedEntityType: 'message_thread',
+      relatedEntityId: threadId,
+    })
+    return { ok: true as const }
   }
 }

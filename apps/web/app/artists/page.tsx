@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -19,9 +18,8 @@ import { Nav } from '@/components/landing/nav'
 import { Footer } from '@/components/landing/footer'
 import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { MOCK_ARTISTS } from '@/lib/mock/artists'
 import { cn } from '@/lib/utils'
+import { TalentPreview } from './talent-preview'
 
 export const metadata: Metadata = {
   title: 'For artists — CastFlow',
@@ -103,8 +101,6 @@ const FAQS = [
 ]
 
 export default function ArtistsPage() {
-  const preview = Object.values(MOCK_ARTISTS).slice(0, 3)
-
   return (
     <>
       <Nav />
@@ -215,8 +211,7 @@ export default function ArtistsPage() {
                   Why CastFlow
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                  Built for the people{' '}
-                  actually doing the work.
+                  Built for the people actually doing the work.
                 </h2>
               </div>
             </Reveal>
@@ -251,8 +246,7 @@ export default function ArtistsPage() {
                     Verified by humans
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                    The badge you earn{' '}
-                    opens better briefs.
+                    The badge you earn opens better briefs.
                   </h2>
                   <p className="mt-6 max-w-md text-base leading-relaxed text-foreground/75">
                     Every approved artist is hand-reviewed: ID document cross-checked, age verified,
@@ -331,8 +325,7 @@ export default function ArtistsPage() {
                   Get started
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                  Four steps from sign-up{' '}
-                  to first payout.
+                  Four steps from sign-up to first payout.
                 </h2>
               </div>
             </Reveal>
@@ -343,10 +336,7 @@ export default function ArtistsPage() {
               {STEPS.map((s, i) => {
                 const isLast = i === STEPS.length - 1
                 return (
-                  <li
-                    key={s.n}
-                    className="relative pb-12 pl-14 last:pb-0 sm:pl-20"
-                  >
+                  <li key={s.n} className="relative pb-12 pl-14 last:pb-0 sm:pl-20">
                     {/* Connecting rail between numbers — hairline. Sits behind
                         the number badge via z-index so it tucks neatly. */}
                     {!isLast ? (
@@ -394,8 +384,7 @@ export default function ArtistsPage() {
                     On the platform
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                    A few of the approved{' '}
-                    artists.
+                    A few of the approved artists.
                   </h2>
                 </div>
                 <Button asChild variant="outline" className="rounded-full">
@@ -408,53 +397,7 @@ export default function ArtistsPage() {
             </Reveal>
 
             <Reveal delay={120}>
-              <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {preview.map((artist) => {
-                  const hero =
-                    artist.portfolioItems?.find((p) => p.isPrimary)?.url ??
-                    artist.portfolioItems?.[0]?.url ??
-                    ''
-                  return (
-                    <Link
-                      key={artist.id}
-                      href={`/artists/${artist.id}`}
-                      className="group block overflow-hidden rounded-2xl border border-border/60 bg-background transition-all hover:shadow-md"
-                    >
-                      <div className="relative aspect-[4/5] overflow-hidden bg-[var(--surface-50)]">
-                        {hero && (
-                          <Image
-                            src={hero}
-                            alt={`${artist.firstName} portfolio cover`}
-                            fill
-                            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                          />
-                        )}
-                        <div className="absolute left-4 top-4">
-                          <Badge className="rounded-full bg-background/90 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-foreground backdrop-blur">
-                            <BadgeCheck className="mr-1 h-3 w-3 text-primary" />
-                            Verified
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between p-5">
-                        <div>
-                          <p className="text-base font-medium tracking-[-0.01em] text-foreground">
-                            {artist.firstName}
-                          </p>
-                          <p className="mt-1 text-xs text-foreground/60">
-                            {artist.artistType === 'model' ? 'Model' : 'Actor'} · {artist.city}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm font-medium text-foreground">
-                          <Star className="h-3.5 w-3.5 fill-primary text-primary" aria-hidden />
-                          {Number(artist.ratingAvg ?? 0).toFixed(1)}
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
+              <TalentPreview />
             </Reveal>
           </div>
         </section>
@@ -517,8 +460,7 @@ export default function ArtistsPage() {
                   Join the platform
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
-                  Your next booking is{' '}
-                  one application away.
+                  Your next booking is one application away.
                 </h2>
                 <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
                   Free forever for artists. Apply in 15 minutes — we review every application within
@@ -625,4 +567,3 @@ function Check({ children }: { children: React.ReactNode }) {
     </li>
   )
 }
-

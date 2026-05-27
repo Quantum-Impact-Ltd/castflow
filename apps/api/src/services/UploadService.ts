@@ -211,6 +211,35 @@ export class UploadService {
     return { url, expiresIn, contentTypeHint }
   }
 
+  /**
+   * Admin-only: short-lived presigned read URL for an applicant's ID document,
+   * looked up by ArtistProfile id (not userId). Used by the application-review
+   * screen to view the uploaded ID securely — expires in 10 minutes and is
+   * never persisted into the app's own storage.
+   */
+  static async getIdDocumentUrlByProfileId(profileId: string): Promise<{
+    url: string
+    expiresIn: number
+    contentTypeHint: 'image' | 'pdf' | 'unknown'
+  } | null> {
+    const profile = await prisma.artistProfile.findUnique({
+      where: { id: profileId },
+      select: { idDocumentUrl: true },
+    })
+    if (!profile?.idDocumentUrl) return null
+    const key = profile.idDocumentUrl
+    const command = new GetObjectCommand({ Bucket: Buckets.private, Key: key })
+    const expiresIn = 60 * 10
+    const url = await getSignedUrl(r2, command, { expiresIn })
+    const lower = key.toLowerCase()
+    const contentTypeHint: 'image' | 'pdf' | 'unknown' = lower.endsWith('.pdf')
+      ? 'pdf'
+      : /\.(jpe?g|png)$/.test(lower)
+        ? 'image'
+        : 'unknown'
+    return { url, expiresIn, contentTypeHint }
+  }
+
   static async setPrimaryPortfolioItem(userId: string, itemId: string) {
     const item = await prisma.portfolioItem.findUnique({
       where: { id: itemId },

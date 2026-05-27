@@ -1,10 +1,6 @@
-import { CasterPayClient } from './client'
+import { PayClient } from './pay-client'
 
-export default async function CasterBookingPayPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function CasterPayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  return <CasterPayClient bookingId={id} />
+  return <PayClient bookingId={id} />
 }

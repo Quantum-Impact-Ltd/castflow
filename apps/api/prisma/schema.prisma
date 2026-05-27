@@ -167,21 +167,21 @@ enum CounterOfferStatus {
 // Domain enums (UserRole, UserStatus) describe the canonical string values.
 
 model User {
-  id             String    @id
+  id             String   @id
   name           String
-  email          String    @unique
-  emailVerified  Boolean   @default(false)
+  email          String   @unique
+  emailVerified  Boolean  @default(false)
   image          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  role           String    @default("artist")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  role           String   @default("artist")
   profileId      String?
   approvalStatus String?
-  status         String    @default("pending")
+  status         String   @default("pending")
   // Per-user secret token for the ICS calendar subscription URL.
   // Anyone with the URL can read (calendar apps don't send cookies); user
   // regenerates if compromised. Null until first calendar fetch.
-  calendarToken  String?   @unique
+  calendarToken  String?  @unique
 
   sessions      Session[]
   accounts      Account[]
@@ -241,10 +241,10 @@ model Verification {
 // ─── DOMAIN MODELS ────────────────────────────────────────────────────────────
 
 model ArtistProfile {
-  id                 String             @id @default(uuid())
-  userId             String             @unique @map("user_id")
-  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  artistType         ArtistType         @map("artist_type")
+  id         String     @id @default(uuid())
+  userId     String     @unique @map("user_id")
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artistType ArtistType @map("artist_type")
 
   firstName          String             @map("first_name")
   lastName           String             @map("last_name")
@@ -265,18 +265,18 @@ model ArtistProfile {
   idDocumentUrl  String?        @map("id_document_url")
   idVerified     Boolean        @default(false) @map("id_verified")
 
-  ratingAvg     Decimal? @db.Decimal(2, 1) @map("rating_avg")
+  ratingAvg     Decimal? @map("rating_avg") @db.Decimal(2, 1)
   ratingCount   Int      @default(0) @map("rating_count")
   jobsCompleted Int      @default(0) @map("jobs_completed")
-  responseRate  Decimal? @db.Decimal(5, 2) @map("response_rate")
+  responseRate  Decimal? @map("response_rate") @db.Decimal(5, 2)
   strikeCount   Int      @default(0) @map("strike_count")
 
   // Stripe Connect Express account id. Null until the artist starts the
   // payout-setup flow. Cached `payoutsEnabled` mirrors Stripe's account
   // capability so we can gate escrow release without an extra round-trip
   // — but it's authoritative-on-Stripe; trust the cache only at write time.
-  stripeAccountId String?  @unique @map("stripe_account_id")
-  payoutsEnabled  Boolean  @default(false) @map("payouts_enabled")
+  stripeAccountId String? @unique @map("stripe_account_id")
+  payoutsEnabled  Boolean @default(false) @map("payouts_enabled")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -300,7 +300,7 @@ model ModelStats {
   artistProfileId String        @unique @map("artist_profile_id")
   artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id])
   heightCm        Int           @map("height_cm")
-  weightKg        Decimal?      @db.Decimal(4, 1) @map("weight_kg")
+  weightKg        Decimal?      @map("weight_kg") @db.Decimal(4, 1)
   dressSize       String        @map("dress_size")
   shoeSize        String        @map("shoe_size")
   bustCm          Int?          @map("bust_cm")
@@ -356,25 +356,25 @@ model PortfolioItem {
 }
 
 model CasterProfile {
-  id               String      @id @default(uuid())
-  userId           String      @unique @map("user_id")
-  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName      String      @map("company_name")
-  companyType      CompanyType @map("company_type")
-  contactName      String      @map("contact_name")
-  phone            String?
-  website          String?
+  id                    String      @id @default(uuid())
+  userId                String      @unique @map("user_id")
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName           String      @map("company_name")
+  companyType           CompanyType @map("company_type")
+  contactName           String      @map("contact_name")
+  phone                 String?
+  website               String?
   // Public R2 key for the company logo. Shown on caster's profile + on
   // jobs they post — boosts perceived legitimacy with artists deciding
   // whether to bid. Optional. (Audit M23.)
-  logoUrl          String?     @map("logo_url")
-  stripeCustomerId String?     @map("stripe_customer_id")
-  ratingAvg               Decimal?  @db.Decimal(2, 1) @map("rating_avg")
-  ratingCount             Int       @default(0) @map("rating_count")
-  jobsPosted              Int       @default(0) @map("jobs_posted")
-  onboardingCompletedAt   DateTime? @map("onboarding_completed_at")
-  createdAt               DateTime  @default(now()) @map("created_at")
-  updatedAt               DateTime  @updatedAt @map("updated_at")
+  logoUrl               String?     @map("logo_url")
+  stripeCustomerId      String?     @map("stripe_customer_id")
+  ratingAvg             Decimal?    @map("rating_avg") @db.Decimal(2, 1)
+  ratingCount           Int         @default(0) @map("rating_count")
+  jobsPosted            Int         @default(0) @map("jobs_posted")
+  onboardingCompletedAt DateTime?   @map("onboarding_completed_at")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
 
   jobs            Job[]
   bookings        Booking[]
@@ -384,15 +384,16 @@ model CasterProfile {
 }
 
 model Job {
-  id          String        @id @default(uuid())
-  casterId    String        @map("caster_id")
-  caster      CasterProfile @relation(fields: [casterId], references: [id])
-  title       String
-  description String
-  category    JobCategory
-  subcategory String?
-  visibility  JobVisibility @default(public)
-  status      JobStatus     @default(active)
+  id            String        @id @default(uuid())
+  casterId      String        @map("caster_id")
+  caster        CasterProfile @relation(fields: [casterId], references: [id])
+  title         String
+  description   String
+  category      JobCategory
+  subcategory   String?
+  coverImageUrl String?       @map("cover_image_url") // Public R2 URL for the job's hero/cover image
+  visibility    JobVisibility @default(public)
+  status        JobStatus     @default(active)
 
   genderRequired       String   @map("gender_required")
   ageMin               Int?     @map("age_min")
@@ -403,13 +404,13 @@ model Job {
 
   shootDate           DateTime  @map("shoot_date")
   shootEndDate        DateTime? @map("shoot_end_date")
-  shootDurationHours  Decimal   @db.Decimal(3, 1) @map("shoot_duration_hours")
+  shootDurationHours  Decimal   @map("shoot_duration_hours") @db.Decimal(3, 1)
   callTime            DateTime? @map("call_time")
   shootLocationDetail String?   @map("shoot_location_detail")
 
   paymentType JobPaymentType @map("payment_type")
   rateSetBy   RateSetBy      @map("rate_set_by")
-  rateAmount  Decimal?       @db.Decimal(10, 2) @map("rate_amount")
+  rateAmount  Decimal?       @map("rate_amount") @db.Decimal(10, 2)
 
   requiresNda Boolean @default(false) @map("requires_nda")
   exclusivity Boolean @default(false)
@@ -455,8 +456,8 @@ model Bid {
   artistId String        @map("artist_id")
   artist   ArtistProfile @relation(fields: [artistId], references: [id])
 
-  proposedRate   Decimal  @db.Decimal(10, 2) @map("proposed_rate")
-  estimatedHours Decimal? @db.Decimal(4, 1) @map("estimated_hours")
+  proposedRate   Decimal  @map("proposed_rate") @db.Decimal(10, 2)
+  estimatedHours Decimal? @map("estimated_hours") @db.Decimal(4, 1)
 
   coverNote                 String    @map("cover_note")
   highlightedPortfolioItems String[]  @map("highlighted_portfolio_items")
@@ -465,8 +466,8 @@ model Bid {
   submittedAt               DateTime  @default(now()) @map("submitted_at")
   updatedAt                 DateTime  @updatedAt @map("updated_at")
 
-  booking        Booking?
-  counterOffers  CounterOffer[]
+  booking       Booking?
+  counterOffers CounterOffer[]
 
   @@unique([jobId, artistId])
   @@index([artistId, status])
@@ -478,8 +479,8 @@ model CounterOffer {
   id             String             @id @default(uuid())
   bidId          String             @map("bid_id")
   bid            Bid                @relation(fields: [bidId], references: [id])
-  proposedRate   Decimal            @db.Decimal(10, 2) @map("proposed_rate")
-  estimatedHours Decimal?           @db.Decimal(4, 1) @map("estimated_hours")
+  proposedRate   Decimal            @map("proposed_rate") @db.Decimal(10, 2)
+  estimatedHours Decimal?           @map("estimated_hours") @db.Decimal(4, 1)
   message        String?
   status         CounterOfferStatus @default(pending)
   createdAt      DateTime           @default(now()) @map("created_at")
@@ -501,9 +502,9 @@ model Booking {
   artist   ArtistProfile @relation(fields: [artistId], references: [id])
 
   paymentType JobPaymentType @map("payment_type")
-  agreedRate  Decimal        @db.Decimal(10, 2) @map("agreed_rate")
-  agreedHours Decimal?       @db.Decimal(4, 1) @map("agreed_hours")
-  totalAmount Decimal        @db.Decimal(10, 2) @map("total_amount")
+  agreedRate  Decimal        @map("agreed_rate") @db.Decimal(10, 2)
+  agreedHours Decimal?       @map("agreed_hours") @db.Decimal(4, 1)
+  totalAmount Decimal        @map("total_amount") @db.Decimal(10, 2)
 
   shootDate             DateTime      @map("shoot_date")
   shootLocation         String        @map("shoot_location")
@@ -540,9 +541,9 @@ model Contract {
   shootLocation     String   @map("shoot_location")
 
   paymentType  JobPaymentType @map("payment_type")
-  agreedRate   Decimal        @db.Decimal(10, 2) @map("agreed_rate")
-  agreedHours  Decimal?       @db.Decimal(4, 1) @map("agreed_hours")
-  totalAmount  Decimal        @db.Decimal(10, 2) @map("total_amount")
+  agreedRate   Decimal        @map("agreed_rate") @db.Decimal(10, 2)
+  agreedHours  Decimal?       @map("agreed_hours") @db.Decimal(4, 1)
+  totalAmount  Decimal        @map("total_amount") @db.Decimal(10, 2)
   paymentTerms String         @map("payment_terms")
 
   usageRights String
@@ -572,13 +573,13 @@ model Payment {
   stripeChargeId        String? @map("stripe_charge_id")
   stripeTransferId      String? @map("stripe_transfer_id")
 
-  grossAmount              Decimal @db.Decimal(10, 2) @map("gross_amount")
-  platformCommissionRate   Decimal @db.Decimal(4, 2) @map("platform_commission_rate")
-  platformCommissionAmount Decimal @db.Decimal(10, 2) @map("platform_commission_amount")
-  netArtistAmount          Decimal @db.Decimal(10, 2) @map("net_artist_amount")
+  grossAmount              Decimal @map("gross_amount") @db.Decimal(10, 2)
+  platformCommissionRate   Decimal @map("platform_commission_rate") @db.Decimal(4, 2)
+  platformCommissionAmount Decimal @map("platform_commission_amount") @db.Decimal(10, 2)
+  netArtistAmount          Decimal @map("net_artist_amount") @db.Decimal(10, 2)
 
   escrowStatus          EscrowStatus @default(awaiting_payment) @map("escrow_status")
-  cancellationFeeAmount Decimal?     @db.Decimal(10, 2) @map("cancellation_fee_amount")
+  cancellationFeeAmount Decimal?     @map("cancellation_fee_amount") @db.Decimal(10, 2)
 
   paidAt        DateTime? @map("paid_at")
   releasedAt    DateTime? @map("released_at")
@@ -621,10 +622,10 @@ model Message {
 }
 
 model Review {
-  id           String  @id @default(uuid())
-  bookingId    String  @map("booking_id")
-  booking      Booking @relation(fields: [bookingId], references: [id])
-  reviewerId   String  @map("reviewer_id")
+  id               String  @id @default(uuid())
+  bookingId        String  @map("booking_id")
+  booking          Booking @relation(fields: [bookingId], references: [id])
+  reviewerId       String  @map("reviewer_id")
   // Exactly one of `artistRevieweeId` / `casterRevieweeId` is non-null —
   // depending on whether the reviewer is the caster (writing about the
   // artist) or the artist (writing about the caster). Enforced at the
@@ -632,12 +633,12 @@ model Review {
   // applied via raw SQL (`prisma db push` does not emit CHECK clauses).
   artistRevieweeId String? @map("artist_reviewee_id")
   casterRevieweeId String? @map("caster_reviewee_id")
-  reviewerRole String  @map("reviewer_role")
-  rating       Int
-  comment      String?
-  isFlagged    Boolean @default(false) @map("is_flagged")
-  flagReason   String? @map("flag_reason")
-  isRemoved    Boolean @default(false) @map("is_removed")
+  reviewerRole     String  @map("reviewer_role")
+  rating           Int
+  comment          String?
+  isFlagged        Boolean @default(false) @map("is_flagged")
+  flagReason       String? @map("flag_reason")
+  isRemoved        Boolean @default(false) @map("is_removed")
 
   artistReviewee ArtistProfile? @relation("RevieweeArtist", fields: [artistRevieweeId], references: [id])
   casterReviewee CasterProfile? @relation("RevieweeCaster", fields: [casterRevieweeId], references: [id])

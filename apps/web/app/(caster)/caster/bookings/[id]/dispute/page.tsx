@@ -1,10 +1,10 @@
-import { DisputeForm } from '@/app/(artist)/artist/bookings/[id]/dispute/form'
+import { DisputeClient } from './dispute-client'
 
-export default async function CasterBookingDisputePage({
+export default async function CasterDisputePage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <DisputeForm bookingId={id} />
+  return <DisputeClient bookingId={id} />
 }

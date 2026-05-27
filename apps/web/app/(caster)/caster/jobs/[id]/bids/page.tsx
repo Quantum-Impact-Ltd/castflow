@@ -1,6 +1,10 @@
-import { CasterBidsClient } from './client'
+import { BidsListClient } from './bids-list-client'
 
-export default async function CasterJobBidsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CasterJobBidsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   const { id } = await params
-  return <CasterBidsClient jobId={id} />
+  return <BidsListClient jobId={id} />
 }

@@ -67,3 +67,44 @@ casterRoutes.patch('/me', authenticate, requireRole('caster'), async (c) => {
   })
   return c.json({ success: true, data: updated })
 })
+
+// Delete the caster's account (PRD §7.10). Blocked while there are active
+// bookings or escrow funds still held. Hard-deletes the user (cascades to the
+// profile/sessions/accounts). NOTE for the DB-verified pass: casters with
+// historical bookings may hit the Booking→CasterProfile FK — those need a
+// soft-delete/anonymise path.
+casterRoutes.delete('/me', authenticate, requireRole('caster'), async (c) => {
+  const user = c.get('user')
+  const profile = await prisma.casterProfile.findUnique({
+    where: { userId: user.id },
+    select: { id: true },
+  })
+  if (!profile) throw new AppError('NOT_FOUND', 'Caster profile not found', 404)
+
+  const activeBookings = await prisma.booking.count({
+    where: { casterId: profile.id, status: { in: ['pending_payment', 'confirmed', 'disputed'] } },
+  })
+  if (activeBookings > 0) {
+    throw new AppError(
+      'CONFLICT',
+      'You have active bookings. Resolve them before deleting your account.',
+      409
+    )
+  }
+  const heldEscrow = await prisma.payment.count({
+    where: {
+      booking: { casterId: profile.id },
+      escrowStatus: { in: ['held', 'awaiting_payment'] },
+    },
+  })
+  if (heldEscrow > 0) {
+    throw new AppError(
+      'CONFLICT',
+      'You have escrow funds held. These must clear before deletion.',
+      409
+    )
+  }
+
+  await prisma.user.delete({ where: { id: user.id } })
+  return c.json({ success: true, data: { ok: true } })
+})

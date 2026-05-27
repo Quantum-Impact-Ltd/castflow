@@ -1,60 +1,54 @@
-import { redirect } from 'next/navigation'
+import type { ReactNode } from 'react'
 import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth-server'
 import { postLoginPath } from '@/lib/auth-redirect'
-import { DashboardShell } from '@/components/dashboard'
+import { DashboardShell, Forbidden403 } from '@/components/dashboard'
 
-export default async function CasterLayout({ children }: { children: React.ReactNode }) {
-  const hdrs = await headers()
-  const session = await auth.api.getSession({ headers: hdrs }).catch(() => null)
+/**
+ * Caster panel guard. Authoritative server-side RBAC (edge middleware only
+ * checks cookie presence):
+ *   - no session         → /login
+ *   - suspended | banned  → /suspended
+ *   - role !== caster     → 403 (rendered in place)
+ *   - onboarding gate     → /onboarding/caster (FAILS CLOSED)
+ *
+ * The onboarding gate fetches the caster profile and lets the caster through
+ * only on a confirmed `onboardingCompletedAt`. Any fetch failure / 5xx sends
+ * them to onboarding rather than past the gate (audit C3). The redirect() calls
+ * stay OUTSIDE the try/catch because Next implements redirect by throwing.
+ */
+export default async function CasterLayout({ children }: { children: ReactNode }) {
+  const headersList = await headers()
+  const session = await auth.api.getSession({ headers: headersList }).catch(() => null)
 
   if (!session?.user) redirect('/login')
 
-  if (session.user.role !== 'caster') {
-    redirect(
-      postLoginPath({
-        role: session.user.role,
-        approvalStatus: session.user.approvalStatus ?? null,
-      })
-    )
-  }
+  const { role, status, approvalStatus, email } = session.user
 
-  const status = (session.user as { status?: string }).status
   if (status === 'suspended' || status === 'banned') redirect('/suspended')
 
-  // Gate: redirect to onboarding until StepCasterWelcome marks it complete.
-  // `onboardingCompletedAt` lives on the profile row, not in the session, so
-  // we fetch it directly. We FAIL CLOSED — if we can't confirm the gate
-  // (network error or non-OK), send the caster to onboarding rather than
-  // letting an un-onboarded account into the dashboard. The earlier
-  // implementation swallowed the error and fell through, which meant a
-  // momentary 5xx permanently bypassed the gate (audit finding C3).
-  // NB: keep this OUTSIDE the try/catch — redirect() throws a Next.js
-  // navigation signal that must propagate.
-  let onboardingComplete = false
-  let gateConfirmed = false
+  if (role !== 'caster') {
+    return <Forbidden403 homeHref={postLoginPath({ role, approvalStatus: approvalStatus ?? null })} />
+  }
+
+  let onboarded = false
   try {
     const res = await fetch(`${process.env['NEXT_PUBLIC_API_URL']}/api/v1/casters/me`, {
-      headers: { cookie: hdrs.get('cookie') ?? '' },
+      headers: { cookie: headersList.get('cookie') ?? '' },
       cache: 'no-store',
     })
     if (res.ok) {
-      const body = (await res.json()) as { data?: { onboardingCompletedAt?: string | null } }
-      onboardingComplete = Boolean(body.data?.onboardingCompletedAt)
-      gateConfirmed = true
+      const json = (await res.json()) as { data?: { onboardingCompletedAt?: string | null } }
+      onboarded = Boolean(json?.data?.onboardingCompletedAt)
     }
-  } catch (err) {
-    console.error('[caster-layout] onboarding gate fetch failed', err)
+  } catch {
+    onboarded = false
   }
-  if (!gateConfirmed || !onboardingComplete) redirect('/onboarding/caster')
+  if (!onboarded) redirect('/onboarding/caster')
 
   return (
-    <DashboardShell
-      role="caster"
-      brand="CastFlow"
-      brandHref="/caster/dashboard"
-      user={{ email: session.user.email, role: session.user.role }}
-    >
+    <DashboardShell role="caster" user={{ email, role }} notificationsHref="/caster/notifications">
       {children}
     </DashboardShell>
   )

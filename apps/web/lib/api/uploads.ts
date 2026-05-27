@@ -6,6 +6,7 @@ export type UploadType =
   | 'id_document'
   | 'demo_reel'
   | 'caster_logo'
+  | 'job_cover'
 
 export interface PresignedUploadResponse {
   uploadUrl: string
@@ -56,7 +57,7 @@ function putWithProgress(
   url: string,
   file: File,
   onProgress?: (percent: number) => void,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
@@ -97,7 +98,7 @@ function putWithProgress(
 export async function uploadFile(
   file: File,
   type: UploadType,
-  opts: UploadOptions = {},
+  opts: UploadOptions = {}
 ): Promise<{ publicUrl: string; key: string }> {
   const { uploadUrl, publicUrl, key } = await getPresignedUrl({
     type,

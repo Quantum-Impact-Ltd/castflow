@@ -6,6 +6,8 @@ export const createJobSchema = z
     description: z.string().min(50, 'Description must be at least 50 characters').max(5000).trim(),
     category: z.enum(['model', 'actor', 'voiceover', 'extra']),
     subcategory: z.string().max(50).optional(),
+    // Public R2 URL of the cover image, set via the upload flow before submit.
+    coverImageUrl: z.string().url().max(2048).optional(),
     visibility: z.enum(['public', 'invite_only']).default('public'),
 
     genderRequired: z.enum(['male', 'female', 'non_binary', 'any']),
@@ -60,6 +62,7 @@ export const updateJobSchema = z.object({
   title: z.string().min(5).max(100).trim().optional(),
   description: z.string().min(50).max(5000).trim().optional(),
   subcategory: z.string().max(50).optional(),
+  coverImageUrl: z.string().url().max(2048).optional(),
   genderRequired: z.enum(['male', 'female', 'non_binary', 'any']).optional(),
   ageMin: z.number().int().min(18).max(80).optional(),
   ageMax: z.number().int().min(18).max(80).optional(),

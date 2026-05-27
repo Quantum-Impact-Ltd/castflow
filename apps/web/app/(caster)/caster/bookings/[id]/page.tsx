@@ -1,4 +1,4 @@
-import { CasterBookingDetailClient } from './client'
+import { CasterBookingDetailClient } from './caster-booking-detail-client'
 
 export default async function CasterBookingDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function CasterBookingDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <CasterBookingDetailClient id={id} />
+  return <CasterBookingDetailClient bookingId={id} />
 }

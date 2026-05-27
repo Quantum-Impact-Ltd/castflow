@@ -1,109 +1,130 @@
-import { Badge } from '@/components/ui/badge'
+// Maps every domain status string CastFlow can emit to a label, a colour
+// variant, and a tooltip explaining what the status means. One component for
+// BidStatus, BookingStatus, EscrowStatus, ContractStatus, DisputeStatus,
+// JobStatus, ApprovalStatus and InviteStatus.
+
 import { cn } from '@/lib/utils'
 
 type Variant = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
 
-const styles: Record<Variant, string> = {
-  neutral: 'bg-muted text-foreground/80 border-transparent',
-  info: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900',
-  success:
-    'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-900',
-  warning:
-    'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900',
-  danger:
-    'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900',
+const VARIANT_CLASS: Record<Variant, string> = {
+  neutral: 'bg-muted text-muted-foreground border-border',
+  info: 'bg-[var(--brand-50)] text-[var(--brand-700)] border-[var(--brand-200)]',
+  success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  warning: 'bg-amber-50 text-amber-700 border-amber-200',
+  danger: 'bg-destructive/10 text-destructive border-destructive/30',
 }
 
-const mapping: Record<string, Variant> = {
-  // Generic
-  pending: 'warning',
-  pending_payment: 'warning',
-  pending_signatures: 'warning',
-  active: 'success',
-  confirmed: 'success',
-  completed: 'success',
-  released: 'success',
-  approved: 'success',
-  accepted: 'success',
-  fully_signed: 'success',
-  partially_signed: 'info',
-  shortlisted: 'info',
-  open: 'info',
-  under_review: 'info',
-  draft: 'neutral',
-  filled: 'neutral',
-  expired: 'neutral',
-  closed: 'neutral',
-  withdrawn: 'neutral',
-  refunded: 'neutral',
-  partially_refunded: 'warning',
-  rejected: 'danger',
-  cancelled: 'danger',
-  suspended: 'danger',
-  banned: 'danger',
-  disputed: 'danger',
-  voided: 'danger',
-  escalated: 'danger',
-  declined: 'danger',
-  held: 'info',
-  awaiting_payment: 'warning',
-  resolved: 'success',
+interface Entry {
+  label: string
+  variant: Variant
+  title: string
 }
 
-// Native `title` tooltips — accessible without a tooltip provider. The map
-// covers every status referenced across artist/caster/admin lists so users
-// can hover to see what each one actually means before they click in.
-const tooltip: Record<string, string> = {
-  draft: 'Not yet published. Only you can see this.',
-  open: 'Accepting bids from artists.',
-  under_review: 'Submitted and waiting on an admin reviewer.',
-  pending: 'Action required by you or the other party.',
-  pending_payment: 'Waiting for the caster to confirm payment.',
-  pending_signatures: 'Contract issued — waiting for both parties to sign.',
-  partially_signed: 'Contract signed by one party; the other has not signed yet.',
-  fully_signed: 'Both parties have signed. Shoot location is now revealed.',
-  shortlisted: 'You have been shortlisted on this job — messaging is unlocked.',
-  awaiting_payment: 'Escrow is pending — funds have not yet been captured.',
-  active: 'Live on the platform.',
-  confirmed: 'Booking is confirmed by both sides.',
-  accepted: 'Bid accepted — the booking is being created.',
-  approved: 'Approved by an admin.',
-  completed: 'Shoot is done.',
-  released: 'Escrow released. The artist has been paid.',
-  resolved: 'Dispute has been resolved.',
-  refunded: 'Payment was refunded to the caster.',
-  partially_refunded: 'Part of the payment was refunded.',
-  filled: 'Headcount is full — no more bids accepted.',
-  expired: 'Closed automatically because the deadline passed.',
-  closed: 'No longer accepting bids.',
-  withdrawn: 'Withdrawn by the artist.',
-  rejected: 'Declined — see the message for next steps.',
-  cancelled: 'Cancelled. A cancellation fee may apply if under 48 hours of the shoot.',
-  declined: 'The bid was declined.',
-  suspended: 'Account on hold pending Trust & Safety review.',
-  banned: 'Account banned. Contact support if you believe this is an error.',
-  disputed: 'A dispute has been raised within the 72-hour window.',
-  escalated: 'Escalated to an admin for review.',
-  voided: 'Voided. No further action will be taken.',
-  held: 'Funds are held in escrow until the shoot completes.',
+// Keyed by status string. Some strings are shared across enums but always
+// carry the same meaning here.
+const STATUS: Record<string, Entry> = {
+  // Approval
+  pending: { label: 'Pending', variant: 'warning', title: 'Awaiting a decision.' },
+  approved: { label: 'Approved', variant: 'success', title: 'Approved and live.' },
+  rejected: { label: 'Rejected', variant: 'danger', title: 'Not approved.' },
+  // Bid
+  shortlisted: {
+    label: 'Shortlisted',
+    variant: 'info',
+    title: 'The caster shortlisted this bid — messaging is unlocked.',
+  },
+  accepted: { label: 'Accepted', variant: 'success', title: 'Accepted — a booking was created.' },
+  withdrawn: { label: 'Withdrawn', variant: 'neutral', title: 'You withdrew this bid.' },
+  expired: { label: 'Expired', variant: 'neutral', title: 'No longer active.' },
+  // Job
+  draft: { label: 'Draft', variant: 'neutral', title: 'Not yet published.' },
+  active: { label: 'Active', variant: 'success', title: 'Live and accepting bids.' },
+  filled: { label: 'Filled', variant: 'info', title: 'All spots are booked.' },
+  cancelled: { label: 'Cancelled', variant: 'danger', title: 'Cancelled.' },
+  closed: { label: 'Closed', variant: 'neutral', title: 'Closed to new bids.' },
+  // Booking
+  pending_payment: {
+    label: 'Awaiting payment',
+    variant: 'warning',
+    title: 'The caster needs to pay into escrow to confirm.',
+  },
+  confirmed: { label: 'Confirmed', variant: 'success', title: 'Booked and paid into escrow.' },
+  completed: { label: 'Completed', variant: 'success', title: 'Shoot completed and paid out.' },
+  disputed: {
+    label: 'Disputed',
+    variant: 'danger',
+    title: 'A dispute is open — escrow is frozen.',
+  },
+  // Escrow
+  awaiting_payment: {
+    label: 'Awaiting payment',
+    variant: 'warning',
+    title: 'Funds have not been captured yet.',
+  },
+  held: { label: 'In escrow', variant: 'info', title: 'Funds are held securely in escrow.' },
+  released: { label: 'Released', variant: 'success', title: 'Funds released to the artist.' },
+  refunded: { label: 'Refunded', variant: 'neutral', title: 'Funds refunded to the caster.' },
+  partially_refunded: {
+    label: 'Partially refunded',
+    variant: 'warning',
+    title: 'A cancellation fee was split between both parties.',
+  },
+  // Contract
+  pending_signatures: {
+    label: 'Awaiting signatures',
+    variant: 'warning',
+    title: 'Neither party has signed yet.',
+  },
+  partially_signed: {
+    label: 'Partially signed',
+    variant: 'warning',
+    title: 'One party has signed. Both must sign within 72 hours.',
+  },
+  fully_signed: {
+    label: 'Fully signed',
+    variant: 'success',
+    title: 'Both parties signed — the shoot location is now revealed.',
+  },
+  voided: { label: 'Voided', variant: 'neutral', title: 'The contract was voided.' },
+  // Dispute
+  open: { label: 'Open', variant: 'danger', title: 'A new dispute awaiting review.' },
+  under_review: { label: 'Under review', variant: 'warning', title: 'An admin is reviewing.' },
+  resolved: { label: 'Resolved', variant: 'success', title: 'Resolved by an admin.' },
+  escalated: { label: 'Escalated', variant: 'danger', title: 'Escalated for legal review.' },
+  // Invite
+  declined: { label: 'Declined', variant: 'neutral', title: 'You declined this invite.' },
 }
 
 interface StatusBadgeProps {
   status: string
   className?: string
+  /** Override the label (e.g. to localise) without losing the variant/tooltip. */
+  label?: string
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const variant: Variant = mapping[status] ?? 'neutral'
-  const label = status.replace(/_/g, ' ')
-  const description = tooltip[status]
+export function StatusBadge({ status, className, label }: StatusBadgeProps) {
+  const entry = STATUS[status]
+  const variant: Variant = entry?.variant ?? 'neutral'
+  const text = label ?? entry?.label ?? humanise(status)
+
   return (
-    <Badge
-      variant="outline"
-      className={cn(styles[variant], 'capitalize', className)}
-      title={description}
+    <span
+      title={entry?.title ?? text}
+      className={cn(
+        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        VARIANT_CLASS[variant],
+        className
+      )}
     >
-      {label}
-    </Badge>
+      {text}
+    </span>
   )
+}
+
+function humanise(value: string): string {
+  return value
+    .split('_')
+    .map((w) => (w.length ? `${w[0]!.toUpperCase()}${w.slice(1)}` : w))
+    .join(' ')
 }

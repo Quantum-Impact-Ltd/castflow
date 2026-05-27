@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { AdminPaymentDetailClient } from './admin-payment-detail-client'
 
 export default async function AdminPaymentDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function AdminPaymentDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  redirect(`/admin/bookings/${id}`)
+  return <AdminPaymentDetailClient paymentId={id} />
 }

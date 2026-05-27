@@ -1,5 +1,5 @@
-import { MessagesInbox } from '@/components/messaging/inbox'
+import { MessageInbox } from '@/components/dashboard/message-inbox'
 
 export default function CasterMessagesPage() {
-  return <MessagesInbox basePath="/caster/messages" />
+  return <MessageInbox basePath="/caster/messages" />
 }

@@ -1,7 +1,33 @@
-import type { Bid } from '@castflow/types'
+import type { Bid, JobPaymentType, JobStatus, ArtistType, PortfolioItem } from '@castflow/types'
 import type { SubmitBidInput, UpdateBidInput, CounterOfferInput } from '@castflow/validators'
 import { fetcher } from '@/lib/fetcher'
 import type { Init } from './types'
+
+/** A bid as the owning caster sees it — carries the artist preview the API
+ *  includes (first name only, no surname, plus rating + sample portfolio). */
+export interface BidForCaster extends Omit<Bid, 'artist'> {
+  artist?: {
+    id: string
+    firstName: string
+    artistType: ArtistType
+    city: string | null
+    ratingAvg: number | null
+    ratingCount: number
+    portfolioItems?: PortfolioItem[]
+  }
+}
+
+/** A bid as returned by the artist's own list — carries a slim job relation. */
+export interface BidWithJob extends Bid {
+  job?: {
+    id: string
+    title: string
+    paymentType: JobPaymentType
+    shootDate: string
+    applicationDeadline: string
+    status: JobStatus
+  }
+}
 
 export function submitBid(jobId: string, input: SubmitBidInput) {
   return fetcher<Bid>(`/bids/jobs/${jobId}`, { method: 'POST', body: input })
@@ -19,11 +45,11 @@ export function listMyBids(
   filters: { status?: string; cursor?: string; limit?: number } = {},
   init?: Init
 ) {
-  return fetcher<Bid[]>('/bids/me/list', { params: filters, ...init })
+  return fetcher<BidWithJob[]>('/bids/me/list', { params: filters, ...init })
 }
 
 export function listBidsForJob(jobId: string, init?: Init) {
-  return fetcher<Bid[]>(`/bids/jobs/${jobId}/list`, init)
+  return fetcher<BidForCaster[]>(`/bids/jobs/${jobId}/list`, init)
 }
 
 export function shortlistBid(bidId: string) {

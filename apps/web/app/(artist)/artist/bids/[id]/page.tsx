@@ -1,4 +1,4 @@
-import { BidDetailClient } from './client'
+import { ArtistBidDetailClient } from './bid-detail-client'
 
 export default async function ArtistBidDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function ArtistBidDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <BidDetailClient id={id} />
+  return <ArtistBidDetailClient bidId={id} />
 }

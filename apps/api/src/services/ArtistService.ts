@@ -5,6 +5,7 @@ import type {
   ArtistExperienceInput,
   UpdateArtistTypeInput,
   ReplaceSkillsInput,
+  UpdateAvailabilityInput,
 } from '@castflow/validators'
 import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
@@ -29,6 +30,95 @@ export class ArtistService {
 
   static async getMyProfile(userId: string) {
     return getProfileByUser(userId)
+  }
+
+  /**
+   * Public, unauthenticated artist profile (PRD §8.4 — the shareable
+   * `castflow.co.uk/artists/:id` page). Approved artists only. Sensitive fields
+   * (lastName, dob, idDocumentUrl, userId, approvalNotes, strikeCount,
+   * approvedById) are excluded by the select — anything not listed never leaves
+   * the DB. Same projection as the caster talent detail, minus the auth gate.
+   */
+  static async getPublicProfile(id: string) {
+    const profile = await prisma.artistProfile.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        artistType: true,
+        firstName: true,
+        gender: true,
+        pronouns: true,
+        city: true,
+        bio: true,
+        experienceLevel: true,
+        instagramHandle: true,
+        availabilityStatus: true,
+        approvalStatus: true,
+        idVerified: true,
+        ratingAvg: true,
+        ratingCount: true,
+        jobsCompleted: true,
+        responseRate: true,
+        createdAt: true,
+        modelStats: true,
+        actorStats: true,
+        skills: true,
+        portfolioItems: { where: { isApproved: true }, orderBy: { displayOrder: 'asc' } },
+      },
+    })
+    if (!profile || profile.approvalStatus !== 'approved') {
+      throw new AppError('NOT_FOUND', 'Artist not found', 404)
+    }
+    return profile
+  }
+
+  /** Toggle the artist's discoverability in talent search (PRD §8.13). */
+  static async updateAvailability(userId: string, input: UpdateAvailabilityInput) {
+    const profile = await getProfileByUser(userId)
+    await prisma.artistProfile.update({
+      where: { id: profile.id },
+      data: { availabilityStatus: input.availabilityStatus },
+    })
+    return getProfileByUser(userId)
+  }
+
+  /**
+   * Delete the artist's account (PRD §8.13). Blocked while there are active
+   * bookings or escrow that hasn't cleared. Hard-deletes the user, which
+   * cascades to the profile/sessions/accounts via the onDelete relation.
+   *
+   * NOTE for the DB-verified pass: accounts that have *historical*
+   * (completed/cancelled) bookings will hit the Booking→ArtistProfile FK on a
+   * hard delete — those should be soft-deleted/anonymised instead. Accounts
+   * with no booking history delete cleanly.
+   */
+  static async deleteAccount(userId: string) {
+    const profile = await getProfileByUser(userId)
+    const activeBookings = await prisma.booking.count({
+      where: { artistId: profile.id, status: { in: ['pending_payment', 'confirmed', 'disputed'] } },
+    })
+    if (activeBookings > 0) {
+      throw new AppError(
+        'CONFLICT',
+        'You have active bookings. Resolve them before deleting your account.',
+        409
+      )
+    }
+    const pendingEscrow = await prisma.payment.count({
+      where: {
+        booking: { artistId: profile.id },
+        escrowStatus: { in: ['held', 'awaiting_payment'] },
+      },
+    })
+    if (pendingEscrow > 0) {
+      throw new AppError(
+        'CONFLICT',
+        'You have pending payouts that must clear before deletion.',
+        409
+      )
+    }
+    await prisma.user.delete({ where: { id: userId } })
+    return { ok: true as const }
   }
 
   static async updatePersonalInfo(userId: string, input: ArtistPersonalInfoInput) {
@@ -113,11 +203,7 @@ export class ArtistService {
   static async updateArtistType(userId: string, input: UpdateArtistTypeInput) {
     const profile = await getProfileByUser(userId)
     if (profile.submittedAt || profile.approvalStatus === 'approved') {
-      throw new AppError(
-        'INVALID_STATE',
-        'Cannot change craft after submitting for review',
-        400
-      )
+      throw new AppError('INVALID_STATE', 'Cannot change craft after submitting for review', 400)
     }
     if (profile.artistType === input.artistType) return profile
 

@@ -1,48 +1,28 @@
 /**
- * Mock data for the public shoots feed.
+ * Mock data for the public shoots feed + detail page.
  *
- * Shape matches the public-feed response of `GET /jobs` — visible-only fields
- * (no `shootLocationDetail`, no internal status). Replace with `useJobs(filters)`
- * once the backend public feed endpoint is live.
+ * These are shaped as real `Job` objects (same type the API returns from
+ * `GET /jobs` and `GET /jobs/:id`) so the public pages can use them as a
+ * drop-in fallback: the pages call the live endpoints first and only fall back
+ * to this data when the backend returns nothing. The richer detail-page fields
+ * the API has no column for (caster stats, wardrobe, perks, cancellation
+ * policy, similar shoots) live in `ShootDetailExtras` and are mock-only — real
+ * jobs render the same layout but hide the sections they have no data for.
  */
 
-import type { Job, CasterProfile } from '@castflow/types'
+import type { Job } from '@castflow/types'
 
-type PublicJob = Pick<
+/** A raw mock entry — a `Job` minus the constant fields we inject below, plus a
+ *  card image. `imageUrl` becomes the job's `coverImageUrl`. */
+type RawShoot = Omit<
   Job,
-  | 'id'
-  | 'casterId'
-  | 'title'
-  | 'description'
-  | 'category'
-  | 'subcategory'
-  | 'visibility'
-  | 'status'
-  | 'genderRequired'
-  | 'ageMin'
-  | 'ageMax'
-  | 'locationCity'
-  | 'skillsRequired'
-  | 'shootDate'
-  | 'shootEndDate'
-  | 'shootDurationHours'
-  | 'paymentType'
-  | 'rateSetBy'
-  | 'rateAmount'
-  | 'requiresNda'
-  | 'exclusivity'
-  | 'usageRights'
-  | 'headcountRequired'
-  | 'headcountFilled'
-  | 'applicationDeadline'
-  | 'createdAt'
-> & {
-  caster: Pick<CasterProfile, 'id' | 'companyName'>
-  /** Mock-only: hero image for card. Backend would derive from `coverImageUrl` on Job. */
-  imageUrl: string
-}
-
-export type { PublicJob }
+  | 'coverImageUrl'
+  | 'physicalRequirements'
+  | 'callTime'
+  | 'shootLocationDetail'
+  | 'autoExpiresAt'
+  | 'updatedAt'
+> & { imageUrl: string }
 
 export interface CasterMeta {
   verified: boolean
@@ -62,6 +42,9 @@ export interface ShootDetailExtras {
   similarShootIds: string[]
   casterMeta: CasterMeta
 }
+
+/** A mock shoot enriched with the detail-page-only extras. */
+export type MockShootDetail = Job & ShootDetailExtras
 
 const SHOOT_DETAIL_EXTRAS: Record<string, ShootDetailExtras> = {
   'shoot-001': {
@@ -188,11 +171,7 @@ const SHOOT_DETAIL_EXTRAS: Record<string, ShootDetailExtras> = {
     shootLocationDetail: 'Various — North London, exact addresses on call sheet',
     callTime: 'Daily call sheets confirmed 48h ahead',
     wardrobe: 'Costume provided · sizing call required',
-    perks: [
-      'Festival submission credit',
-      'Showreel footage delivered',
-      'Per diem covered',
-    ],
+    perks: ['Festival submission credit', 'Showreel footage delivered', 'Per diem covered'],
     cancellationPolicy: '72hr standard',
     similarShootIds: ['shoot-003'],
     casterMeta: {
@@ -205,21 +184,7 @@ const SHOOT_DETAIL_EXTRAS: Record<string, ShootDetailExtras> = {
   },
 }
 
-export function getMockShoot(id: string): (PublicJob & ShootDetailExtras) | null {
-  const job = MOCK_SHOOTS.find((s) => s.id === id)
-  if (!job) return null
-  const extras = SHOOT_DETAIL_EXTRAS[id]
-  if (!extras) return null
-  return { ...job, ...extras }
-}
-
-export function getSimilarShoots(ids: readonly string[]): PublicJob[] {
-  return ids
-    .map((id) => MOCK_SHOOTS.find((s) => s.id === id))
-    .filter((s): s is PublicJob => Boolean(s))
-}
-
-export const MOCK_SHOOTS: PublicJob[] = [
+const RAW_SHOOTS: RawShoot[] = [
   {
     id: 'shoot-001',
     casterId: 'c-1',
@@ -500,3 +465,29 @@ export const MOCK_SHOOTS: PublicJob[] = [
     caster: { id: 'c-9', companyName: 'Linen & Light' },
   },
 ]
+
+/** Mock shoots shaped exactly like the API's `GET /jobs` response. */
+export const MOCK_SHOOTS: Job[] = RAW_SHOOTS.map(({ imageUrl, ...rest }) => ({
+  ...rest,
+  coverImageUrl: imageUrl,
+  physicalRequirements: null,
+  callTime: null,
+  // Public feed strips this server-side; mirror that here. The signed address
+  // lives in `ShootDetailExtras.shootLocationDetail` for the detail page.
+  shootLocationDetail: null,
+  autoExpiresAt: rest.shootDate,
+  updatedAt: rest.createdAt,
+}))
+
+/** A mock shoot + its detail-page extras, or `null` if the id isn't a mock. */
+export function getMockShoot(id: string): MockShootDetail | null {
+  const job = MOCK_SHOOTS.find((s) => s.id === id)
+  if (!job) return null
+  const extras = SHOOT_DETAIL_EXTRAS[id]
+  if (!extras) return null
+  return { ...job, ...extras }
+}
+
+export function getSimilarShoots(ids: readonly string[]): Job[] {
+  return ids.map((id) => MOCK_SHOOTS.find((s) => s.id === id)).filter((s): s is Job => Boolean(s))
+}

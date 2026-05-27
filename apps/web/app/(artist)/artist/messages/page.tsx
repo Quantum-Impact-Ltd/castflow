@@ -1,5 +1,5 @@
-import { MessagesInbox } from '@/components/messaging/inbox'
+import { MessageInbox } from '@/components/dashboard/message-inbox'
 
 export default function ArtistMessagesPage() {
-  return <MessagesInbox basePath="/artist/messages" />
+  return <MessageInbox basePath="/artist/messages" />
 }

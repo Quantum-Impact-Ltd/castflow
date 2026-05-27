@@ -1,10 +1,10 @@
-import { ApplicationReviewClient } from './client'
+import { ApplicationReviewClient } from './application-review-client'
 
-export default async function AdminApplicationDetailPage({
+export default async function AdminApplicationReviewPage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <ApplicationReviewClient id={id} />
+  return <ApplicationReviewClient profileId={id} />
 }

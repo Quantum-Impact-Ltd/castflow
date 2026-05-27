@@ -1,49 +1,54 @@
 'use client'
 
+import { NAVS, type DashboardRole } from './nav-config'
 import { SidebarNav } from './sidebar-nav'
 import { Topbar } from './topbar'
-import { adminNav, artistNav, casterNav, type NavItem } from './nav-config'
-
-type Role = 'artist' | 'caster' | 'admin'
 
 interface DashboardShellProps {
-  role: Role
-  brand: string
-  brandHref: string
+  role: DashboardRole
   user: { email: string; role: string }
-  notificationsHref?: string
   children: React.ReactNode
+  brand?: string
+  brandHref?: string
+  notificationsHref?: string
 }
 
-const NAVS: Record<Role, NavItem[]> = {
-  artist: artistNav,
-  caster: casterNav,
-  admin: adminNav,
+const DEFAULT_BRAND: Record<DashboardRole, { brand: string; href: string }> = {
+  artist: { brand: 'CastFlow', href: '/artist/dashboard' },
+  caster: { brand: 'CastFlow', href: '/caster/dashboard' },
+  admin: { brand: 'CastFlow Admin', href: '/admin' },
 }
 
 export function DashboardShell({
   role,
+  user,
+  children,
   brand,
   brandHref,
-  user,
   notificationsHref,
-  children,
 }: DashboardShellProps) {
-  const items = NAVS[role]
+  const navItems = NAVS[role]
+  const resolvedBrand = brand ?? DEFAULT_BRAND[role].brand
+  const resolvedHref = brandHref ?? DEFAULT_BRAND[role].href
+
   return (
-    <div className="bg-background min-h-screen">
-      <aside className="border-border bg-card fixed inset-y-0 left-0 z-30 hidden w-64 border-r lg:flex lg:flex-col">
-        <SidebarNav items={items} brand={brand} brandHref={brandHref} />
+    <div className="flex min-h-screen bg-background">
+      <aside className="hidden w-64 shrink-0 border-r border-sidebar-border lg:block">
+        <div className="sticky top-0 h-screen overflow-y-auto">
+          <SidebarNav items={navItems} brand={resolvedBrand} brandHref={resolvedHref} />
+        </div>
       </aside>
-      <div className="flex min-h-screen flex-col lg:ml-64">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
-          items={items}
-          brand={brand}
-          brandHref={brandHref}
+          navItems={navItems}
+          brand={resolvedBrand}
+          brandHref={resolvedHref}
           user={user}
-          notificationsHref={notificationsHref}
+          {...(notificationsHref ? { notificationsHref } : {})}
         />
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 lg:p-8">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   )

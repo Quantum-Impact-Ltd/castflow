@@ -36,6 +36,23 @@ export function useInviteArtist(jobId: string) {
   })
 }
 
+/** Invite an artist to a job chosen at call time (talent search / shortlist). */
+export function useInviteToJob() {
+  return useMutation({
+    mutationFn: ({
+      jobId,
+      artistId,
+      message,
+    }: {
+      jobId: string
+      artistId: string
+      message?: string
+    }) => inviteArtist(jobId, artistId, message),
+    onSuccess: () => toast.success('Invite sent'),
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
 export function useAcceptInvite() {
   const qc = useQueryClient()
   return useMutation({

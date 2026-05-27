@@ -1,4 +1,4 @@
-import { BookingDetailClient } from './client'
+import { BookingDetailClient } from './booking-detail-client'
 
 export default async function ArtistBookingDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function ArtistBookingDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <BookingDetailClient id={id} />
+  return <BookingDetailClient bookingId={id} />
 }

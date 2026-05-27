@@ -2,7 +2,12 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { uploadFile, deletePortfolioItem, setPrimaryPortfolioItem, type UploadType } from '@/lib/api/uploads'
+import {
+  uploadFile,
+  deletePortfolioItem,
+  setPrimaryPortfolioItem,
+  type UploadType,
+} from '@/lib/api/uploads'
 import { queryKeys } from '@/lib/query-keys'
 
 const myProfileKey = queryKeys.artist.me()
@@ -31,6 +36,20 @@ export function useUploadFile() {
         ...(onProgress ? { onProgress } : {}),
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: myProfileKey }),
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+/**
+ * Upload a job cover image. Unlike {@link useUploadFile} this does not touch
+ * the artist-profile cache (the uploader is a caster) — it just runs the
+ * presign → PUT → confirm flow and returns the public URL for the caller to
+ * drop into the job form's `coverImageUrl`.
+ */
+export function useUploadJobCover() {
+  return useMutation({
+    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (percent: number) => void }) =>
+      uploadFile(file, 'job_cover', { ...(onProgress ? { onProgress } : {}) }),
     onError: (err) => toast.error(errorMessage(err)),
   })
 }

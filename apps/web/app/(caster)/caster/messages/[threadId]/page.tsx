@@ -1,4 +1,4 @@
-import { MessageThread } from '@/components/messaging/thread'
+import { MessageThreadView } from '@/components/dashboard/message-thread'
 
 export default async function CasterMessageThreadPage({
   params,
@@ -6,5 +6,5 @@ export default async function CasterMessageThreadPage({
   params: Promise<{ threadId: string }>
 }) {
   const { threadId } = await params
-  return <MessageThread threadId={threadId} backHref="/caster/messages" />
+  return <MessageThreadView threadId={threadId} backHref="/caster/messages" />
 }

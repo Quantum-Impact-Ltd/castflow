@@ -31,3 +31,12 @@ export function sendMessage(threadId: string, content: string) {
 export function markThreadRead(threadId: string) {
   return fetcher<{ ok: true }>(`/messages/threads/${threadId}/read`, { method: 'POST' })
 }
+
+export type ReportThreadReason = 'harassment' | 'off_platform' | 'spam' | 'other'
+
+export function reportThread(threadId: string, reason: ReportThreadReason, detail?: string) {
+  return fetcher<{ ok: true }>(`/messages/threads/${threadId}/report`, {
+    method: 'POST',
+    body: { reason, ...(detail ? { detail } : {}) },
+  })
+}

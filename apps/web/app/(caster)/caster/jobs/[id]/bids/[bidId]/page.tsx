@@ -1,4 +1,4 @@
-import { CasterBidDetailClient } from './client'
+import { CasterBidDetailClient } from './bid-detail-client'
 
 export default async function CasterBidDetailPage({
   params,

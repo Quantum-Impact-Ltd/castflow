@@ -1,4 +1,4 @@
-import { MessageThread } from '@/components/messaging/thread'
+import { MessageThreadView } from '@/components/dashboard/message-thread'
 
 export default async function ArtistMessageThreadPage({
   params,
@@ -6,5 +6,5 @@ export default async function ArtistMessageThreadPage({
   params: Promise<{ threadId: string }>
 }) {
   const { threadId } = await params
-  return <MessageThread threadId={threadId} backHref="/artist/messages" />
+  return <MessageThreadView threadId={threadId} backHref="/artist/messages" />
 }

@@ -51,7 +51,13 @@ export type CompanyType = 'brand' | 'agency' | 'production_house' | 'independent
 export type InviteStatus = 'pending' | 'accepted' | 'declined'
 export type CancelledBy = 'caster' | 'artist'
 export type ReviewerRole = 'caster' | 'artist'
-export type UploadType = 'portfolio_photo' | 'portfolio_video' | 'id_document' | 'demo_reel'
+export type UploadType =
+  | 'portfolio_photo'
+  | 'portfolio_video'
+  | 'id_document'
+  | 'demo_reel'
+  | 'caster_logo'
+  | 'job_cover'
 
 export type NotificationType =
   | 'artist_approved'

@@ -9,6 +9,7 @@ import type {
   ArtistExperienceInput,
   UpdateArtistTypeInput,
   ReplaceSkillsInput,
+  UpdateAvailabilityInput,
 } from '@castflow/validators'
 import {
   getMyProfile,
@@ -19,6 +20,7 @@ import {
   updateModelStats,
   updateActorStats,
   updateExperience,
+  updateAvailability,
   submitForReview,
 } from '@/lib/api/artists'
 import { queryKeys } from '@/lib/query-keys'
@@ -111,6 +113,22 @@ export function useSubmitForReview() {
   return useMutation({
     mutationFn: () => submitForReview(),
     onSuccess: () => void qc.invalidateQueries({ queryKey: myProfileKey }),
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+export function useUpdateAvailability() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: UpdateAvailabilityInput) => updateAvailability(input),
+    onSuccess: (profile) => {
+      qc.setQueryData(myProfileKey, profile)
+      toast.success(
+        profile.availabilityStatus === 'available'
+          ? 'You’re now visible as available'
+          : 'You’re now marked unavailable'
+      )
+    },
     onError: (err) => toast.error(errorMessage(err)),
   })
 }

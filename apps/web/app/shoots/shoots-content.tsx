@@ -1,16 +1,25 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, MapPin, Users, Search, SlidersHorizontal } from 'lucide-react'
+import {
+  ArrowRight,
+  CalendarDays,
+  Camera,
+  MapPin,
+  Users,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react'
+import type { Job } from '@castflow/types'
 import { Reveal } from '@/components/landing/reveal'
+import { RemoteImage } from '@/components/dashboard/remote-image'
+import { usePublicJobs } from '@/lib/hooks/use-jobs'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MOCK_SHOOTS, type PublicJob } from '@/lib/mock/shoots'
-import { formatCurrency } from '@/lib/utils'
-import { cn } from '@/lib/utils'
+import { MOCK_SHOOTS } from '@/lib/mock/shoots'
+import { formatCurrency, cn } from '@/lib/utils'
 
 type CategoryFilter = 'all' | 'model' | 'actor' | 'voiceover' | 'extra'
 type PaymentFilter = 'all' | 'fixed' | 'hourly'
@@ -53,21 +62,26 @@ export function ShootsContent() {
   const [payment, setPayment] = useState<PaymentFilter>('all')
   const [sort, setSort] = useState<SortKey>('soonest')
 
+  // Live public feed first; fall back to mock data only when the backend
+  // returns nothing so the page still demos richly on a fresh platform.
+  const { data } = usePublicJobs({ limit: 60 })
+  const allShoots = data && data.length > 0 ? data : MOCK_SHOOTS
+
   const cities = useMemo(() => {
     const set = new Set<string>()
-    for (const s of MOCK_SHOOTS) set.add(s.locationCity)
+    for (const s of allShoots) set.add(s.locationCity)
     return Array.from(set).sort()
-  }, [])
+  }, [allShoots])
 
   const filtered = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase()
-    const matched = MOCK_SHOOTS.filter((s) => {
+    const matched = allShoots.filter((s) => {
       if (category !== 'all' && s.category !== category) return false
       if (city !== 'all' && s.locationCity !== city) return false
       if (payment !== 'all' && s.paymentType !== payment) return false
       if (!q) return true
       const hay =
-        `${s.title} ${s.description} ${s.caster.companyName} ${s.skillsRequired.join(' ')}`.toLowerCase()
+        `${s.title} ${s.description} ${s.caster?.companyName ?? ''} ${s.skillsRequired.join(' ')}`.toLowerCase()
       return hay.includes(q)
     })
     const sorted = [...matched]
@@ -79,9 +93,9 @@ export function ShootsContent() {
       sorted.sort((a, b) => (b.rateAmount ?? 0) - (a.rateAmount ?? 0))
     }
     return sorted
-  }, [debouncedQuery, category, city, payment, sort])
+  }, [allShoots, debouncedQuery, category, city, payment, sort])
 
-  const featured = MOCK_SHOOTS[0]!
+  const featured = allShoots[0]!
   const reset = () => {
     setQuery('')
     setCategory('all')
@@ -91,7 +105,7 @@ export function ShootsContent() {
 
   return (
     <>
-      <Hero count={MOCK_SHOOTS.length} featured={featured} />
+      <Hero count={allShoots.length} featured={featured} />
 
       <section className="border-y border-border/60 bg-background">
         <div className="mx-auto w-full max-w-[90rem] px-6 py-4 lg:px-8">
@@ -150,7 +164,7 @@ export function ShootsContent() {
   )
 }
 
-function Hero({ count, featured }: { count: number; featured: PublicJob }) {
+function Hero({ count, featured }: { count: number; featured: Job }) {
   const shootDate = new Date(featured.shootDate).toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'long',
@@ -175,7 +189,8 @@ function Hero({ count, featured }: { count: number; featured: PublicJob }) {
 
             <h1 className="mt-6 max-w-3xl text-balance text-5xl font-medium leading-[1.02] tracking-[-0.025em] text-foreground sm:text-6xl lg:text-7xl">
               <span className="text-foreground">{count}</span> live{' '}
-              <span className="font-serif font-normal italic">briefs</span> looking to cast right now.
+              <span className="font-serif font-normal italic">briefs</span> looking to cast right
+              now.
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-relaxed text-foreground/75">
               Posted in the last seven days by verified UK casters and brands. Filter by city, type,
@@ -196,13 +211,12 @@ function Hero({ count, featured }: { count: number; featured: PublicJob }) {
               className="group relative block overflow-hidden rounded-3xl border border-border/60 bg-background shadow-sm"
             >
               <div className="relative aspect-[4/5] overflow-hidden">
-                <Image
-                  src={featured.imageUrl}
+                <ShootCover
+                  url={featured.coverImageUrl}
                   alt={featured.title}
-                  fill
                   sizes="(min-width: 1024px) 50vw, 100vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                   priority
+                  className="transition-transform duration-700 group-hover:scale-[1.04]"
                 />
                 <div
                   className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"
@@ -223,7 +237,7 @@ function Hero({ count, featured }: { count: number; featured: PublicJob }) {
                     {featured.title}
                   </h2>
                   <p className="mt-3 text-sm font-medium text-white/85">
-                    {featured.caster.companyName}
+                    {featured.caster?.companyName ?? 'A verified caster'}
                   </p>
                 </div>
               </div>
@@ -407,7 +421,7 @@ function PillSelect({
   )
 }
 
-function ShootCard({ shoot }: { shoot: PublicJob }) {
+function ShootCard({ shoot }: { shoot: Job }) {
   const remaining = Math.max(shoot.headcountRequired - shoot.headcountFilled, 0)
   const rateLabel = formatRate(shoot)
   const shootWhen = formatShootDate(shoot.shootDate, shoot.shootEndDate)
@@ -415,12 +429,11 @@ function ShootCard({ shoot }: { shoot: PublicJob }) {
   return (
     <Link href={`/shoots/${shoot.id}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-[var(--surface-50)]">
-        <Image
-          src={shoot.imageUrl}
+        <ShootCover
+          url={shoot.coverImageUrl}
           alt={shoot.title}
-          fill
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          className="transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
         <div
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent"
@@ -456,7 +469,7 @@ function ShootCard({ shoot }: { shoot: PublicJob }) {
 
       <div className="mt-5 px-1">
         <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
-          {shoot.caster.companyName}
+          {shoot.caster?.companyName ?? 'A verified caster'}
         </p>
         <h3 className="mt-2 text-lg font-medium leading-snug tracking-[-0.01em] text-foreground transition-colors group-hover:text-foreground/85">
           {shoot.title}
@@ -503,8 +516,7 @@ function FinalCta() {
               Bid on shoots
             </p>
             <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
-              Get on the platform —{' '}
-              then bid in seconds.
+              Get on the platform — then bid in seconds.
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
               Apply once, get verified, then submit a bid on any open shoot with a rate and cover
@@ -537,7 +549,45 @@ function FinalCta() {
   )
 }
 
-function formatRate(shoot: PublicJob): string {
+/** Cover image for a shoot card/hero. Falls back to a quiet typographic
+ *  placeholder when the job has no `coverImageUrl` (real jobs posted without
+ *  one). Uses RemoteImage because covers are served from R2. */
+function ShootCover({
+  url,
+  alt,
+  sizes,
+  priority = false,
+  className,
+}: {
+  url: string | null
+  alt: string
+  sizes: string
+  priority?: boolean
+  className?: string
+}) {
+  if (url) {
+    return (
+      <RemoteImage
+        src={url}
+        alt={alt}
+        fill
+        sizes={sizes}
+        className={cn('object-cover', className)}
+        {...(priority ? { priority: true } : {})}
+      />
+    )
+  }
+  return (
+    <div
+      className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[var(--surface-50)] to-foreground/[0.05]"
+      aria-hidden
+    >
+      <Camera className="h-10 w-10 text-foreground/15" />
+    </div>
+  )
+}
+
+function formatRate(shoot: Pick<Job, 'rateSetBy' | 'paymentType' | 'rateAmount'>): string {
   if (shoot.rateSetBy === 'open' || shoot.rateAmount == null) {
     return 'Open to bids'
   }
@@ -547,7 +597,7 @@ function formatRate(shoot: PublicJob): string {
   return `${formatCurrency(shoot.rateAmount)}`
 }
 
-function formatShootDate(start: string, end: string | null): string {
+function formatShootDate(start: string, end: string | null | undefined): string {
   const d = new Date(start)
   const fmt = (date: Date) =>
     date.toLocaleDateString('en-GB', {

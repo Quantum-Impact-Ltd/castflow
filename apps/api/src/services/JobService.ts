@@ -62,6 +62,7 @@ export class JobService {
         description: input.description,
         category: input.category,
         subcategory: input.subcategory ?? null,
+        coverImageUrl: input.coverImageUrl ?? null,
         visibility: input.visibility as JobVisibility,
         status: 'active',
         genderRequired: input.genderRequired,
@@ -101,6 +102,7 @@ export class JobService {
     if (input.title !== undefined) data.title = input.title
     if (input.description !== undefined) data.description = input.description
     if (input.subcategory !== undefined) data.subcategory = input.subcategory
+    if (input.coverImageUrl !== undefined) data.coverImageUrl = input.coverImageUrl
     if (input.genderRequired !== undefined) data.genderRequired = input.genderRequired
     if (input.ageMin !== undefined) data.ageMin = input.ageMin
     if (input.ageMax !== undefined) data.ageMax = input.ageMax

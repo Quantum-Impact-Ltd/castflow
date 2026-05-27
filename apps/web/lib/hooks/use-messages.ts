@@ -3,7 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { queryKeys } from '@/lib/query-keys'
-import { listMessages, listThreads, markThreadRead, sendMessage } from '@/lib/api/messages'
+import {
+  listMessages,
+  listThreads,
+  markThreadRead,
+  sendMessage,
+  reportThread,
+  type ReportThreadReason,
+} from '@/lib/api/messages'
 import { errorMessage } from './util'
 
 export function useThreads() {
@@ -40,5 +47,14 @@ export function useMarkThreadRead(threadId: string) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.threads.inbox() })
     },
+  })
+}
+
+export function useReportThread(threadId: string) {
+  return useMutation({
+    mutationFn: ({ reason, detail }: { reason: ReportThreadReason; detail?: string }) =>
+      reportThread(threadId, reason, detail),
+    onSuccess: () => toast.success('Thread reported — our team will review it'),
+    onError: (err) => toast.error(errorMessage(err)),
   })
 }

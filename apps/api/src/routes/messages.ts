@@ -57,3 +57,28 @@ messageRoutes.post('/threads/:id/read', async (c) => {
   const result = await MessageService.markRead(user, c.req.param('id') ?? '')
   return c.json({ success: true, data: { updated: result.count } })
 })
+
+const reportSchema = z.object({
+  reason: z.enum(['harassment', 'off_platform', 'spam', 'other']),
+  detail: z.string().max(500).optional(),
+})
+
+messageRoutes.post('/threads/:id/report', async (c) => {
+  const user = c.get('user')
+  const parsed = reportSchema.safeParse(await c.req.json())
+  if (!parsed.success) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Invalid input',
+      400,
+      parsed.error.flatten().fieldErrors as Record<string, string[]>
+    )
+  }
+  const result = await MessageService.reportThread(
+    user,
+    c.req.param('id') ?? '',
+    parsed.data.reason,
+    parsed.data.detail
+  )
+  return c.json({ success: true, data: result })
+})

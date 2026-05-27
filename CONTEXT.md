@@ -7,8 +7,172 @@
 
 ## Current phase
 
-**Feature development** — the 2026-05 frontend audit remediation pass
-completed 2026-05-22 (archived at `audit/2026-05-frontend-audit.md`).
+**Dashboard rebuild — all three roles complete** — the role dashboards were
+deleted and rebuilt from scratch per `DASHBOARD_PLAN.md` (repo root). **Artist
+(25 pages), caster (24), and admin (17) are all built end-to-end** and
+typecheck + lint clean. Remaining work is the Phase 0 backend pass (new
+endpoints + WebSocket broadcast) so it all runs live — see the list below.
+
+Prior phase: the 2026-05 frontend audit remediation pass completed 2026-05-22
+(archived at `audit/2026-05-frontend-audit.md`).
+
+---
+
+## Dashboard rebuild — artist slice (this session)
+
+**Deleted:** all of `app/(artist|caster|admin)/` and `components/{dashboard,
+messaging,notifications,caster,settings}/`. Kept: `components/ui`, landing, auth,
+legal, onboarding, `components/card/profile-card.tsx`, the public pages, and the
+entire `lib/` data layer (`lib/api/*` + `lib/hooks/*` — comprehensive, untouched
+except the additions below).
+
+**RBAC (new):** `apps/web/middleware.ts` gates `/artist|/caster|/admin/:path*` on
+session-cookie presence (edge, redirects to `/login?next=`). Authoritative
+session+role checks live in each route-group `layout.tsx`; wrong-role renders a
+real **403** (`Forbidden403`) in place — no redirect loop. `app/(artist)/layout.tsx`
+is built; caster/admin layouts still to come.
+
+**Shared primitives (rebuilt in `components/dashboard/`):** `DashboardShell`,
+`SidebarNav`, `Topbar` (live unread bell), `nav-config` (all 3 role navs),
+`states` (Loading/Error/Empty), `PageHeader`, `StatCard`, `StatusBadge` (full
+status→variant+tooltip map), `LockedField`, `Money`+`CommissionBreakdown`,
+`Stars`, `RemoteImage` (R2 images via `unoptimized` — host is a runtime env var),
+`JobCard`, `AvailabilityToggle`, `CalendarFeedCard`, `MessageInbox`,
+`MessageThreadView`, `NotificationList`, `Forbidden403`.
+
+**Artist pages (25, all states handled, real data):** dashboard, jobs (feed +
+detail + bid), bids (list + detail), saved, invites, bookings (list + detail +
+contract + review + dispute), disputes/[id], earnings (+ payout), profile (view +
+preview + edit/portfolio), messages (inbox + thread w/ live WS), reviews,
+notifications, settings (+ delete).
+
+**Caster pages (24):** dashboard, my jobs (status tabs), post-job 6-step wizard
+(`components/dashboard/job-wizard.tsx`), job detail, edit job, bids list + bid
+detail (shortlist / reject + 24h undo / accept→pay), talent search (filters +
+client sorts) + shortlist + artist profile, booking flow incl. **Stripe escrow
+payment** (`bookings/[id]/pay`, `@stripe/react-stripe-js` Elements, manual-capture
+hold), bookings list + detail (date-locked confirm-completion, release, cancel
+tiers), contract sign (caster side), review, dispute (+ detail), messages,
+notifications, settings (company + logo, security, billing history, notification
+prefs, delete). New shared components: `TalentCard`, `InviteToJobDialog`,
+`job-wizard`; new data-layer types `BidForCaster`, `JobWithCounts`;
+`use-talent-shortlist` (localStorage); `deleteCasterAccount`/`useDeleteCasterAccount`.
+`app/(caster)/layout.tsx` enforces the fail-closed onboarding gate.
+
+**Admin pages (17):** overview (summary tiles + action-queue cards), application
+queue + review (public-style profile preview; ID status — see gap below),
+all users + user detail (suspend/ban/reactivate), all jobs + detail (remove),
+all bookings + detail, payments + detail (force-release / refund, mandatory
+reason), disputes queue + detail (resolve: release/refund/split %/escalate),
+flagged content (messages + reviews tabs + item detail), analytics (real summary
+tiles + defensive CSS bar charts for the weekly series), audit log.
+`app/(admin)/layout.tsx` renders a 403 for non-admins. Dispute resolution uses
+`useResolveDispute` (from use-disputes, admin-gated). No new shared data-layer
+files were needed for admin — `lib/api/admin.ts` + `use-admin.ts` already cover it.
+
+**Real-time messaging:** `lib/hooks/use-thread-socket.ts` opens
+`${NEXT_PUBLIC_WS_URL}/ws/messages/:threadId`, appends inbound messages to the
+TanStack cache, falls back to REST invalidation if the socket is unavailable.
+
+**Data-layer additions (frontend):** `useUpdateAvailability` + `MyArtistProfile`
+gained `availabilityStatus`/rating fields (`lib/api/artists.ts`, `use-artist.ts`);
+`BidWithJob` + `BookingWithRelations` relation types; `reportThread`/`useReportThread`;
+`use-saved-jobs` + `use-notification-prefs` (localStorage, swap-ready);
+`use-calendar`, `use-account` (delete), `lib/api/account.ts`. Fixed a pre-existing
+dispute-evidence field bug (`content` → `submission`) in `lib/api/disputes.ts`.
+Added `UpdateAvailabilityInput` export to `packages/validators/src/artist.ts`.
+
+**Verification:** `bunx tsc --noEmit` and `eslint` both clean across the web
+workspace; prettier applied. NOT run: full `next build` (API/DB not running here)
+and E2E.
+
+### Phase 0 backend — IMPLEMENTED this session (API + web both typecheck + lint clean)
+
+No Prisma schema change was needed for any of these (the columns/models already
+existed), so **no `prisma db push` is required** for this batch:
+- ✅ `PATCH /artists/me/availability` (`ArtistService.updateAvailability`) — `GET /artists/me`
+  already returns the full row incl. `availabilityStatus` + ratings.
+- ✅ `DELETE /artists/me` (`ArtistService.deleteAccount`) + `DELETE /casters/me`
+  (inline in `routes/casters.ts`) — PRD guards: block on active bookings /
+  held escrow → 409 CONFLICT. **Caveat:** hard-delete will FK-fail for accounts
+  with *historical* bookings; the production path is soft-delete/anonymise
+  (flagged in the service docstrings).
+- ✅ `POST /messages/threads/:id/report` (`MessageService.reportThread`) — MVP
+  path alerts all admins (deduped `thread_reported` notification, new type added);
+  a persisted `ContentReport` model is the richer follow-up.
+- ✅ `GET /admin/applications/:id/id-document/url`
+  (`UploadService.getIdDocumentUrlByProfileId`) — admin secure ID preview; reject
+  also now folds free-text `notes` into the reason.
+- ✅ **WebSocket broadcast** — `apps/api/src/ws/registry.ts` (per-thread socket
+  registry) + authenticated upgrade in `index.ts` (session + `canAccessThread`
+  participant/unlocked check) + `MessageService.sendMessage` calls
+  `broadcastToThread`. The frontend `use-thread-socket` now receives live pushes.
+  Single-instance only (needs Redis pub/sub for >1 replica). Prod cross-domain
+  cookies on the WS handshake need `SameSite=None; Secure`.
+
+### Still outstanding (deferred — need schema + `prisma db push`, or are degraded)
+- Saved-jobs / talent-shortlist / notification-prefs are localStorage on the
+  frontend; backend tables (`SavedJob`, `TalentShortlist`, `User.notificationPrefs`)
+  are the follow-up (would also let `prisma generate` expose them).
+- `ContentReport` model (to make reports queryable beyond the admin notification).
+- Talent search richer facets (height/skin tone/hair/eye beyond what `GET /talent`
+  honours) + caster downloadable invoices remain degraded/client-side.
+
+Admin-specific gaps still degraded in the UI (honest notes, no fake data):
+- ✅ **Admin ID-document viewer** — DONE (see Phase 0 above); the review page can
+  now fetch a short-lived presigned read of the applicant's ID.
+- **Admin user detail aggregation** (G12) — `GET /admin/users/:id` returns the
+  user + slim profile only; booking/bid history, strike count, payment + login
+  history need filters/fields (`?userId=` on bookings, expose `strikeCount`, etc.).
+- **Flagged content** (G9) — only flagged messages/reviews lists exist; no
+  clear-flag / remove-review / reporter identity / flagged-jobs+profiles. "Take
+  action" controls are disabled with notes; manual author suspension via Users.
+- **Analytics time-series** (G8) — `/admin/analytics/summary` returns totals; the
+  weekly series + rates render only if the API populates them (charts degrade).
+
+**G7 — DONE (earlier session):** new public endpoint `GET /artists/:id/public`
+(`ArtistService.getPublicProfile`, approved-only, sanitised select) + frontend
+`getPublicArtist` / `usePublicArtist`. The shareable `app/artists/[id]` profile and
+the `/artists` "approved artists" preview (`app/artists/talent-preview.tsx`) render
+REAL data; images use `RemoteImage`.
+
+**G7 — public marketing pages on real data + mock fallback (this session, 2026-05-27):**
+`/talent` (`talent-content.tsx` → `useTalentSearch`), `/shoots`
+(`shoots-content.tsx` → `usePublicJobs`), and `/shoots/[id]`
+(`shoots/[id]/page.tsx` now passes `id` to a client `shoot-detail-view.tsx` →
+`useJob`) all consume the live API. All UGC images go through `RemoteImage`.
+
+> **DEVIATION from handoff item 1 (per user direction):** `lib/mock` is **KEPT**, not
+> deleted. The pages fetch live first and **fall back to mock data only when the
+> backend returns empty** (≥1 real result → real only, no mixing) so the platform
+> still demos richly pre-launch. `lib/mock/shoots.ts` was reshaped so `MOCK_SHOOTS`
+> is now real `Job[]` (drop-in). Detail-page enrichment the API has no column for
+> (caster stats, wardrobe, perks, cancellation policy, similar shoots) is
+> **mock-only** — real jobs render the same layout but hide those sections.
+> Call time + exact shoot address are now **always locked** on the public detail
+> page (correct per the location-hidden business rule; the API returns null anyway).
+
+**Job cover images — NEW (this session):** added `Job.coverImageUrl` end to end:
+- `apps/api/prisma/schema.prisma` (`cover_image_url String?`) — ⚠ needs
+  `bunx prisma db push` on deploy (no live DB here; `prisma generate` ran offline).
+- `@castflow/types` `Job.coverImageUrl: string | null`; `createJobSchema` +
+  `updateJobSchema` gained optional `coverImageUrl` (url, ≤2048); `JobService`
+  create/update persist it (public feed returns it un-stripped).
+- New `job_cover` upload type: `@castflow/validators` `upload.ts` (presigned +
+  confirm enums + `UPLOAD_LIMITS.job_cover`, 10 MB image), `types/enums.ts`
+  `UploadType` (also synced the missing `caster_logo`), web `lib/api/uploads.ts`.
+  `UploadService.confirmUpload` handles it via the existing `noop` branch (cover
+  is attached to the Job at create time, not a profile). New `useUploadJobCover`
+  hook (no artist-cache invalidation) + a cover-image upload control in the
+  job wizard's Basics step. Jobs without a cover render a typographic placeholder.
+
+Verified green this session: `apps/api` + `apps/web` `tsc --noEmit`, ESLint on all
+touched web files, Prettier, `prisma format`. Could NOT `db push` / runtime-verify
+(no live DB).
+
+**Next up:** the deferred schema-backed items (SavedJob / TalentShortlist /
+notificationPrefs / ContentReport + `prisma db push`); the G8/G9/G12 admin
+endpoints; then a full `next build` + E2E pass with the API/DB running.
 
 ---
 

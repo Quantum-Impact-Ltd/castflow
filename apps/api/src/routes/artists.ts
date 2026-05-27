@@ -7,6 +7,7 @@ import {
   artistExperienceSchema,
   updateArtistTypeSchema,
   replaceSkillsSchema,
+  updateAvailabilitySchema,
 } from '@castflow/validators'
 import { authenticate } from '../middleware/authenticate'
 import { requireRole } from '../middleware/requireRole'
@@ -94,6 +95,19 @@ artistRoutes.post('/me/submit', authenticate, requireRole('artist'), async (c) =
   return c.json({ success: true, data: profile })
 })
 
+artistRoutes.patch('/me/availability', authenticate, requireRole('artist'), async (c) => {
+  const user = c.get('user')
+  const input = await parseBody(c, updateAvailabilitySchema)
+  const profile = await ArtistService.updateAvailability(user.id, input)
+  return c.json({ success: true, data: profile })
+})
+
+artistRoutes.delete('/me', authenticate, requireRole('artist'), async (c) => {
+  const user = c.get('user')
+  const result = await ArtistService.deleteAccount(user.id)
+  return c.json({ success: true, data: result })
+})
+
 // Presigned read URL for the artist's own ID document. Used by the
 // onboarding ID step to show a preview / "View document" after upload
 // so the artist can confirm they uploaded the right file before
@@ -104,10 +118,20 @@ artistRoutes.get('/me/id-document/url', authenticate, requireRole('artist'), asy
   if (!result) {
     return c.json(
       { success: false, error: { code: 'NOT_FOUND', message: 'No ID document on file' } },
-      404,
+      404
     )
   }
   return c.json({ success: true, data: result })
+})
+
+/**
+ * Public, unauthenticated artist profile for the shareable `/artists/:id`
+ * page (PRD §8.4). Approved artists only; sensitive fields are stripped in the
+ * service select.
+ */
+artistRoutes.get('/:id/public', async (c) => {
+  const profile = await ArtistService.getPublicProfile(c.req.param('id') ?? '')
+  return c.json({ success: true, data: profile })
 })
 
 /**

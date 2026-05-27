@@ -1,4 +1,4 @@
-import { JobDetailClient } from './client'
+import { ArtistJobDetailClient } from './job-detail-client'
 
 export default async function ArtistJobDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function ArtistJobDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <JobDetailClient id={id} />
+  return <ArtistJobDetailClient jobId={id} />
 }

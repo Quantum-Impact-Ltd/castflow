@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-22T00:00:00Z",
+  "title": "Design System: CastFlow",
+  "extensions": {
+    "colorMeta": {
+      "brand-500": {
+        "role": "primary",
+        "displayName": "Infrastructure Blue",
+        "canonical": "#3a8dc4",
+        "tonalRamp": ["#1e4a64", "#245878", "#2a6b96", "#2f77a8", "#3a8dc4", "#5fa3cc", "#85bcda", "#b3d4e8", "#d6e8f3", "#eef6fb"]
+      },
+      "brand-700": {
+        "role": "primary-text-safe",
+        "displayName": "Infrastructure Blue – Text Safe",
+        "canonical": "#2a6b96",
+        "tonalRamp": ["#1e4a64", "#245878", "#2a6b96", "#2f77a8", "#3a8dc4", "#5fa3cc", "#85bcda", "#b3d4e8"]
+      },
+      "cta-500": {
+        "role": "secondary",
+        "displayName": "Set Light – Deep",
+        "canonical": "#e67e3e",
+        "tonalRamp": ["#7a3e15", "#9a4e1f", "#bd5d28", "#d76b30", "#e67e3e", "#f0925a", "#f9a26c", "#fbbb91", "#fdd4b9", "#fde9da"]
+      },
+      "cta-400": {
+        "role": "secondary",
+        "displayName": "Set Light",
+        "canonical": "#f9a26c",
+        "tonalRamp": ["#7a3e15", "#9a4e1f", "#bd5d28", "#d76b30", "#e67e3e", "#f0925a", "#f9a26c", "#fbbb91", "#fdd4b9", "#fde9da"]
+      },
+      "ink-900": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0d1b26",
+        "tonalRamp": ["#0d1b26", "#142735", "#1f3441", "#2d4554", "#475569", "#647386", "#94a3b8", "#c5cfdb", "#e2e8ee", "#f4f6f9"]
+      },
+      "ink-600": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "#475569",
+        "tonalRamp": ["#0d1b26", "#1f3441", "#2d4554", "#3a4757", "#475569", "#647386", "#94a3b8", "#c5cfdb"]
+      },
+      "surface-0": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "canonical": "oklch(0.98 0.006 240)",
+        "tonalRamp": ["oklch(0.18 0.022 240)", "oklch(0.32 0.018 240)", "oklch(0.45 0.014 240)", "oklch(0.62 0.012 240)", "oklch(0.78 0.01 240)", "oklch(0.88 0.008 240)", "oklch(0.94 0.007 240)", "oklch(0.98 0.006 240)"]
+      },
+      "surface-50": {
+        "role": "neutral",
+        "displayName": "Canvas Raised",
+        "canonical": "oklch(0.955 0.01 240)",
+        "tonalRamp": ["oklch(0.20 0.022 240)", "oklch(0.34 0.018 240)", "oklch(0.50 0.014 240)", "oklch(0.65 0.012 240)", "oklch(0.80 0.011 240)", "oklch(0.90 0.010 240)", "oklch(0.955 0.01 240)", "oklch(0.985 0.006 240)"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(0.91 0.008 240)",
+        "tonalRamp": ["oklch(0.30 0.018 240)", "oklch(0.50 0.014 240)", "oklch(0.70 0.012 240)", "oklch(0.82 0.010 240)", "oklch(0.91 0.008 240)", "oklch(0.96 0.006 240)"]
+      },
+      "destructive": {
+        "role": "status",
+        "displayName": "Considered Red",
+        "canonical": "oklch(0.577 0.245 27.325)",
+        "tonalRamp": ["oklch(0.30 0.15 27)", "oklch(0.40 0.20 27)", "oklch(0.48 0.23 27)", "oklch(0.577 0.245 27)", "oklch(0.68 0.20 27)", "oklch(0.80 0.14 27)", "oklch(0.90 0.08 27)", "oklch(0.96 0.04 27)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero headline only. One per page maximum." },
+      "editorial": { "displayName": "Editorial Italic", "purpose": "Instrument Serif italic. Reserved for one editorial moment per page — usually inside the hero." },
+      "headline": { "displayName": "Headline", "purpose": "Major section openings." },
+      "title": { "displayName": "Title", "purpose": "Card titles and sub-section headers." },
+      "body": { "displayName": "Body", "purpose": "Default paragraph text. Max line length 65–75ch." },
+      "label": { "displayName": "Label", "purpose": "Eyebrow labels, button text, form labels. +0.04em letter-spacing — the institutional-voice signal." },
+      "mono": { "displayName": "Mono", "purpose": "Transaction IDs, rate breakdowns, contract reference numbers. Never default body." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out-quint", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default easing for scroll reveals and translateY hover lifts." },
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Hero headline word-stagger reveal." },
+      { "name": "duration-fast", "value": "200ms", "purpose": "Hover and focus state transitions." },
+      { "name": "duration-reveal", "value": "600ms", "purpose": "Scroll-triggered fade + translate reveals." },
+      { "name": "marquee", "value": "marquee-x 40s linear infinite", "purpose": "Continuous-scroll trust marquee. Pauses on hover, disabled under prefers-reduced-motion." },
+      { "name": "live-pulse", "value": "live-pulse 1.8s cubic-bezier(0.4,0,0.6,1) infinite", "purpose": "Live indicator on numbers strip and active-shoots feed only." },
+      { "name": "shimmer-slide", "value": "shimmer-slide 3s ease-in-out infinite alternate", "purpose": "Inner shimmer sweep on the Shimmer Button. One CTA per page maximum." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "2xl", "value": "1536px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The platform's pill-shaped CTA. Infrastructure Blue on canvas, transparent border that becomes the focus ring.",
+      "html": "<button class=\"ds-btn-primary\">Post your first shoot</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 14px; border-radius: 26px; border: 1px solid transparent; background: #3a8dc4; color: oklch(0.98 0.006 240); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0; cursor: pointer; transition: background 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 120ms ease-out; } .ds-btn-primary:hover { background: #2f77a8; } .ds-btn-primary:focus-visible { outline: none; border-color: #3a8dc4; box-shadow: 0 0 0 3px rgba(58, 141, 196, 0.5); } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Shimmer Button",
+      "kind": "button",
+      "refersTo": "button-shimmer",
+      "description": "The page's signature CTA. Ink-on-canvas pill with a Set Light shimmer sweep. One per page only.",
+      "html": "<button class=\"ds-btn-shimmer\"><span class=\"ds-btn-shimmer__sweep\"></span><span class=\"ds-btn-shimmer__label\">Get started</span></button>",
+      "css": ".ds-btn-shimmer { position: relative; display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 24px; border-radius: 26px; border: 1px solid transparent; background: #0d1b26; color: oklch(0.98 0.006 240); font-family: Geist, ui-sans-serif, sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.02em; overflow: hidden; cursor: pointer; isolation: isolate; transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-shimmer__label { position: relative; z-index: 2; } .ds-btn-shimmer__sweep { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(249, 162, 108, 0.35) 35%, rgba(230, 126, 62, 0.6) 50%, rgba(249, 162, 108, 0.35) 65%, transparent 100%); transform: translateX(-100%); animation: ds-shimmer-sweep 3s ease-in-out infinite alternate; z-index: 1; } .ds-btn-shimmer:hover { transform: translateY(-2px); } @keyframes ds-shimmer-sweep { to { transform: translateX(100%); } } @media (prefers-reduced-motion: reduce) { .ds-btn-shimmer__sweep { animation: none; opacity: 0; } }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Transparent at rest. Used inside tables, dense UI, and secondary navigation.",
+      "html": "<button class=\"ds-btn-ghost\">View details</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 12px; border-radius: 26px; border: 1px solid transparent; background: transparent; color: #0d1b26; font-family: Geist, ui-sans-serif, sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-ghost:hover { background: oklch(0.955 0.01 240); } .ds-btn-ghost:focus-visible { outline: none; border-color: #3a8dc4; box-shadow: 0 0 0 3px rgba(58, 141, 196, 0.5); }"
+    },
+    {
+      "name": "Flat Card",
+      "kind": "card",
+      "refersTo": "card-flat",
+      "description": "Flat surface with a hairline ring. No drop shadow, ever. Lifts 2px on hover when interactive.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card__eyebrow\">SHOOT • EDITORIAL</div><div class=\"ds-card__title\">Spring/Summer Lookbook</div><div class=\"ds-card__meta\">London · 16 Jun · £680 + agreed hours</div></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 18px; background: oklch(0.98 0.006 240); color: #0d1b26; box-shadow: 0 0 0 1px rgba(13, 27, 38, 0.1); transition: box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-card:hover { box-shadow: 0 0 0 1px rgba(13, 27, 38, 0.15); transform: translateY(-2px); } .ds-card__eyebrow { font-family: Geist, ui-sans-serif, sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; color: #2a6b96; text-transform: uppercase; } .ds-card__title { font-family: Geist, ui-sans-serif, sans-serif; font-size: 24px; font-weight: 500; line-height: 1.3; letter-spacing: -0.005em; color: #0d1b26; } .ds-card__meta { font-family: Geist, ui-sans-serif, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; color: #475569; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Hairline-bordered field. Focus shifts border to brand and adds a 3px ring.",
+      "html": "<label class=\"ds-input-wrap\"><span class=\"ds-input-label\">Shoot title</span><input class=\"ds-input\" type=\"text\" placeholder=\"e.g. Spring lookbook — daywear\" /></label>",
+      "css": ".ds-input-wrap { display: flex; flex-direction: column; gap: 6px; font-family: Geist, ui-sans-serif, sans-serif; } .ds-input-label { font-size: 13px; font-weight: 500; letter-spacing: 0.04em; color: #1f3441; text-transform: uppercase; } .ds-input { height: 36px; padding: 8px 12px; border-radius: 10px; border: 1px solid oklch(0.91 0.008 240); background: transparent; color: #0d1b26; font-size: 15px; font-weight: 400; transition: border-color 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-input::placeholder { color: #94a3b8; } .ds-input:focus-visible { outline: none; border-color: #3a8dc4; box-shadow: 0 0 0 3px rgba(58, 141, 196, 0.5); }"
+    },
+    {
+      "name": "Brand Chip",
+      "kind": "chip",
+      "refersTo": "chip-brand",
+      "description": "Pill tag for filter and shortlist states. Brand-50 fill, brand-700 text — never a side-stripe.",
+      "html": "<span class=\"ds-chip\">Shortlisted</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 26px; background: #eef6fb; color: #2a6b96; font-family: Geist, ui-sans-serif, sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; }"
+    },
+    {
+      "name": "Live Pulse Indicator",
+      "kind": "custom",
+      "refersTo": "live-pulse",
+      "description": "Signature live-status indicator: pulsing dot + tracked LIVE label. Reserved for active shoots feed and numbers strip.",
+      "html": "<span class=\"ds-live\"><span class=\"ds-live__dot\"></span><span class=\"ds-live__label\">LIVE</span></span>",
+      "css": ".ds-live { display: inline-flex; align-items: center; gap: 8px; font-family: Geist, ui-sans-serif, sans-serif; font-size: 13px; font-weight: 500; letter-spacing: 0.06em; color: #1f3441; } .ds-live__dot { width: 6px; height: 6px; border-radius: 50%; background: oklch(0.70 0.18 145); animation: ds-live-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; } @keyframes ds-live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.92); } } @media (prefers-reduced-motion: reduce) { .ds-live__dot { animation: none; } }"
+    },
+    {
+      "name": "Magazine Plate Placeholder",
+      "kind": "custom",
+      "refersTo": "magazine-plate",
+      "description": "Designed photography placeholder: brand-tinted block with a radial dot grid + Instrument Serif italic caption. Looks intentional, never broken.",
+      "html": "<figure class=\"ds-plate\"><figcaption class=\"ds-plate__caption\">Mira A.</figcaption></figure>",
+      "css": ".ds-plate { position: relative; display: block; aspect-ratio: 3 / 4; width: 240px; border-radius: 18px; background-color: #d6e8f3; background-image: radial-gradient(circle at 1px 1px, rgba(13, 27, 38, 0.08) 1px, transparent 0); background-size: 14px 14px; box-shadow: 0 0 0 1px rgba(13, 27, 38, 0.1); overflow: hidden; } .ds-plate__caption { position: absolute; left: 16px; bottom: 16px; font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 28px; font-weight: 400; line-height: 1; letter-spacing: -0.01em; color: #2a6b96; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Financial-Grade Rail",
+    "overview": "CastFlow is infrastructure for a creative industry — the rail that carries money, contracts, and reputation between casters and artists. The design system reads as serious utility for creative people. Stripe-restraint in the chrome, editorial confidence in the typography, real photography of real talent where photography appears at all. The aesthetic explicitly rejects the two reflexes the casting category trains for: the glamour-coded gatekeeper (Models.com severity) and the bargain-coded marketplace (Fiverr clutter). CastFlow is neither. It is the adult version of this.\n\nThe system runs on tinted neutrals with one decisive blue accent (Infrastructure Blue, #3a8dc4) and a sparing warm secondary (Set Light, #f9a26c / #e67e3e) reserved for shimmer-button sweeps and eyebrow callouts. Every neutral carries a 240° hue undertone — pure #fff and pure #000 are banned at the stylesheet level. Surfaces alternate between two tints to pace the page editorially; cards are flat with a hairline ring, never glassmorphic, never elevated by drop-shadow.\n\nPhotography is a first-class element when it appears: real artist portraits in featured strips and profile pages, designed brand-tinted 'magazine plates' as honest placeholders elsewhere. Motion is multi-moment (marquees, count-ups, scroll reveals, shimmer sweeps) but every effect earns its space — comprehension first, decoration never.",
+    "keyCharacteristics": [
+      "One decisive brand color (#3a8dc4) carrying ~30% of surface presence through drenched sections + CTAs.",
+      "Warm CTA accent (#f9a26c → #e67e3e) deployed sparingly on shimmer buttons and eyebrow ornaments only.",
+      "Geist Sans for everything operational, Instrument Serif for one editorial moment per page.",
+      "Flat surfaces with hairline rings — no drop-shadow vocabulary, ever.",
+      "Pill-shaped controls (26px radius / rounded-4xl) on a 10px base radius scale.",
+      "All neutrals tinted toward 240° at low chroma; #fff and #000 are prohibited literals.",
+      "Magic UI motion library available (marquee, shimmer, shine, orbit, number-ticker) but disciplined.",
+      "Dark mode is defined for future authenticated UI; unused on marketing surfaces."
+    ],
+    "rules": [
+      { "name": "The Decisive Blue Rule", "body": "Infrastructure Blue is decisive, never decorative. It marks CTAs, focus rings, brand moments, and drenched sections — nothing else. It is never a background wash without intent, never a gradient companion, never present 'for vibe.' The page is mostly neutral; the blue earns every appearance.", "section": "colors" },
+      { "name": "The No-White, No-Black Rule", "body": "Pure #ffffff and pure #000000 are prohibited literals. Every neutral carries a 240° hue tint at low chroma. If a future utility references #fff or #000, replace with surface-0 and ink-900 respectively.", "section": "colors" },
+      { "name": "The Single Saturated Color Rule", "body": "Infrastructure Blue is the only saturated color used at marketing-page scale. Set Light is a sparing accent, never a co-equal hue. Pastel palettes, neon outlines, and rainbow data-viz are forbidden.", "section": "colors" },
+      { "name": "The One Italic Rule", "body": "Instrument Serif italic is reserved for one editorial moment per page. It is never used for body, never used for buttons, never used inside cards. Two italic moments on one screen is one too many.", "section": "typography" },
+      { "name": "The Sans-Body Rule", "body": "Body copy is Geist Sans. Serif body type is forbidden. If globals.css still sets font-serif as the body default, that is a regression — fix it before shipping anything new.", "section": "typography" },
+      { "name": "The Tracked-Label Rule", "body": "Labels and eyebrows carry +0.04em letter-spacing. This is the institutional-voice signal: confident, slightly typeset, never casual.", "section": "typography" },
+      { "name": "The No-Shadow Rule", "body": "box-shadow is forbidden on cards, buttons, panels, modals, and drawers in their resting state. Glassmorphic blurs are forbidden as decorative defaults. Apparent depth is expressed through surface tint and hairline rings.", "section": "elevation" },
+      { "name": "The Hairline-Only Rule", "body": "All borders are 1px. Side-stripe accents (a 3px or 4px colored border-left as a 'callout' indicator) are prohibited. If a callout needs emphasis, use a full hairline ring and a brand-50 background fill instead.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use #3a8dc4 (brand-500) as the only saturated identity color, and brand-700 (#2a6b96) when blue meets body-size text on white.",
+      "Do tint every neutral toward 240° — use surface-0 / surface-50 / ink-* tokens, never raw grays.",
+      "Do keep buttons on rounded-4xl (26px pill) and cards on rounded-2xl (18px). The contrast between pill controls and softer surfaces is intentional.",
+      "Do restrict Instrument Serif italic to one editorial moment per page — usually inside the hero.",
+      "Do use the Shimmer Button for the page's primary CTA only. It is the one allowed warm-color moment at button scale.",
+      "Do reserve real artist photography for places where it exists; use the Magazine Plate component (dot-grid brand tint) for honest placeholders elsewhere.",
+      "Do honor prefers-reduced-motion — the global override in globals.css is non-negotiable.",
+      "Do let sections breathe with 96–160px desktop vertical padding, but earn the space with substantial content."
+    ],
+    "donts": [
+      "Don't use pure #ffffff or #000000 — they are prohibited literals. Use surface-0 and ink-900.",
+      "Don't use side-stripe colored borders (border-left: 4px solid …) as callout accents. Use a full hairline ring and a brand-50 fill instead.",
+      "Don't use background-clip: text gradient text. Emphasis is via weight or size, never via gradient fill.",
+      "Don't use box-shadow for card or button elevation. Surfaces are flat with hairline rings; depth is tonal.",
+      "Don't ship glassmorphic blurs (backdrop-filter) as a default decorative treatment. Reserve for rare, purposeful uses.",
+      "Don't lay out three-column 'icon + heading + text' feature grids on the homepage. Editorial maximalism means every section has its own shape — the only allowed card grid is Pricing.",
+      "Don't chase the anti-references from PRODUCT.md — Models.com gatekeeper severity, Fiverr/Upwork clutter, gradient-hero SaaS templates, Airbnb consumer warmth, 'AI startup' neon-on-black aesthetics, agency-portfolio parallax-everything.",
+      "Don't use serif type for body copy. The font-serif body default in legacy globals.css is a bug; if you see it, fix it.",
+      "Don't use stock photography of 'diverse smiling teams in meetings' or AI-generated faces. Real platform talent only; if it's not available, use a Magazine Plate or omit the placement.",
+      "Don't write CTAs that say 'Click here' or 'Learn more.' Every CTA is verb-led and specific: 'Post your first shoot', 'Find paid work', 'Browse talent free'.",
+      "Don't apply dark mode to public marketing pages. Dark tokens exist for future authenticated UI; the marketing site is light-only.",
+      "Don't add a second saturated accent color 'for variety.' Set Light is the only warm accent; everything else is the brand-blue family and tinted neutrals."
+    ]
+  }
+}

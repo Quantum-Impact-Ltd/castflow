@@ -54,6 +54,7 @@ export type CastflowNotificationType =
   | 'invite_accepted'
   | 'invite_declined'
   | 'job_critical_change'
+  | 'thread_reported'
 
 interface CreateArgs {
   userId: string

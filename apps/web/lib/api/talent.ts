@@ -24,3 +24,8 @@ export function searchTalent(filters: TalentFilters = {}, init?: Init) {
 export function getTalentProfile(id: string, init?: Init) {
   return fetcher<PublicArtistProfile>(`/talent/${id}`, init)
 }
+
+/** Public (unauthenticated) artist profile for the shareable /artists/:id page. */
+export function getPublicArtist(id: string, init?: Init) {
+  return fetcher<PublicArtistProfile>(`/artists/${id}/public`, init)
+}

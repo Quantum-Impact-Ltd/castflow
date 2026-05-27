@@ -28,6 +28,8 @@ import { contactRoutes } from './routes/contact'
 import { calendarRoutes } from './routes/calendar'
 import { webhookRoutes } from './routes/webhooks'
 import { adminRoutes } from './routes/admin'
+import { MessageService } from './services/MessageService'
+import { joinThread, leaveThread } from './ws/registry'
 
 const { upgradeWebSocket, websocket } = createBunWebSocket()
 
@@ -109,10 +111,7 @@ app.use(
 // leaving an orphan that breaks every downstream relation. Reject it with a
 // 404 so the route effectively doesn't exist from a client's perspective.
 app.all('/api/auth/sign-up/*', (c) =>
-  c.json(
-    { success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } },
-    404
-  )
+  c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } }, 404)
 )
 
 // `*` reliably captures the full Better Auth surface here. In this app shape,
@@ -152,20 +151,40 @@ api.route('/admin', adminRoutes)
 app.route('/webhooks', webhookRoutes)
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
+// Real-time message delivery. The upgrade is authenticated via the Better Auth
+// session cookie (same-origin credentials) and authorised against thread
+// participation + the `unlocked` gate — mirroring the REST THREAD_LOCKED rule.
+// Persistence stays on POST /api/v1/messages/threads/:id; that service call
+// broadcasts the persisted row here (see MessageService.sendMessage).
 app.get(
   '/ws/messages/:threadId',
-  upgradeWebSocket((c) => {
-    const threadId = c.req.param('threadId')
+  upgradeWebSocket(async (c) => {
+    const threadId = c.req.param('threadId') ?? ''
+    const session = await auth.api.getSession({ headers: c.req.raw.headers }).catch(() => null)
+    const user = session?.user
+    const authorized = user
+      ? await MessageService.canAccessThread(
+          { id: user.id, role: user.role as 'admin' | 'caster' | 'artist' },
+          threadId
+        ).catch(() => false)
+      : false
+
     return {
-      onOpen(_event, _ws) {
-        console.info(`WS connected: thread ${threadId}`)
+      onOpen(_event, ws) {
+        if (!authorized) {
+          // 1008 = policy violation. The client falls back to REST polling.
+          ws.close(1008, 'Unauthorized')
+          return
+        }
+        joinThread(threadId, ws)
       },
-      onMessage(event, _ws) {
-        console.info(`WS message on thread ${threadId}:`, event.data)
+      onClose(_event, ws) {
+        leaveThread(threadId, ws)
       },
-      onClose() {
-        console.info(`WS disconnected: thread ${threadId}`)
-      },
+      // Inbound frames are ignored — clients send via the REST endpoint, which
+      // persists and then broadcasts. This keeps the socket read-only and the
+      // contact-detail flagging / notification logic in one place.
+      onMessage() {},
     }
   })
 )

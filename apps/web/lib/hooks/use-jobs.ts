@@ -30,7 +30,7 @@ export function useJob(id: string | undefined) {
   })
 }
 
-export function useMyJobs(filters: { cursor?: string; limit?: number } = {}) {
+export function useMyJobs(filters: { status?: string; cursor?: string; limit?: number } = {}) {
   return useQuery({
     queryKey: [...queryKeys.caster.jobs(), filters],
     queryFn: ({ signal }) => listMyJobs(filters, { signal }),

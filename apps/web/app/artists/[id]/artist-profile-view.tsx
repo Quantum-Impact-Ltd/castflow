@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
+import { RemoteImage } from '@/components/dashboard/remote-image'
 import Link from 'next/link'
 import { Lock, MapPin, Star, Sparkles, ChevronLeft } from 'lucide-react'
 import ProfileCard from '@/components/card/profile-card'
@@ -10,14 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Reveal } from '@/components/landing/reveal'
-import { getMockArtist, getMockReviews } from '@/lib/mock/artists'
 import { cn } from '@/lib/utils'
 import { useAuthSession } from '@/providers/session-provider'
+import { usePublicArtist } from '@/lib/hooks/use-talent'
+import { useArtistReviews } from '@/lib/hooks/use-reviews'
 import type { PortfolioItem, ArtistSkill, Review } from '@castflow/types'
-
-// NOTE: Using mock data while `/talent/:id` is still caster-auth-gated on the
-// API. Swap `getMockArtist` / `getMockReviews` for `useTalentProfile` /
-// `useArtistReviews` once a public-lite endpoint exists.
 
 interface Props {
   id: string
@@ -31,34 +28,52 @@ const EXPERIENCE_LABEL: Record<string, string> = {
 
 export function ArtistProfileView({ id }: Props) {
   const router = useRouter()
-  const profile = getMockArtist(id)
-  const reviews = getMockReviews(id)
-  // Real session — replaces the prior `const isCaster = false` placeholder
-  // which made every logged-in caster see the public "Sign in to contact"
-  // UI. (Audit H11.)
+  const { data: profile, isPending, isError } = usePublicArtist(id)
+  const { data: reviewsData } = useArtistReviews(id)
+  const reviews = reviewsData ?? []
+  // Real session — a logged-in caster sees the "Shortlist" CTA + contact;
+  // everyone else sees the public "Sign in to contact" UI. (Audit H11.)
   const { session } = useAuthSession()
   const isCaster = session?.user.role === 'caster'
 
   const handleContactClick = () => {
     if (!isCaster) {
-      router.push(
-        `/login?redirect=${encodeURIComponent(`/artists/${id}`)}`,
-      )
+      router.push(`/login?redirect=${encodeURIComponent(`/artists/${id}`)}`)
       return
     }
-    // TODO: open shortlist modal once `/caster/talent` is wired.
-    router.push(`/caster/talent?artist=${id}`)
+    router.push(`/caster/talent/${id}`)
+  }
+
+  if (isPending) {
+    return (
+      <div className="mx-auto w-full max-w-[90rem] px-6 py-24 lg:px-8">
+        <p className="text-sm text-foreground/60">Loading profile…</p>
+      </div>
+    )
+  }
+
+  if (isError || !profile) {
+    return (
+      <div className="mx-auto w-full max-w-[90rem] px-6 py-24 text-center lg:px-8">
+        <h1 className="font-serif text-3xl text-foreground">Artist not found</h1>
+        <p className="mt-3 text-sm text-foreground/60">
+          This profile may be private or no longer available.
+        </p>
+        <Link
+          href="/artists"
+          className="mt-6 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden /> Back to talent
+        </Link>
+      </div>
+    )
   }
 
   const primaryPortfolio = profile.portfolioItems?.find((p) => p.isPrimary)
   const heroImage =
-    primaryPortfolio?.url ??
-    profile.portfolioItems?.[0]?.url ??
-    '/placeholder-avatar.png'
+    primaryPortfolio?.url ?? profile.portfolioItems?.[0]?.url ?? '/placeholder-avatar.png'
 
-  const ratingDisplay = profile.ratingAvg
-    ? Number(profile.ratingAvg).toFixed(1)
-    : '–'
+  const ratingDisplay = profile.ratingAvg ? Number(profile.ratingAvg).toFixed(1) : '–'
 
   return (
     <div className="mx-auto w-full max-w-[90rem] px-6 pb-24 pt-10 lg:px-8 lg:pt-14">
@@ -90,11 +105,7 @@ export function ArtistProfileView({ id }: Props) {
                   ? profile.instagramHandle.replace(/^@/, '')
                   : profile.firstName.toLowerCase()
               }
-              status={
-                profile.availabilityStatus === 'available'
-                  ? 'Available'
-                  : 'Unavailable'
-              }
+              status={profile.availabilityStatus === 'available' ? 'Available' : 'Unavailable'}
               avatarUrl={heroImage}
               contactText={isCaster ? 'Shortlist' : 'Sign in to contact'}
               onContactClick={handleContactClick}
@@ -148,8 +159,7 @@ export function ArtistProfileView({ id }: Props) {
                   variant="outline"
                   className="rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em]"
                 >
-                  {EXPERIENCE_LABEL[profile.experienceLevel] ??
-                    profile.experienceLevel}
+                  {EXPERIENCE_LABEL[profile.experienceLevel] ?? profile.experienceLevel}
                 </Badge>
               )}
               <Badge className="rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em]">
@@ -207,9 +217,7 @@ export function ArtistProfileView({ id }: Props) {
                 <TabsTrigger value="reviews" className="rounded-full px-4">
                   Reviews{' '}
                   {profile.ratingCount > 0 && (
-                    <span className="ml-1 text-foreground/50">
-                      {profile.ratingCount}
-                    </span>
+                    <span className="ml-1 text-foreground/50">{profile.ratingCount}</span>
                   )}
                 </TabsTrigger>
               </TabsList>
@@ -233,15 +241,7 @@ export function ArtistProfileView({ id }: Props) {
   )
 }
 
-function Stat({
-  label,
-  value,
-  sub,
-}: {
-  label: string
-  value: string
-  sub: string
-}) {
+function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="rounded-2xl border border-border/60 bg-[var(--surface-50)] px-3 py-4">
       <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/60">
@@ -267,11 +267,7 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
   }
 
   if (items.length === 0) {
-    return (
-      <EmptyState>
-        No portfolio items yet. This artist hasn&apos;t uploaded work.
-      </EmptyState>
-    )
+    return <EmptyState>No portfolio items yet. This artist hasn&apos;t uploaded work.</EmptyState>
   }
 
   return (
@@ -287,7 +283,7 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
             }}
             className={cn(
               'group relative aspect-[3/4] overflow-hidden rounded-xl border border-border/60 bg-[var(--surface-50)]',
-              'transition-all duration-300 hover:border-foreground/30',
+              'transition-all duration-300 hover:border-foreground/30'
             )}
           >
             {item.type === 'video' ? (
@@ -299,7 +295,7 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
                 playsInline
               />
             ) : (
-              <Image
+              <RemoteImage
                 src={item.url}
                 alt={item.caption ?? 'Portfolio image'}
                 fill
@@ -321,13 +317,7 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
   )
 }
 
-function Lightbox({
-  item,
-  onClose,
-}: {
-  item: PortfolioItem
-  onClose: () => void
-}) {
+function Lightbox({ item, onClose }: { item: PortfolioItem; onClose: () => void }) {
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
 
@@ -352,7 +342,7 @@ function Lightbox({
       const root = dialogRef.current
       if (!root) return
       const focusables = root.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, video[controls], [tabindex]:not([tabindex="-1"])',
+        'button, [href], input, select, textarea, video[controls], [tabindex]:not([tabindex="-1"])'
       )
       if (focusables.length === 0) return
       const first = focusables[0]!
@@ -390,22 +380,14 @@ function Lightbox({
       >
         ✕
       </button>
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[85vh] max-w-4xl"
-      >
+      <div onClick={(e) => e.stopPropagation()} className="max-h-[85vh] max-w-4xl">
         {item.type === 'video' ? (
-          <video
-            src={item.url}
-            controls
-            autoPlay
-            className="max-h-[85vh] w-auto rounded-xl"
-          />
+          <video src={item.url} controls autoPlay className="max-h-[85vh] w-auto rounded-xl" />
         ) : (
           // Lightbox shows the full-size image; Image with fill won't work
           // (no explicit dims). Use width=0/height=0 trick with style for
           // intrinsic sizing while still going through the optimiser.
-          <Image
+          <RemoteImage
             src={item.url}
             alt={item.caption ?? 'Portfolio image'}
             width={1600}
@@ -416,11 +398,7 @@ function Lightbox({
             priority
           />
         )}
-        {item.caption && (
-          <p className="mt-4 text-center text-sm text-white/80">
-            {item.caption}
-          </p>
-        )}
+        {item.caption && <p className="mt-4 text-center text-sm text-white/80">{item.caption}</p>}
       </div>
     </div>
   )
@@ -449,7 +427,7 @@ function AboutBlock({ profile }: { profile: ProfileForAbout }) {
     if (profile.artistType === 'model' && profile.modelStats) {
       const s = profile.modelStats as Record<string, unknown>
       return [
-        ['Height', s['heightCm'] ? `${s['heightCm']} cm` : null],
+        ['Height', s['heightCm'] ? `${toStr(s['heightCm']) ?? ''} cm` : null],
         ['Dress size', toStr(s['dressSize'])],
         ['Shoe size', toStr(s['shoeSize'])],
         ['Hair', toStr(s['hairColour'])],
@@ -457,7 +435,7 @@ function AboutBlock({ profile }: { profile: ProfileForAbout }) {
         [
           'Measurements',
           s['bustCm'] && s['waistCm'] && s['hipCm']
-            ? `${s['bustCm']} / ${s['waistCm']} / ${s['hipCm']} cm`
+            ? `${toStr(s['bustCm']) ?? ''} / ${toStr(s['waistCm']) ?? ''} / ${toStr(s['hipCm']) ?? ''} cm`
             : null,
         ],
       ]
@@ -474,9 +452,7 @@ function AboutBlock({ profile }: { profile: ProfileForAbout }) {
     return []
   }, [profile.artistType, profile.modelStats, profile.actorStats])
 
-  const visible = statsRows.filter(
-    (row): row is [string, string] => row[1] !== null,
-  )
+  const visible = statsRows.filter((row): row is [string, string] => row[1] !== null)
 
   return (
     <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
@@ -485,16 +461,11 @@ function AboutBlock({ profile }: { profile: ProfileForAbout }) {
           Stats
         </h2>
         {visible.length === 0 ? (
-          <p className="mt-4 text-sm text-foreground/60">
-            No stats provided yet.
-          </p>
+          <p className="mt-4 text-sm text-foreground/60">No stats provided yet.</p>
         ) : (
           <dl className="mt-4 divide-y divide-border/60">
             {visible.map(([label, value]) => (
-              <div
-                key={label}
-                className="flex items-center justify-between py-3"
-              >
+              <div key={label} className="flex items-center justify-between py-3">
                 <dt className="text-sm text-foreground/70">{label}</dt>
                 <dd className="text-sm font-medium text-foreground">{value}</dd>
               </div>
@@ -508,17 +479,12 @@ function AboutBlock({ profile }: { profile: ProfileForAbout }) {
           Skills
         </h2>
         {skills.length === 0 ? (
-          <p className="mt-4 text-sm text-foreground/60">
-            No skills listed yet.
-          </p>
+          <p className="mt-4 text-sm text-foreground/60">No skills listed yet.</p>
         ) : (
           <ul className="mt-4 flex flex-wrap gap-2">
             {skills.map((s) => (
               <li key={s.id}>
-                <Badge
-                  variant="outline"
-                  className="rounded-full px-3 py-1.5 text-xs font-medium"
-                >
+                <Badge variant="outline" className="rounded-full px-3 py-1.5 text-xs font-medium">
                   {s.skillValue}
                 </Badge>
               </li>
@@ -535,19 +501,14 @@ function ReviewsBlock({ reviews }: { reviews: Review[] }) {
 
   if (visible.length === 0) {
     return (
-      <EmptyState>
-        No reviews yet. This artist hasn&apos;t been reviewed by a caster.
-      </EmptyState>
+      <EmptyState>No reviews yet. This artist hasn&apos;t been reviewed by a caster.</EmptyState>
     )
   }
 
   return (
     <ul className="space-y-5">
       {visible.map((r) => (
-        <li
-          key={r.id}
-          className="rounded-2xl border border-border/60 bg-[var(--surface-50)] p-5"
-        >
+        <li key={r.id} className="rounded-2xl border border-border/60 bg-[var(--surface-50)] p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -555,9 +516,7 @@ function ReviewsBlock({ reviews }: { reviews: Review[] }) {
                   key={i}
                   className={cn(
                     'h-3.5 w-3.5',
-                    i < r.rating
-                      ? 'fill-primary text-primary'
-                      : 'text-foreground/20',
+                    i < r.rating ? 'fill-primary text-primary' : 'text-foreground/20'
                   )}
                 />
               ))}
@@ -570,9 +529,7 @@ function ReviewsBlock({ reviews }: { reviews: Review[] }) {
             </span>
           </div>
           {r.comment && (
-            <p className="mt-3 text-sm leading-relaxed text-foreground/80">
-              {r.comment}
-            </p>
+            <p className="mt-3 text-sm leading-relaxed text-foreground/80">{r.comment}</p>
           )}
         </li>
       ))}
@@ -587,4 +544,3 @@ function EmptyState({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
-

@@ -6,6 +6,12 @@ Scope: public website + marketplace UI. Admin/internal panels are out of scope h
 
 ---
 
+## Register
+
+brand
+
+---
+
 ## Design Context
 
 ### Users

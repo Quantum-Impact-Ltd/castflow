@@ -1,6 +1,10 @@
-import { CasterJobDetailClient } from './client'
+import { CasterJobDetailClient } from './caster-job-detail-client'
 
-export default async function CasterJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CasterJobDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   const { id } = await params
-  return <CasterJobDetailClient id={id} />
+  return <CasterJobDetailClient jobId={id} />
 }

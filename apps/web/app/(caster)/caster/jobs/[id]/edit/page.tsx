@@ -1,6 +1,10 @@
-import { CasterJobEditClient } from './client'
+import { EditJobClient } from './edit-job-client'
 
-export default async function CasterJobEditPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditJobPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   const { id } = await params
-  return <CasterJobEditClient id={id} />
+  return <EditJobClient jobId={id} />
 }

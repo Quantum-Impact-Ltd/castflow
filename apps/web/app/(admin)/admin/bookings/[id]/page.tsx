@@ -1,4 +1,4 @@
-import { AdminBookingDetailClient } from './client'
+import { AdminBookingDetailClient } from './admin-booking-detail-client'
 
 export default async function AdminBookingDetailPage({
   params,
@@ -6,5 +6,5 @@ export default async function AdminBookingDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <AdminBookingDetailClient id={id} />
+  return <AdminBookingDetailClient bookingId={id} />
 }

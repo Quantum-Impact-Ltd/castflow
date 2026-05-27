@@ -1,10 +1,10 @@
-import { DisputeForm } from './form'
+import { DisputeClient } from './dispute-client'
 
-export default async function ArtistBookingDisputePage({
+export default async function ArtistDisputePage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  return <DisputeForm bookingId={id} />
+  return <DisputeClient bookingId={id} />
 }
