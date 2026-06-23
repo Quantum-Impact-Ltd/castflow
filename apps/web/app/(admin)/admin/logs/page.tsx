@@ -2,12 +2,7 @@
 
 import { useState } from 'react'
 import { ScrollText, Search, X, Lock } from 'lucide-react'
-import {
-  PageHeader,
-  LoadingState,
-  ErrorState,
-  EmptyState,
-} from '@/components/dashboard'
+import { PageHeader, LoadingState, ErrorState, EmptyState } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -127,20 +122,15 @@ export default function AdminLogsPage() {
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     {formatDateTime(log.createdAt)}
                   </TableCell>
-                  <TableCell
-                    className="font-mono text-xs text-foreground"
-                    title={log.adminId}
-                  >
-                    {shortId(log.adminId)}
+                  <TableCell className="text-foreground" title={log.adminId}>
+                    {log.adminName ?? shortId(log.adminId)}
                   </TableCell>
                   <TableCell className="font-medium text-foreground">
                     {humanise(log.action)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     <span className="text-foreground">{humanise(log.entityType)}</span>{' '}
-                    <span className="font-mono text-xs" title={log.entityId}>
-                      {shortId(log.entityId)}
-                    </span>
+                    <span title={log.entityId}>{log.entityLabel ?? shortId(log.entityId)}</span>
                   </TableCell>
                   <TableCell className="max-w-xs whitespace-normal text-muted-foreground">
                     {log.notes ?? '—'}

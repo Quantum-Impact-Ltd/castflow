@@ -39,10 +39,7 @@ export type CastflowNotificationType =
   | 'contract_ready'
   | 'contract_signed_by_other'
   | 'contract_fully_signed'
-  | 'payment_held'
-  | 'payment_released'
-  | 'payment_failed'
-  | 'payout_sent'
+  | 'subscription_past_due'
   | 'dispute_opened'
   | 'dispute_resolved'
   | 'message_received'
@@ -55,6 +52,7 @@ export type CastflowNotificationType =
   | 'invite_declined'
   | 'job_critical_change'
   | 'thread_reported'
+  | 'review_reported'
 
 interface CreateArgs {
   userId: string

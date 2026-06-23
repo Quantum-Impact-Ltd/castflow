@@ -105,28 +105,30 @@ const SECTIONS: LegalSection[] = [
   },
   {
     id: 'payments',
-    title: 'Payments and escrow',
+    title: 'Subscription and job fees',
     body: (
       <>
         <p>
-          All payments flow through CastFlow&apos;s Stripe escrow. When a
-          booking is confirmed, the caster&apos;s full payment is captured into
-          a ring-fenced Stripe account. Neither party can withdraw the funds
-          while they are in escrow.
+          CastFlow charges <strong>casters a recurring subscription</strong> to
+          access and use the platform. This subscription is the only money
+          CastFlow collects. The current plans and prices are set out on our{' '}
+          <a href="/pricing">Pricing page</a>. <strong>Artists pay nothing</strong>{' '}
+          — there is no artist subscription, listing fee, or platform charge of
+          any kind.
         </p>
         <p>
-          Funds release to the artist when (a) the caster confirms shoot
-          completion, or (b) <strong>48 hours after the shoot date</strong>{' '}
-          (auto-release), whichever comes first. Stripe deducts the platform
-          commission at release and transfers the net amount to the
-          artist&apos;s connected UK bank account, typically within 2–3
-          business days.
+          <strong>Job fees are arranged and paid directly between the caster
+          and the artist, off-platform</strong>, on whatever terms the two
+          parties agree (before, at, or after the shoot). CastFlow does{' '}
+          <strong>not</strong> process, hold, escrow, or take any commission or
+          percentage of job fees, and is not a paying agent, payment processor,
+          or escrow holder for those fees.
         </p>
         <p>
-          The commission rate is set out on our{' '}
-          <a href="/pricing">Pricing page</a>. Artists keep 100% of the agreed
-          rate — commission is deducted from our side of the transfer, not
-          added to the caster&apos;s bill.
+          The agreed rate is recorded on the booking contract so both parties
+          have a clear written record of what was agreed. Responsibility for
+          actually paying the agreed fee rests entirely with the caster and
+          artist.
         </p>
       </>
     ),
@@ -137,18 +139,20 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Cancellation rules depend on how close to the shoot date the
-          cancellation happens:
+          Cancellation terms are advisory terms in the booking contract that
+          the two parties agree to and settle directly between themselves.
+          CastFlow records them but does not move money. They depend on how
+          close to the shoot date the cancellation happens:
         </p>
         <ul>
           <li>
-            <strong>More than 48 hours before shoot:</strong> full escrow
-            refund to the caster, no penalty.
+            <strong>More than 48 hours before shoot:</strong> no cancellation
+            fee.
           </li>
           <li>
             <strong>Within 48 hours of shoot:</strong> the cancelling party
-            owes <strong>50% of the agreed rate</strong> to the other party.
-            Stripe handles the split automatically.
+            owes <strong>50% of the agreed rate</strong> to the other party,
+            payable directly off-platform.
           </li>
           <li>
             Artists cancelling under 48 hours additionally receive a{' '}
@@ -157,11 +161,13 @@ const SECTIONS: LegalSection[] = [
         </ul>
         <p>
           Either party can raise a dispute within{' '}
-          <strong>72 hours of the shoot date</strong>. Escrow funds freeze
-          until a human admin reviews both submissions, the contract, and the
-          message thread, then rules on the outcome. Outcomes can include full
-          release, full refund, a custom split, and/or a strike on the
-          offending account.
+          <strong>72 hours of the shoot date</strong>. A human admin reviews
+          both submissions, the contract, and the message thread, then records
+          an outcome. Outcomes are a record and an advisory recommendation —
+          they can include finding for the artist, finding for the caster, an
+          advised split, and/or a strike on the offending account. Any fee owed
+          is settled <strong>directly between the parties, off-platform</strong>;
+          CastFlow does not hold or transfer money.
         </p>
         <p>
           Three strikes triggers a full account review. Frivolous disputes
@@ -178,8 +184,9 @@ const SECTIONS: LegalSection[] = [
         <p>You agree not to:</p>
         <ul>
           <li>
-            request or accept payment outside the CastFlow escrow — this is a
-            hard ToS violation and both accounts get flagged
+            arrange bookings off-platform to avoid a caster subscription, or
+            otherwise circumvent the platform&apos;s fees — this is a hard ToS
+            violation and accounts involved get flagged
           </li>
           <li>share or solicit contact details before a booking is confirmed</li>
           <li>impersonate anyone, falsify ID, or use someone else&apos;s likeness</li>
@@ -231,7 +238,7 @@ const SECTIONS: LegalSection[] = [
         <p>
           To the maximum extent permitted by law, CastFlow&apos;s total
           liability to you for any claim arising out of these Terms is capped
-          at the greater of (a) £100, or (b) the total platform commission you
+          at the greater of (a) £100, or (b) the total subscription fees you
           paid us in the 12 months before the claim.
         </p>
         <p>
@@ -250,8 +257,8 @@ const SECTIONS: LegalSection[] = [
         <p>
           You can delete your CastFlow account at any time from{' '}
           <strong>Settings → Account → Close account</strong>, unless you have
-          active bookings or funds in escrow. We may suspend or terminate any
-          account that breaches these Terms.
+          active bookings. We may suspend or terminate any account that breaches
+          these Terms.
         </p>
         <p>
           Closing your account does not cancel any in-flight contracts or

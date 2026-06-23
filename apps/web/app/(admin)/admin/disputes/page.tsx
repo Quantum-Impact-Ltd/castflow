@@ -41,9 +41,21 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 const REASON_LABEL: Record<DisputeReason, string> = {
   no_show_artist: 'Artist did not show up',
   no_show_caster: 'Caster did not show up',
-  payment_issue: 'Payment issue',
+  payment_issue: 'Fee dispute',
   quality_issue: 'Quality issue',
   other: 'Other',
+}
+
+// `reason` is a free-text column at the DB level, so a value may not be one of
+// the known enum keys. Fall back to a humanised version of whatever is stored.
+function reasonLabel(reason: string): string {
+  return (
+    REASON_LABEL[reason as DisputeReason] ??
+    reason
+      .split('_')
+      .map((w) => (w.length ? `${w[0]!.toUpperCase()}${w.slice(1)}` : w))
+      .join(' ')
+  )
 }
 
 // Surface actionable disputes first when the API doesn't pre-sort.
@@ -132,7 +144,7 @@ export default function AdminDisputesPage() {
 function DisputeRow({ dispute, onOpen }: { dispute: Dispute; onOpen: () => void }) {
   return (
     <TableRow className="cursor-pointer" onClick={onOpen}>
-      <TableCell className="font-medium text-foreground">{REASON_LABEL[dispute.reason]}</TableCell>
+      <TableCell className="font-medium text-foreground">{reasonLabel(dispute.reason)}</TableCell>
       <TableCell>
         <StatusBadge status={dispute.status} />
       </TableCell>
@@ -147,9 +159,9 @@ function DisputeRow({ dispute, onOpen }: { dispute: Dispute; onOpen: () => void 
 function resolutionLabel(resolution: string): string {
   switch (resolution) {
     case 'full_release_to_artist':
-      return 'Full release to artist'
+      return 'Resolved for the artist'
     case 'full_refund_to_caster':
-      return 'Full refund to caster'
+      return 'Resolved for the caster'
     case 'split':
       return 'Split'
     case 'escalated':

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 export const metadata: Metadata = {
   title: 'Pricing — CastFlow',
   description:
-    'Casters pay a monthly subscription plus a per-booking commission. Artists never pay a fee — they keep 100% of every agreed rate.',
+    'Casters pay a flat monthly subscription to use CastFlow — that is the only money the platform collects. Artists join free, and job fees are paid directly between caster and artist.',
 }
 
 interface Tier {
@@ -18,7 +18,7 @@ interface Tier {
   name: string
   sub: string
   monthly: string
-  commission: string
+  note: string
   features: string[]
   cta: string
   popular?: boolean
@@ -30,12 +30,12 @@ const TIERS: Tier[] = [
     name: 'Starter',
     sub: 'Freelance producers and small brands',
     monthly: '£49',
-    commission: '10% per booking',
+    note: 'No commission, ever',
     features: [
       '1 active job post at a time',
       '1 user seat',
       'Full talent search & filters',
-      'Escrow + contracts + reviews',
+      'Contracts + reviews',
       'Email support',
     ],
     cta: 'Choose Starter',
@@ -45,7 +45,7 @@ const TIERS: Tier[] = [
     name: 'Studio',
     sub: 'Mid-size brands and boutique agencies',
     monthly: '£149',
-    commission: '8% per booking',
+    note: 'No commission, ever',
     features: [
       '3 active job posts',
       '3 user seats',
@@ -61,7 +61,7 @@ const TIERS: Tier[] = [
     name: 'Agency',
     sub: 'Full agencies and production houses',
     monthly: '£399',
-    commission: '6% per booking',
+    note: 'No commission, ever',
     features: [
       'Unlimited job posts',
       '10 user seats',
@@ -84,7 +84,7 @@ const COMPARISON: ComparisonRow[] = [
   { label: 'Active job posts', starter: '1', studio: '3', agency: 'Unlimited' },
   { label: 'Team seats', starter: '1', studio: '3', agency: '10' },
   { label: 'Talent search', starter: true, studio: true, agency: true },
-  { label: 'Escrow payments', starter: true, studio: true, agency: true },
+  { label: 'Commission on bookings', starter: 'None', studio: 'None', agency: 'None' },
   { label: 'Built-in contracts', starter: true, studio: true, agency: true },
   { label: 'Verified artists', starter: true, studio: true, agency: true },
   { label: 'Direct invite-to-apply', starter: false, studio: true, agency: true },
@@ -98,15 +98,15 @@ const COMPARISON: ComparisonRow[] = [
 const FAQS: Array<{ q: string; a: string }> = [
   {
     q: 'Do artists pay anything?',
-    a: 'No. Artists never pay a subscription, listing fee, or platform charge. Our commission comes out of the artist payout — the caster pays the full agreed rate, and we take a small percentage at the point of release. The artist always sees the gross → commission → net breakdown up-front, so there are no surprises.',
+    a: 'No — artists never pay a subscription, listing fee, or any platform charge. CastFlow is free for artists, full stop. The only money the platform collects is the caster subscription.',
   },
   {
-    q: 'How does the commission work?',
-    a: "When a booking is confirmed, the caster's full payment goes into escrow. Once the shoot is completed and confirmed (or auto-released after 48 hours), Stripe deducts the platform commission from the artist's side and transfers the net amount to their connected bank account. The commission rate depends on the caster's plan — 10%, 8%, or 6%.",
+    q: 'Does CastFlow take a cut of the job fee?',
+    a: "No. There is no commission. Job fees are paid directly between caster and artist, off-platform, on whatever terms you agree — before, at, or after the shoot. CastFlow doesn't process, hold, or take a percentage of those fees.",
   },
   {
     q: 'When am I charged?',
-    a: 'The monthly subscription is billed at sign-up and then every 30 days. The per-booking commission is only taken when a booking is paid out — never up-front, never on cancelled or refunded bookings.',
+    a: 'The caster subscription is billed at sign-up and then on each renewal. That subscription is the platform’s only charge — there are no per-booking fees or surprise deductions.',
   },
   {
     q: 'Can I change plans?',
@@ -114,11 +114,11 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: 'What if a booking is cancelled?',
-    a: 'If a booking is cancelled before the 48-hour mark, the caster receives a full refund and no commission is taken. Inside 48 hours, our cancellation policy applies (the cancelling party owes a 50% fee to the other side) — commission is still only taken on funds that actually transfer to the artist.',
+    a: 'Bookings are governed by a signed contract. If a cancellation happens within 48 hours of the shoot, our cancellation term applies as an advisory: the cancelling party owes 50% of the agreed rate to the other side, settled directly between the two parties. CastFlow records the term but does not move money.',
   },
   {
     q: 'Is VAT included?',
-    a: 'All prices shown are excluding VAT. UK VAT (20%) is added at checkout for UK-registered businesses. EU and international customers are charged based on their location.',
+    a: 'Subscription prices shown are excluding VAT. UK VAT (20%) is added at checkout for UK-registered businesses. EU and international customers are charged based on their location.',
   },
   {
     q: 'Do you offer custom enterprise pricing?',
@@ -156,7 +156,7 @@ function TierCard({ tier }: { tier: Tier }) {
           </span>
           <span className="text-sm text-foreground/60">/ month</span>
         </p>
-        <p className="mt-2 text-sm text-foreground/70">+ {tier.commission}</p>
+        <p className="mt-2 text-sm text-foreground/70">{tier.note}</p>
       </div>
 
       <ul className="mt-8 flex flex-1 flex-col gap-3 border-t border-border/60 pt-6">
@@ -216,12 +216,13 @@ export default function PricingPage() {
                 Pricing
               </p>
               <h1 className="mt-6 max-w-4xl text-balance text-5xl font-medium leading-[1.04] tracking-[-0.02em] text-foreground sm:text-6xl lg:text-7xl">
-                Casters pay.{' '}
-                <span className="font-serif font-normal italic">Artists keep 100%.</span>
+                Casters subscribe.{' '}
+                <span className="font-serif font-normal italic">Artists join free.</span>
               </h1>
               <p className="mt-8 max-w-2xl text-lg leading-relaxed text-foreground/75">
-                One monthly subscription plus a small per-booking commission. Every artist takes
-                home their full agreed rate. No skim, no listing fees, no surprises.
+                A flat monthly subscription for casters — that&apos;s the only money CastFlow
+                collects. No commission, no per-booking fee. Job fees are paid directly between
+                caster and artist, off-platform.
               </p>
             </Reveal>
           </div>
@@ -246,53 +247,55 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Commission breakdown visualisation */}
+        {/* How it works */}
         <section className="w-full bg-[var(--surface-50)] py-24 lg:py-32">
           <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
             <Reveal>
               <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
                 <div className="lg:col-span-5">
                   <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
-                    How payouts work
+                    How it works
                   </p>
                   <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                    The artist sees{' '}
-                    every penny before they
-                    bid.
+                    One subscription.{' '}
+                    No cut of the job fee.
                   </h2>
                 </div>
                 <p className="text-lg leading-relaxed text-foreground/75 lg:col-span-7 lg:pt-2">
-                  Caster pays the agreed rate into escrow. When the shoot is confirmed complete,
-                  Stripe deducts our commission from the artist&apos;s side and transfers the net
-                  into their UK bank account — typically 2–3 business days.
+                  Your subscription unlocks posting jobs and booking talent. The job fee itself is
+                  agreed and paid directly between you and the artist, off-platform. CastFlow never
+                  holds, processes, or takes a percentage of it.
                 </p>
               </div>
             </Reveal>
 
             <Reveal delay={120}>
-              <div className="mt-16 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <BreakdownCard
-                  step="1 · Caster pays"
-                  label="Agreed rate"
-                  prefix="£"
-                  value={1000}
-                  note="Captured into escrow at booking confirmation."
+              <div className="mt-16 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                <StepCard
+                  step="Step 1"
+                  label="Post the job"
+                  note="Your caster subscription unlocks posting and booking talent."
                 />
-                <BreakdownCard
-                  step="2 · Platform commission"
-                  label="At payout (Studio plan, 8%)"
-                  prefix="−£"
-                  value={80}
-                  amountClassName="text-foreground/70"
-                  note="Deducted from artist's side — never added to the caster's bill."
+                <StepCard
+                  step="Step 2"
+                  label="Review bids"
+                  note="Compare rates and portfolios, shortlist, and message."
                 />
-                <BreakdownCard
-                  step="3 · Artist takes home"
-                  label="Net to bank"
-                  prefix="£"
-                  value={920}
+                <StepCard
+                  step="Step 3"
+                  label="Book + sign"
+                  note="Accept a bid and both parties e-sign the contract with the agreed rate."
+                />
+                <StepCard
+                  step="Step 4"
+                  label="Shoot"
+                  note="Talent shows up. Confirm completion afterwards for the record."
+                />
+                <StepCard
+                  step="Step 5"
+                  label="Pay the artist"
+                  note="Settle the agreed fee directly with the artist, off-platform."
                   highlight
-                  note="Released after shoot confirmation. Auto-released after 48h."
                 />
               </div>
             </Reveal>
@@ -300,9 +303,9 @@ export default function PricingPage() {
             <Reveal delay={240}>
               <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-foreground/70">
                 <SmallNote>No listing fees</SmallNote>
-                <SmallNote>No payout fees</SmallNote>
+                <SmallNote>No commission on bookings</SmallNote>
                 <SmallNote>No platform charge to artists</SmallNote>
-                <SmallNote>Commission only on completed bookings</SmallNote>
+                <SmallNote>Job fees paid directly, off-platform</SmallNote>
               </div>
             </Reveal>
           </div>
@@ -452,22 +455,16 @@ export default function PricingPage() {
   )
 }
 
-function BreakdownCard({
+function StepCard({
   step,
   label,
-  prefix,
-  value,
   note,
   highlight = false,
-  amountClassName,
 }: {
   step: string
   label: string
-  prefix: string
-  value: number
   note: string
   highlight?: boolean
-  amountClassName?: string
 }) {
   return (
     <div
@@ -479,18 +476,13 @@ function BreakdownCard({
       <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/60">
         {step}
       </p>
-      <p className="mt-3 text-sm text-foreground/70">{label}</p>
       <p
         className={cn(
-          'mt-4 inline-flex items-baseline text-5xl font-medium tracking-[-0.03em]',
-          highlight ? 'text-primary' : 'text-foreground',
-          amountClassName
+          'mt-4 text-2xl font-medium tracking-[-0.02em]',
+          highlight ? 'text-primary' : 'text-foreground'
         )}
       >
-        <span>{prefix}</span>
-        <span className={cn(highlight ? 'text-primary' : 'text-foreground', amountClassName)}>
-          {value}
-        </span>
+        {label}
       </p>
       <p className="mt-4 text-sm leading-relaxed text-foreground/70">{note}</p>
     </div>

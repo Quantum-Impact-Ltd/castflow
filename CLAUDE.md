@@ -53,7 +53,9 @@ apps/api/prisma/CLAUDE.md
 
 Contains the full annotated Prisma schema with every model, field, index, and
 constraint. Also documents the payment type business logic (fixed vs hourly)
-and how it flows through Job → Bid → Booking → Contract → Payment.
+and how it flows through Job → Bid → Booking → Contract (the agreed fee is then
+paid directly to the artist off-platform; the only platform charge is the caster
+subscription).
 
 ### 3. Continue with your task
 
@@ -67,7 +69,8 @@ and prevents hours of architectural drift.
 
 CastFlow is a UK-based casting marketplace. Casters (brands/agencies) post shoot
 jobs. Artists (models/actors) bid on them. The platform handles booking, contracts,
-escrow payments, and reviews end to end.
+and reviews end to end. Job fees are paid directly between caster and artist
+off-platform; CastFlow's only charge is a recurring caster subscription.
 
 ## Monorepo structure
 
@@ -113,10 +116,10 @@ These apply everywhere. If any code you write would violate one of these, stop a
 - Contact details hidden until booking confirmed — caster sees only company name, artist sees only first name until a booking exists.
 - Shoot location hidden until contract fully signed — `shootLocationDetail` is never returned until `contract.status === 'fully_signed'`.
 - Completion confirm is date-locked — caster cannot confirm shoot completion before `booking.shootDate` has passed. Hard lock.
-- Dispute window is 72 hours — disputes can only be raised within 72 hours of `booking.shootDate`.
-- Escrow auto-release at shootDate + 48hrs — if caster has not confirmed, release automatically (lazy evaluation).
-- No off-platform payments — ToS violation. Both accounts reviewed if reported.
-- Cancellation fees under 48hrs — cancelling party pays 50% of agreed rate to the other party.
+- Dispute window is 72 hours — disputes can only be raised within 72 hours of `booking.shootDate`. Record-only — no money moves on the platform.
+- Job fees are paid directly off-platform — the caster pays the artist directly (before/at/after the shoot). CastFlow does NOT process job payments. The only money the platform collects is a recurring caster subscription (Stripe Billing); artists pay nothing.
+- Active subscription required to post a job and to accept a bid (book talent) — browsing, messaging, contracts, reviews, and disputes remain free.
+- Cancellation fee under 48hrs — the advisory ToS rate is 50% of the agreed rate, owed off-platform between the parties. It is NOT enforced or split by the platform (no escrow).
 
 ---
 
@@ -141,6 +144,10 @@ hourly → per-hour rate, billed by hours worked
 In both types, `rateSetBy` controls whether the caster sets the rate or leaves
 it open for artists to propose in their bid.
 
+Note: `totalAmount` is the agreed fee the caster pays the artist **directly,
+off-platform** — the platform does not process or hold it. These types only
+describe how that agreed rate is structured and displayed on the contract.
+
 See `packages/CLAUDE.md` for the full type definitions.
 See `apps/api/prisma/CLAUDE.md` for the DB field annotations.
 
@@ -153,7 +160,7 @@ See `apps/api/prisma/CLAUDE.md` for the DB field annotations.
 - **Auth:** Better Auth (email/password + Google + Apple)
 - **Database:** PostgreSQL + Prisma
 - **Storage:** Cloudflare R2
-- **Payments:** Stripe + Stripe Connect
+- **Payments:** Stripe Billing (caster subscriptions only — no escrow, no Connect)
 - **Email:** Resend (inline for MVP, no queue)
 - **Real-time:** Hono native WebSockets (`createBunWebSocket`)
 - **Monorepo:** Turborepo + Bun workspaces

@@ -1,7 +1,15 @@
 import type { MetadataRoute } from 'next'
-import { SITE_URL } from '@/lib/site'
+import { SITE_URL, IS_PUBLIC_PRODUCTION } from '@/lib/site'
 
 export default function robots(): MetadataRoute.Robots {
+  // Non-production (staging/preview) deploys are blocked from crawling
+  // entirely so they never get indexed alongside — or instead of — prod.
+  if (!IS_PUBLIC_PRODUCTION) {
+    return {
+      rules: [{ userAgent: '*', disallow: '/' }],
+    }
+  }
+
   return {
     rules: [
       {

@@ -15,7 +15,7 @@ const PREF_LABELS: { key: keyof NotificationPrefs; label: string; hint: string }
     label: 'Bookings & contracts',
     hint: 'Confirmations, contracts to sign, and cancellations.',
   },
-  { key: 'payments', label: 'Payments', hint: 'Escrow held, released, and refunds.' },
+  { key: 'payments', label: 'Subscription', hint: 'Subscription renewals, receipts, and billing issues.' },
   { key: 'reviews', label: 'Reviews', hint: 'When an artist reviews you after a shoot.' },
 ]
 

@@ -9,7 +9,7 @@
 - **UI:** shadcn/ui + Tailwind CSS
 - **Rich Text:** Tiptap (job description editor)
 - **File Upload:** react-dropzone
-- **Payments:** Stripe.js + @stripe/react-stripe-js
+- **Payments:** Stripe.js (caster subscription checkout/portal only — no escrow, no Connect)
 - **Real-time:** Hono native WebSocket (via browser WebSocket API)
 - **PDF View:** react-pdf
 
@@ -35,7 +35,6 @@ apps/web/
 │   │   │   ├── jobs/
 │   │   │   ├── bids/
 │   │   │   ├── bookings/
-│   │   │   ├── earnings/
 │   │   │   ├── messages/
 │   │   │   └── settings/
 │   ├── (caster)/             # Caster-only pages
@@ -46,6 +45,7 @@ apps/web/
 │   │       ├── jobs/
 │   │       ├── talent/
 │   │       ├── bookings/
+│   │       ├── billing/         # Subscription status + checkout/portal (Stripe Billing)
 │   │       ├── messages/
 │   │       └── settings/
 │   ├── (admin)/              # Admin-only pages
@@ -56,7 +56,6 @@ apps/web/
 │   │       ├── users/
 │   │       ├── jobs/
 │   │       ├── bookings/
-│   │       ├── payments/
 │   │       ├── disputes/
 │   │       ├── flagged/
 │   │       ├── analytics/
@@ -129,7 +128,7 @@ export default async function ArtistLayout({ children }) {
 | ------------------------------- | ----------------------- |
 | Job feed (initial render + SEO) | Forms (useState)        |
 | Artist public profile           | File upload dropzone    |
-| Admin tables (initial data)     | Stripe payment form     |
+| Admin tables (initial data)     | Subscription checkout   |
 | Static pages                    | Real-time messaging     |
 | Data that doesn't change often  | Anything with useEffect |
 
@@ -372,8 +371,22 @@ function MessageThread({ threadId }) {
 - **Before booking confirmed:** Show caster only as company name, artist only as first name
 - **After booking + contract signed:** Show full contact details on the booking detail page
 - **Shoot location:** Only display after `contract.status === 'fully_signed'`
-- **Earnings breakdown:** Always show gross → commission deduction → net (never hide the commission)
+- **Job fee:** The platform does not process job fees — the caster pays the artist
+  directly off-platform. Show the agreed fee on the contract/booking; never show
+  escrow status, commission, or payout breakdowns (those concepts no longer exist).
 - **Admin only:** ID document URLs, full Stripe IDs, strike counts
+
+## Subscription Gate (Caster)
+
+CastFlow's only platform charge is a recurring caster subscription (Stripe Billing).
+
+- Posting a job and accepting a bid (booking talent) require an **active**
+  subscription. The API returns `SUBSCRIPTION_REQUIRED` (HTTP 402) if not — the
+  fetcher surfaces it as a typed `ApiError`; gate those CTAs and redirect the
+  caster to `/caster/billing` to subscribe (Checkout) or manage (Portal).
+- Browsing, messaging, contracts, reviews, and disputes are free — no gate.
+- `/caster/billing` calls `POST /subscriptions/checkout` (start),
+  `POST /subscriptions/portal` (manage), and `GET /subscriptions/status` (display).
 
 ## Notification Rules
 
@@ -396,7 +409,7 @@ queryClient.setQueryData(queryKeys.jobs.detail(job.id), job)
 ```
 
 Resources covered: `jobs`, `caster.jobs`, `bids`, `artist.bids`,
-`artist.earnings`, `bookings`, `threads.inbox`, `messages.forThread`,
+`bookings`, `subscription.status`, `threads.inbox`, `messages.forThread`,
 `notifications.all`, `talent.search`. Add new resources to the factory
 before using them.
 

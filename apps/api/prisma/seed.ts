@@ -1,11 +1,16 @@
 /**
  * CastFlow development seed.
  *
- * Idempotent: re-running upserts users + their profiles, jobs, bids, bookings,
- * contracts, payments, reviews, disputes, invites, threads, messages, and
- * notifications without dupes. Safe to run repeatedly. Set FRESH=1 to wipe
- * CastFlow domain data first (does NOT touch the Better Auth user/account
- * tables — those go through signUpEmail).
+ * Idempotent: re-running upserts users + their profiles, caster subscriptions,
+ * jobs, bids, bookings, contracts, reviews, disputes, invites, threads,
+ * messages, and notifications without dupes. Safe to run repeatedly. Set
+ * FRESH=1 to wipe CastFlow domain data first (does NOT touch the Better Auth
+ * user/account tables — those go through signUpEmail).
+ *
+ * Payment model: the platform takes NO job payment. Casters pay artists
+ * directly off-platform — there is no escrow, no commission, no artist payout.
+ * The only platform money is the caster subscription (CasterSubscription),
+ * which casters need in order to post jobs and accept bids.
  *
  * Default password for every account: `Password123!`
  * Credentials are printed at the end.
@@ -17,7 +22,6 @@ import { auth } from '../src/lib/auth'
 const prisma = new PrismaClient()
 
 const DEFAULT_PASSWORD = 'Password123!'
-const COMMISSION_RATE = 15
 
 // ─── Time helpers ─────────────────────────────────────────────────────────────
 
@@ -79,7 +83,7 @@ const ID = {
   invite: (job: string, artist: string) => `inv_seed_${job}_${artist}`,
   booking: (k: string) => `bk_seed_${k}`,
   contract: (k: string) => `ct_seed_${k}`,
-  payment: (k: string) => `pay_seed_${k}`,
+  subscription: (k: string) => `sub_seed_${k}`,
   review: (bk: string, by: string) => `rv_seed_${bk}_${by}`,
   dispute: (k: string) => `dp_seed_${k}`,
   thread: (job: string, artist: string) => `th_seed_${job}_${artist}`,
@@ -103,7 +107,6 @@ async function wipeIfRequested() {
     prisma.messageThread.deleteMany(),
     prisma.review.deleteMany(),
     prisma.dispute.deleteMany(),
-    prisma.payment.deleteMany(),
     prisma.contract.deleteMany(),
     prisma.booking.deleteMany(),
     prisma.counterOffer.deleteMany(),
@@ -115,6 +118,7 @@ async function wipeIfRequested() {
     prisma.modelStats.deleteMany(),
     prisma.actorStats.deleteMany(),
     prisma.artistProfile.deleteMany(),
+    prisma.casterSubscription.deleteMany(),
     prisma.casterProfile.deleteMany(),
   ])
 }
@@ -130,6 +134,9 @@ interface CasterSpec {
   contactName: string
   phone?: string
   website?: string
+  // Casters now need an active subscription to post jobs / accept bids. Seeded
+  // casters that own jobs and bookings are given one by default.
+  subscribed?: boolean
 }
 
 async function ensureCaster(spec: CasterSpec) {
@@ -139,6 +146,9 @@ async function ensureCaster(spec: CasterSpec) {
     role: 'caster',
     status: 'active',
   })
+
+  const subscribed = spec.subscribed ?? true
+  const stripeCustomerId = `cus_seed_${spec.key}`
 
   const caster = await prisma.casterProfile.upsert({
     where: { id: ID.caster(spec.key) },
@@ -150,6 +160,7 @@ async function ensureCaster(spec: CasterSpec) {
       contactName: spec.contactName,
       phone: spec.phone ?? null,
       website: spec.website ?? null,
+      stripeCustomerId: subscribed ? stripeCustomerId : null,
     },
     update: {
       companyName: spec.companyName,
@@ -157,6 +168,7 @@ async function ensureCaster(spec: CasterSpec) {
       contactName: spec.contactName,
       phone: spec.phone ?? null,
       website: spec.website ?? null,
+      stripeCustomerId: subscribed ? stripeCustomerId : null,
     },
   })
 
@@ -164,6 +176,28 @@ async function ensureCaster(spec: CasterSpec) {
     where: { id: user.id },
     data: { profileId: caster.id },
   })
+
+  // Active platform subscription — required for posting jobs and accepting
+  // bids. Seeded as a live monthly subscription renewing ~30 days out.
+  if (subscribed) {
+    const subData = {
+      stripeCustomerId,
+      stripeSubscriptionId: `sub_seed_${spec.key}`,
+      status: 'active' as const,
+      priceId: 'price_seed_monthly',
+      currentPeriodEnd: daysFromNow(30),
+      cancelAtPeriodEnd: false,
+    }
+    await prisma.casterSubscription.upsert({
+      where: { casterId: caster.id },
+      create: {
+        id: ID.subscription(spec.key),
+        casterId: caster.id,
+        ...subData,
+      },
+      update: subData,
+    })
+  }
 
   return { user, caster }
 }
@@ -183,8 +217,11 @@ interface ArtistSpec {
   experienceLevel: 'new_face' | 'semi_pro' | 'professional'
   instagramHandle?: string
   approvalStatus: 'pending' | 'approved' | 'rejected'
-  payoutsEnabled?: boolean
-  stripeAccountId?: string
+  approvalNotes?: string
+  // Account-level status (admin user-management states). Defaults to 'active'.
+  status?: 'active' | 'pending' | 'suspended' | 'banned'
+  availabilityStatus?: 'available' | 'unavailable'
+  strikeCount?: number
   modelStats?: {
     heightCm: number
     weightKg?: number
@@ -219,7 +256,7 @@ async function ensureArtist(spec: ArtistSpec, approverId?: string) {
     email: spec.email,
     name: spec.name,
     role: 'artist',
-    status: 'active',
+    status: spec.status ?? 'active',
     approvalStatus: spec.approvalStatus,
   })
 
@@ -236,14 +273,15 @@ async function ensureArtist(spec: ArtistSpec, approverId?: string) {
     bio: spec.bio,
     experienceLevel: spec.experienceLevel,
     instagramHandle: spec.instagramHandle ?? null,
+    availabilityStatus: spec.availabilityStatus ?? 'available',
     approvalStatus: spec.approvalStatus,
-    approvedById: spec.approvalStatus === 'approved' ? approverId ?? null : null,
+    approvalNotes: spec.approvalNotes ?? null,
+    approvedById: spec.approvalStatus === 'approved' ? (approverId ?? null) : null,
     approvedAt: spec.approvalStatus === 'approved' ? daysAgo(30) : null,
     submittedAt: daysAgo(45),
     idDocumentUrl: `seed/id-docs/${spec.key}.jpg`,
     idVerified: spec.approvalStatus === 'approved',
-    payoutsEnabled: spec.payoutsEnabled ?? false,
-    stripeAccountId: spec.stripeAccountId ?? null,
+    strikeCount: spec.strikeCount ?? 0,
     ratingAvg: spec.ratingAvg ? new Prisma.Decimal(spec.ratingAvg) : null,
     ratingCount: spec.ratingCount ?? 0,
     jobsCompleted: spec.jobsCompleted ?? 0,
@@ -267,15 +305,11 @@ async function ensureArtist(spec: ArtistSpec, approverId?: string) {
         id: ID.stats(spec.key),
         artistProfileId: artist.id,
         ...spec.modelStats,
-        weightKg: spec.modelStats.weightKg
-          ? new Prisma.Decimal(spec.modelStats.weightKg)
-          : null,
+        weightKg: spec.modelStats.weightKg ? new Prisma.Decimal(spec.modelStats.weightKg) : null,
       },
       update: {
         ...spec.modelStats,
-        weightKg: spec.modelStats.weightKg
-          ? new Prisma.Decimal(spec.modelStats.weightKg)
-          : null,
+        weightKg: spec.modelStats.weightKg ? new Prisma.Decimal(spec.modelStats.weightKg) : null,
       },
     })
   }
@@ -415,8 +449,7 @@ async function upsertBid(spec: BidSpec) {
     jobId: spec.jobId,
     artistId: spec.artistId,
     proposedRate: new Prisma.Decimal(spec.proposedRate),
-    estimatedHours:
-      spec.estimatedHours != null ? new Prisma.Decimal(spec.estimatedHours) : null,
+    estimatedHours: spec.estimatedHours != null ? new Prisma.Decimal(spec.estimatedHours) : null,
     coverNote: spec.coverNote,
     status: spec.status ?? 'pending',
     highlightedPortfolioItems: spec.highlightedPortfolioItems ?? [],
@@ -428,6 +461,129 @@ async function upsertBid(spec: BidSpec) {
     create: data,
     update: data,
   })
+}
+
+// ─── Full-booking scenario factory ─────────────────────────────────────────────
+// Creates a complete job → bid → booking → contract chain in one call so the
+// dashboard-coverage scenarios below stay readable. Fixed-fee only (the states
+// we need to exercise — contract signing, completion, disputes — don't depend
+// on the hourly maths, which the existing audiobook/commercial jobs already
+// cover). There is no payment row: casters pay artists directly off-platform.
+
+interface ScenarioSpec {
+  key: string
+  casterId: string
+  casterCompanyName: string
+  casterSignerName: string
+  artistId: string
+  artistLegalName: string
+  title: string
+  description: string
+  category?: 'model' | 'actor' | 'voiceover' | 'extra'
+  genderRequired?: string
+  locationCity?: string
+  usageRights?: string
+  shootLocation: string
+  shootDate: Date
+  agreedRate: number
+  jobStatus?: 'active' | 'filled' | 'closed' | 'cancelled'
+  bookingStatus: 'pending_contract' | 'confirmed' | 'completed' | 'cancelled' | 'disputed'
+  completionConfirmedAt?: Date
+  contractStatus: 'pending_signatures' | 'partially_signed' | 'fully_signed' | 'voided'
+  artistSigned?: boolean
+  casterSigned?: boolean
+  paymentTerms?: string
+}
+
+async function seedBooking(s: ScenarioSpec) {
+  const job = await upsertJob({
+    key: s.key,
+    casterId: s.casterId,
+    title: s.title,
+    description: s.description,
+    category: s.category ?? 'model',
+    status: s.jobStatus ?? 'filled',
+    genderRequired: s.genderRequired ?? 'any',
+    locationCity: s.locationCity ?? 'London',
+    shootDate: s.shootDate,
+    shootDurationHours: 8,
+    paymentType: 'fixed',
+    rateSetBy: 'caster',
+    rateAmount: s.agreedRate,
+    usageRights: s.usageRights ?? 'Campaign, UK, 12 months.',
+    headcountRequired: 1,
+    headcountFilled: 1,
+    applicationDeadline: daysAgo(5),
+    autoExpiresAt: daysAgo(5),
+  })
+
+  const bid = await upsertBid({
+    jobKey: s.key,
+    artistKey: s.key,
+    jobId: job.id,
+    artistId: s.artistId,
+    proposedRate: s.agreedRate,
+    coverNote: 'Booked through the seed scenario.',
+    status: 'accepted',
+    submittedAt: daysAgo(12),
+  })
+
+  const booking = await prisma.booking.upsert({
+    where: { id: ID.booking(s.key) },
+    create: {
+      id: ID.booking(s.key),
+      jobId: job.id,
+      bidId: bid.id,
+      casterId: s.casterId,
+      artistId: s.artistId,
+      paymentType: 'fixed',
+      agreedRate: new Prisma.Decimal(s.agreedRate),
+      totalAmount: new Prisma.Decimal(s.agreedRate),
+      shootDate: s.shootDate,
+      shootLocation: s.shootLocation,
+      status: s.bookingStatus,
+      completionConfirmedAt: s.completionConfirmedAt ?? null,
+    },
+    update: {
+      status: s.bookingStatus,
+      completionConfirmedAt: s.completionConfirmedAt ?? null,
+    },
+  })
+
+  await prisma.contract.upsert({
+    where: { bookingId: booking.id },
+    create: {
+      id: ID.contract(s.key),
+      bookingId: booking.id,
+      status: s.contractStatus,
+      artistLegalName: s.artistLegalName,
+      casterCompanyName: s.casterCompanyName,
+      jobTitle: job.title,
+      shootDate: booking.shootDate,
+      shootLocation: booking.shootLocation,
+      paymentType: 'fixed',
+      agreedRate: new Prisma.Decimal(s.agreedRate),
+      totalAmount: new Prisma.Decimal(s.agreedRate),
+      paymentTerms: s.paymentTerms ?? `£${s.agreedRate} flat fee, paid directly by the caster.`,
+      usageRights: s.usageRights ?? 'Campaign, UK, 12 months.',
+      exclusivity: false,
+      ndaIncluded: false,
+      artistSigned: s.artistSigned ?? false,
+      artistSignedAt: s.artistSigned ? daysAgo(6) : null,
+      artistSignatureStr: s.artistSigned ? s.artistLegalName : null,
+      casterSigned: s.casterSigned ?? false,
+      casterSignedAt: s.casterSigned ? daysAgo(5) : null,
+      casterSignatureStr: s.casterSigned ? s.casterSignerName : null,
+      pdfUrl: s.contractStatus === 'fully_signed' ? `seed/contracts/${s.key}.pdf` : null,
+    },
+    update: {
+      status: s.contractStatus,
+      artistSigned: s.artistSigned ?? false,
+      casterSigned: s.casterSigned ?? false,
+    },
+  })
+
+  return { job, bid, booking }
 }
 
 // ─── Main orchestration ───────────────────────────────────────────────────────
@@ -485,8 +641,6 @@ async function main() {
       experienceLevel: 'professional',
       instagramHandle: '@sophiecartermodel',
       approvalStatus: 'approved',
-      payoutsEnabled: true,
-      stripeAccountId: 'acct_seed_sophie',
       ratingAvg: 4.8,
       ratingCount: 12,
       jobsCompleted: 14,
@@ -516,7 +670,7 @@ async function main() {
         { caption: 'Beauty close-up — Hourglass Cosmetics' },
       ],
     },
-    admin.id,
+    admin.id
   )
 
   const { artist: james, user: jamesUser } = await ensureArtist(
@@ -535,8 +689,6 @@ async function main() {
       experienceLevel: 'professional',
       instagramHandle: '@jamesohara.actor',
       approvalStatus: 'approved',
-      payoutsEnabled: true,
-      stripeAccountId: 'acct_seed_james',
       ratingAvg: 4.9,
       ratingCount: 8,
       jobsCompleted: 9,
@@ -564,7 +716,7 @@ async function main() {
         { caption: "Commercial — Sainsbury's Christmas 2025" },
       ],
     },
-    admin.id,
+    admin.id
   )
 
   const { artist: priya, user: priyaUser } = await ensureArtist(
@@ -583,7 +735,6 @@ async function main() {
       experienceLevel: 'semi_pro',
       instagramHandle: '@priyapatelmodel',
       approvalStatus: 'approved',
-      payoutsEnabled: false,
       ratingAvg: 4.6,
       ratingCount: 5,
       jobsCompleted: 6,
@@ -612,7 +763,7 @@ async function main() {
         { caption: 'Beauty — Fenty UK' },
       ],
     },
-    admin.id,
+    admin.id
   )
 
   const { artist: marcus, user: marcusUser } = await ensureArtist(
@@ -630,8 +781,6 @@ async function main() {
       dob: yearsAgo(41),
       experienceLevel: 'professional',
       approvalStatus: 'approved',
-      payoutsEnabled: true,
-      stripeAccountId: 'acct_seed_marcus',
       ratingAvg: 4.7,
       ratingCount: 22,
       jobsCompleted: 27,
@@ -658,7 +807,7 @@ async function main() {
         { caption: 'Audible audiobook narration' },
       ],
     },
-    admin.id,
+    admin.id
   )
 
   const { artist: emma, user: emmaUser } = await ensureArtist(
@@ -676,7 +825,6 @@ async function main() {
       dob: yearsAgo(22),
       experienceLevel: 'new_face',
       approvalStatus: 'approved',
-      payoutsEnabled: false,
       ratingAvg: 4.5,
       ratingCount: 2,
       jobsCompleted: 3,
@@ -703,7 +851,7 @@ async function main() {
         { caption: 'Wellness brand campaign — Aether' },
       ],
     },
-    admin.id,
+    admin.id
   )
 
   // ── ARTISTS — PENDING (waiting on admin review) ──────────────────────────
@@ -760,11 +908,107 @@ async function main() {
       skinTone: 'medium',
     },
     skills: [{ skillType: 'special_skill', skillValue: 'Ballet (Grade 8)' }],
-    portfolio: [
-      { caption: 'Polaroid front', isPrimary: true },
-      { caption: 'Polaroid side' },
-    ],
+    portfolio: [{ caption: 'Polaroid front', isPrimary: true }, { caption: 'Polaroid side' }],
   })
+
+  // ── ARTIST — REJECTED (admin queue "rejected" tab + resubmit banner) ────────
+  await ensureArtist({
+    key: 'liam',
+    email: 'rejected1@castflow.test',
+    name: 'Liam Foster',
+    firstName: 'Liam',
+    lastName: 'Foster',
+    artistType: 'model',
+    gender: 'male',
+    pronouns: 'he/him',
+    city: 'Leeds',
+    bio: 'Applied as a fashion model. Application was rejected pending clearer ID and portfolio.',
+    dob: yearsAgo(27),
+    experienceLevel: 'new_face',
+    approvalStatus: 'rejected',
+    approvalNotes:
+      'ID document was blurred and unreadable, and the portfolio did not include a clear headshot. Please re-upload a valid photo ID and at least one professional headshot, then resubmit.',
+    modelStats: {
+      heightCm: 182,
+      dressSize: 'M',
+      shoeSize: 'UK 9',
+      hairColour: 'Brown',
+      eyeColour: 'Brown',
+      skinTone: 'light',
+    },
+    skills: [{ skillType: 'language', skillValue: 'English (native)' }],
+    portfolio: [{ caption: 'Phone selfie (rejected — not a pro headshot)', isPrimary: true }],
+  })
+
+  // ── ARTIST — SUSPENDED (admin user-management "reactivate" path) ────────────
+  await ensureArtist(
+    {
+      key: 'daniel',
+      email: 'suspended1@castflow.test',
+      name: 'Daniel Price',
+      firstName: 'Daniel',
+      lastName: 'Price',
+      artistType: 'actor',
+      gender: 'male',
+      pronouns: 'he/him',
+      city: 'London',
+      bio: 'Approved actor, suspended after repeated late cancellations. Two strikes on file.',
+      dob: yearsAgo(34),
+      experienceLevel: 'semi_pro',
+      approvalStatus: 'approved',
+      status: 'suspended',
+      strikeCount: 2,
+      ratingAvg: 3.4,
+      ratingCount: 4,
+      jobsCompleted: 4,
+      actorStats: {
+        heightCm: 179,
+        hairColour: 'Black',
+        eyeColour: 'Brown',
+        equityMember: false,
+        ageRangeMin: 30,
+        ageRangeMax: 42,
+      },
+      skills: [{ skillType: 'accent', skillValue: 'RP' }],
+      portfolio: [{ caption: 'Headshot', isPrimary: true }],
+    },
+    admin.id
+  )
+
+  // ── ARTIST — BANNED (blocked-email re-registration guard) ───────────────────
+  await ensureArtist(
+    {
+      key: 'grace',
+      email: 'banned1@castflow.test',
+      name: 'Grace Hunt',
+      firstName: 'Grace',
+      lastName: 'Hunt',
+      artistType: 'model',
+      gender: 'female',
+      pronouns: 'she/her',
+      city: 'London',
+      bio: 'Banned for attempting to take a booking off-platform (ToS violation).',
+      dob: yearsAgo(29),
+      experienceLevel: 'professional',
+      approvalStatus: 'approved',
+      status: 'banned',
+      strikeCount: 3,
+      ratingAvg: 4.1,
+      ratingCount: 7,
+      jobsCompleted: 8,
+      modelStats: {
+        heightCm: 175,
+        dressSize: 'UK 10',
+        shoeSize: 'UK 6',
+        hairColour: 'Auburn',
+        eyeColour: 'Green',
+        skinTone: 'fair',
+      },
+      skills: [{ skillType: 'language', skillValue: 'English (native)' }],
+      portfolio: [{ caption: 'Headshot', isPrimary: true }],
+    },
+    admin.id
+  )
 
   console.info('✓ users + profiles')
 
@@ -1116,7 +1360,7 @@ async function main() {
     update: { status: 'declined' },
   })
 
-  // ── BOOKINGS + CONTRACTS + PAYMENTS ────────────────────────────────────
+  // ── BOOKINGS + CONTRACTS ───────────────────────────────────────────────
   const editorialBid = await prisma.bid.findUnique({
     where: { id: ID.bid('editorial', 'sophie') },
   })
@@ -1154,7 +1398,7 @@ async function main() {
       paymentType: 'fixed',
       agreedRate: new Prisma.Decimal(950),
       totalAmount: new Prisma.Decimal(950),
-      paymentTerms: '£950 flat fee, held in escrow, released within 48h of shoot completion.',
+      paymentTerms: '£950 flat fee, paid directly by the caster off-platform.',
       usageRights: jobEditorial.usageRights,
       exclusivity: false,
       ndaIncluded: false,
@@ -1167,24 +1411,6 @@ async function main() {
       pdfUrl: 'seed/contracts/editorial-sophie.pdf',
     },
     update: { status: 'fully_signed' },
-  })
-
-  await prisma.payment.upsert({
-    where: { bookingId: editorialBooking.id },
-    create: {
-      id: ID.payment('editorial'),
-      bookingId: editorialBooking.id,
-      stripePaymentIntentId: 'pi_seed_editorial',
-      stripeChargeId: 'ch_seed_editorial',
-      grossAmount: new Prisma.Decimal(950),
-      platformCommissionRate: new Prisma.Decimal(COMMISSION_RATE),
-      platformCommissionAmount: new Prisma.Decimal(142.5),
-      netArtistAmount: new Prisma.Decimal(807.5),
-      escrowStatus: 'held',
-      paidAt: daysAgo(4),
-      autoReleaseAt: daysFromNow(12),
-    },
-    update: { escrowStatus: 'held' },
   })
 
   // Completed booking — drives the reviews
@@ -1267,32 +1493,12 @@ async function main() {
     update: { status: 'fully_signed' },
   })
 
-  await prisma.payment.upsert({
-    where: { bookingId: completedBooking.id },
-    create: {
-      id: ID.payment('history-summer'),
-      bookingId: completedBooking.id,
-      stripePaymentIntentId: 'pi_seed_history',
-      stripeChargeId: 'ch_seed_history',
-      stripeTransferId: 'tr_seed_history',
-      grossAmount: new Prisma.Decimal(800),
-      platformCommissionRate: new Prisma.Decimal(COMMISSION_RATE),
-      platformCommissionAmount: new Prisma.Decimal(120),
-      netArtistAmount: new Prisma.Decimal(680),
-      escrowStatus: 'released',
-      paidAt: daysAgo(60),
-      releasedAt: daysAgo(43),
-      autoReleaseAt: daysAgo(43),
-    },
-    update: { escrowStatus: 'released' },
-  })
-
-  // Pending-payment booking
-  const jobPendingPay = await upsertJob({
-    key: 'pending-payment-shoot',
+  // Pending-contract booking — accepted bid, contract not yet signed
+  const jobPendingContract = await upsertJob({
+    key: 'pending-contract-shoot',
     casterId: goldsmith.id,
-    title: 'Catalogue half-day — awaiting payment',
-    description: 'Booking accepted, caster yet to pay escrow.',
+    title: 'Catalogue half-day — awaiting contract signature',
+    description: 'Booking accepted, contract issued and awaiting signatures.',
     category: 'model',
     status: 'filled',
     genderRequired: 'female',
@@ -1308,9 +1514,9 @@ async function main() {
     applicationDeadline: daysAgo(1),
   })
   const pendingBid = await upsertBid({
-    jobKey: 'pending-payment-shoot',
+    jobKey: 'pending-contract-shoot',
     artistKey: 'emma',
-    jobId: jobPendingPay.id,
+    jobId: jobPendingContract.id,
     artistId: emma.id,
     proposedRate: 450,
     coverNote: 'Available, excited.',
@@ -1318,10 +1524,10 @@ async function main() {
     submittedAt: daysAgo(3),
   })
   await prisma.booking.upsert({
-    where: { id: ID.booking('pending-pay') },
+    where: { id: ID.booking('pending-contract') },
     create: {
-      id: ID.booking('pending-pay'),
-      jobId: jobPendingPay.id,
+      id: ID.booking('pending-contract'),
+      jobId: jobPendingContract.id,
       bidId: pendingBid.id,
       casterId: goldsmith.id,
       artistId: emma.id,
@@ -1330,9 +1536,9 @@ async function main() {
       totalAmount: new Prisma.Decimal(450),
       shootDate: daysFromNow(20),
       shootLocation: 'Goldsmith HQ, 88 Wardour Street, London W1F 0TH',
-      status: 'pending_payment',
+      status: 'pending_contract',
     },
-    update: { status: 'pending_payment' },
+    update: { status: 'pending_contract' },
   })
 
   // Cancelled booking with cancellation fee applied
@@ -1340,7 +1546,7 @@ async function main() {
     key: 'cancelled-job',
     casterId: goldsmith.id,
     title: 'Cancelled shoot — half-day commercial',
-    description: 'Caster cancelled under 48h, fee applied.',
+    description: 'Caster cancelled under 48h. Cancellation fee owed directly between the parties.',
     category: 'model',
     status: 'cancelled',
     genderRequired: 'female',
@@ -1364,7 +1570,7 @@ async function main() {
     status: 'accepted',
     submittedAt: daysAgo(20),
   })
-  const cancelledBooking = await prisma.booking.upsert({
+  await prisma.booking.upsert({
     where: { id: ID.booking('cancelled') },
     create: {
       id: ID.booking('cancelled'),
@@ -1383,26 +1589,6 @@ async function main() {
       cancellationReason: 'Brand pulled the campaign at short notice.',
     },
     update: { status: 'cancelled' },
-  })
-  await prisma.payment.upsert({
-    where: { bookingId: cancelledBooking.id },
-    create: {
-      id: ID.payment('cancelled'),
-      bookingId: cancelledBooking.id,
-      stripePaymentIntentId: 'pi_seed_cancelled',
-      stripeChargeId: 'ch_seed_cancelled',
-      grossAmount: new Prisma.Decimal(700),
-      platformCommissionRate: new Prisma.Decimal(COMMISSION_RATE),
-      platformCommissionAmount: new Prisma.Decimal(105),
-      netArtistAmount: new Prisma.Decimal(595),
-      escrowStatus: 'partially_refunded',
-      cancellationFeeAmount: new Prisma.Decimal(350),
-      paidAt: daysAgo(15),
-      releasedAt: daysAgo(9),
-      refundedAt: daysAgo(9),
-      autoReleaseAt: daysAgo(8),
-    },
-    update: { escrowStatus: 'partially_refunded' },
   })
 
   // Disputed booking
@@ -1478,23 +1664,6 @@ async function main() {
     },
     update: { status: 'fully_signed' },
   })
-  await prisma.payment.upsert({
-    where: { bookingId: disputedBooking.id },
-    create: {
-      id: ID.payment('disputed'),
-      bookingId: disputedBooking.id,
-      stripePaymentIntentId: 'pi_seed_disputed',
-      stripeChargeId: 'ch_seed_disputed',
-      grossAmount: new Prisma.Decimal(1200),
-      platformCommissionRate: new Prisma.Decimal(COMMISSION_RATE),
-      platformCommissionAmount: new Prisma.Decimal(180),
-      netArtistAmount: new Prisma.Decimal(1020),
-      escrowStatus: 'disputed',
-      paidAt: daysAgo(15),
-      autoReleaseAt: daysAgo(3),
-    },
-    update: { escrowStatus: 'disputed' },
-  })
   await prisma.dispute.upsert({
     where: { bookingId: disputedBooking.id },
     create: {
@@ -1502,7 +1671,7 @@ async function main() {
       bookingId: disputedBooking.id,
       raisedById: goldsmithUser.id,
       raisedAgainstId: jamesUser.id,
-      reason: 'Partial no-show',
+      reason: 'no_show_artist',
       description:
         'Artist left set after first three hours despite the booking covering the full day. Brand had to reshoot afternoon scenes with a stand-in.',
       casterSubmission:
@@ -1517,7 +1686,193 @@ async function main() {
     update: { status: 'under_review' },
   })
 
-  console.info('✓ bookings, contracts, payments, disputes')
+  console.info('✓ bookings, contracts, disputes')
+
+  // ── DASHBOARD-COVERAGE SCENARIOS ───────────────────────────────────────
+  // Each of these exercises a dashboard state the happy-path data above does
+  // not reach. See DASHBOARD_TESTING.md for the matching test steps.
+
+  // S1 — contract awaiting signatures (NEITHER side signed yet).
+  //   Tests: artist & caster "sign contract" pages; shoot location stays
+  //   LOCKED until fully signed.
+  await seedBooking({
+    key: 'ready-to-sign',
+    casterId: acme.id,
+    casterCompanyName: 'Acme Studios London Ltd',
+    casterSignerName: 'Hannah Lloyd',
+    artistId: sophie.id,
+    artistLegalName: 'Sophie Anne Carter',
+    title: 'Beauty campaign — contract awaiting signatures',
+    description:
+      'Booking confirmed. Contract issued but not yet signed by either party — the shoot location stays hidden until both signatures are in.',
+    shootLocation: 'Acme Studios, 12 Marylebone Lane, London W1U 2DJ',
+    shootDate: daysFromNow(12),
+    agreedRate: 1100,
+    bookingStatus: 'confirmed',
+    contractStatus: 'pending_signatures',
+    artistSigned: false,
+    casterSigned: false,
+  })
+
+  // S2 — shoot date HAS PASSED, awaiting caster completion confirmation.
+  //   Tests: caster date-locked "confirm completion" is now UNLOCKED; artist
+  //   sees "awaiting caster confirmation".
+  await seedBooking({
+    key: 'confirmable',
+    casterId: goldsmith.id,
+    casterCompanyName: 'Goldsmith Casting Agency Ltd',
+    casterSignerName: 'Marcus Goldsmith',
+    artistId: james.id,
+    artistLegalName: "James O'Hara",
+    title: 'Confirmed shoot — completion confirmable (shoot date passed)',
+    description:
+      'Shoot date is yesterday. Caster can now confirm completion (the date lock has lifted). The caster pays the artist directly off-platform.',
+    category: 'actor',
+    genderRequired: 'male',
+    locationCity: 'Manchester',
+    shootLocation: 'MediaCity UK, Salford, M50 2HQ',
+    shootDate: daysAgo(1),
+    agreedRate: 900,
+    bookingStatus: 'confirmed',
+    contractStatus: 'fully_signed',
+    artistSigned: true,
+    casterSigned: true,
+  })
+
+  // S3 — completed, NO reviews yet, shoot within 72h.
+  //   Tests: artist & caster "write a review" pages; "raise a dispute" (still
+  //   inside the 72h window).
+  await seedBooking({
+    key: 'needs-review',
+    casterId: acme.id,
+    casterCompanyName: 'Acme Studios London Ltd',
+    casterSignerName: 'Hannah Lloyd',
+    artistId: priya.id,
+    artistLegalName: 'Priya Patel',
+    title: 'Completed shoot — awaiting reviews',
+    description:
+      'Shoot completed two days ago and completion confirmed. Neither party has left a review yet, and the 72h dispute window is still open.',
+    shootLocation: 'Acme Studios, 12 Marylebone Lane, London W1U 2DJ',
+    shootDate: daysAgo(2),
+    agreedRate: 750,
+    bookingStatus: 'completed',
+    completionConfirmedAt: daysAgo(1),
+    contractStatus: 'fully_signed',
+    artistSigned: true,
+    casterSigned: true,
+  })
+
+  // S4 — completed booking just outside the live happy-path window.
+  //   Tests: completed-booking dashboard state with the dispute window closed.
+  await seedBooking({
+    key: 'completed-older',
+    casterId: goldsmith.id,
+    casterCompanyName: 'Goldsmith Casting Agency Ltd',
+    casterSignerName: 'Marcus Goldsmith',
+    artistId: emma.id,
+    artistLegalName: 'Emma Wilson',
+    title: 'Completed shoot — confirmed, dispute window closed',
+    description:
+      'Shoot was several days ago and the caster confirmed completion. The 72h dispute window has now closed. Payment was handled directly between the parties off-platform.',
+    shootLocation: 'Goldsmith HQ, 88 Wardour Street, London W1F 0TH',
+    shootDate: daysAgo(5),
+    agreedRate: 600,
+    bookingStatus: 'completed',
+    completionConfirmedAt: daysAgo(4),
+    contractStatus: 'fully_signed',
+    artistSigned: true,
+    casterSigned: true,
+  })
+
+  // S5 — completed booking that carries FLAGGED content (review + message).
+  //   Tests: admin flagged-content queue (reviews tab + messages tab + detail).
+  const flagged = await seedBooking({
+    key: 'flagged-content',
+    casterId: goldsmith.id,
+    casterCompanyName: 'Goldsmith Casting Agency Ltd',
+    casterSignerName: 'Marcus Goldsmith',
+    artistId: marcus.id,
+    artistLegalName: 'Marcus Thompson',
+    title: 'Completed shoot — flagged review + message on file',
+    description: 'A completed booking used to seed flagged content for the admin moderation queue.',
+    category: 'voiceover',
+    genderRequired: 'male',
+    locationCity: 'Bristol',
+    shootLocation: 'Remote (home studio)',
+    shootDate: daysAgo(4),
+    agreedRate: 500,
+    bookingStatus: 'completed',
+    completionConfirmedAt: daysAgo(3),
+    contractStatus: 'fully_signed',
+    artistSigned: true,
+    casterSigned: true,
+  })
+
+  // Flagged REVIEW — artist wrote a review with off-platform contact details.
+  await prisma.review.upsert({
+    where: { id: ID.review('flagged-content', 'artist') },
+    create: {
+      id: ID.review('flagged-content', 'artist'),
+      bookingId: flagged.booking.id,
+      reviewerId: marcusUser.id,
+      reviewerRole: 'artist',
+      casterRevieweeId: goldsmith.id,
+      rating: 2,
+      comment:
+        'Decent shoot but payment was slow. For future work just WhatsApp me on 07700 900123 and we can sort it directly without the platform fees.',
+      isFlagged: true,
+      flagReason: 'Contains off-platform contact details / fee avoidance',
+      createdAt: daysAgo(2),
+    },
+    update: {
+      isFlagged: true,
+      flagReason: 'Contains off-platform contact details / fee avoidance',
+    },
+  })
+
+  // Flagged MESSAGE — in an unlocked thread on the flagged-content job.
+  const flaggedThread = await prisma.messageThread.upsert({
+    where: {
+      jobId_casterId_artistId: {
+        jobId: flagged.job.id,
+        casterId: goldsmith.id,
+        artistId: marcus.id,
+      },
+    },
+    create: {
+      id: ID.thread('flagged-content', 'marcus'),
+      jobId: flagged.job.id,
+      casterId: goldsmith.id,
+      artistId: marcus.id,
+      unlocked: true,
+      lastMessageAt: daysAgo(2),
+    },
+    update: { unlocked: true, lastMessageAt: daysAgo(2) },
+  })
+  await prisma.message.deleteMany({ where: { threadId: flaggedThread.id } })
+  await prisma.message.createMany({
+    data: [
+      {
+        id: ID.message('flagged-1'),
+        threadId: flaggedThread.id,
+        senderId: goldsmithUser.id,
+        content: 'Thanks for the session today — files sounded great.',
+        readAt: daysAgo(2),
+        createdAt: daysAgo(2),
+      },
+      {
+        id: ID.message('flagged-2'),
+        threadId: flaggedThread.id,
+        senderId: marcusUser.id,
+        content:
+          "No worries! Next time let's just go direct — email me at marcus.vo@example.com and pay by bank transfer, saves us both the commission.",
+        isFlagged: true,
+        createdAt: daysAgo(2),
+      },
+    ],
+  })
+
+  console.info('✓ dashboard-coverage scenarios (contracts, completion, flagged)')
 
   // ── REVIEWS ────────────────────────────────────────────────────────────
   await prisma.review.upsert({
@@ -1643,7 +1998,8 @@ async function main() {
         userId: sophieUser.id,
         type: 'booking_confirmed',
         title: 'Booking confirmed',
-        body: 'Your editorial shoot with Acme is confirmed for ' + daysFromNow(10).toDateString() + '.',
+        body:
+          'Your editorial shoot with Acme is confirmed for ' + daysFromNow(10).toDateString() + '.',
         relatedEntityType: 'booking',
         relatedEntityId: editorialBooking.id,
         readAt: daysAgo(3),
@@ -1670,13 +2026,13 @@ async function main() {
         createdAt: daysAgo(2),
       },
       {
-        id: ID.notif('emma-pending-payment'),
+        id: ID.notif('emma-pending-contract'),
         userId: emmaUser.id,
-        type: 'booking_pending_payment',
-        title: 'Booking awaiting payment',
-        body: 'Your booking with Goldsmith Casting Agency is pending caster payment.',
+        type: 'booking_pending_contract',
+        title: 'Booking awaiting contract signature',
+        body: 'Your booking with Goldsmith Casting Agency is awaiting contract signature.',
         relatedEntityType: 'booking',
-        relatedEntityId: ID.booking('pending-pay'),
+        relatedEntityId: ID.booking('pending-contract'),
         createdAt: daysAgo(1),
       },
       {
@@ -1755,15 +2111,32 @@ async function main() {
   console.info('Login credentials (password for ALL accounts: Password123!)')
   console.info('─────────────────────────────────────────────────────────────')
   console.info('Admin       admin@castflow.test       Ada Admin')
-  console.info('Caster #1   caster1@castflow.test     Acme Studios London (brand)')
-  console.info('Caster #2   caster2@castflow.test     Goldsmith Casting Agency (agency)')
-  console.info('Artist #1   artist1@castflow.test     Sophie Carter   — model, approved, payouts on')
-  console.info("Artist #2   artist2@castflow.test     James O'Hara    — actor, approved, payouts on")
+  console.info('Caster #1   caster1@castflow.test     Acme Studios London (brand, subscribed)')
+  console.info('Caster #2   caster2@castflow.test     Goldsmith Casting Agency (agency, subscribed)')
+  console.info('Artist #1   artist1@castflow.test     Sophie Carter   — model, approved')
+  console.info("Artist #2   artist2@castflow.test     James O'Hara    — actor, approved")
   console.info('Artist #3   artist3@castflow.test     Priya Patel     — model, approved')
-  console.info('Artist #4   artist4@castflow.test     Marcus Thompson — actor, approved, payouts on')
+  console.info('Artist #4   artist4@castflow.test     Marcus Thompson — actor, approved')
   console.info('Artist #5   artist5@castflow.test     Emma Wilson     — model, approved')
   console.info('Pending #1  pending1@castflow.test    Charlie Reed    — awaiting admin approval')
   console.info('Pending #2  pending2@castflow.test    Olivia Bennett  — awaiting admin approval')
+  console.info('Rejected    rejected1@castflow.test   Liam Foster     — rejected, resubmit notes')
+  console.info(
+    'Suspended   suspended1@castflow.test  Daniel Price    — approved profile, account suspended'
+  )
+  console.info('Banned      banned1@castflow.test     Grace Hunt      — banned (cannot log in)')
+  console.info('')
+  console.info('Both seeded casters have an ACTIVE platform subscription (CasterSubscription).')
+  console.info('Casters pay artists directly off-platform — no escrow, commission, or payouts.')
+  console.info('')
+  console.info('Key scenarios to verify (see DASHBOARD_TESTING.md):')
+  console.info('─────────────────────────────────────────────────────────────')
+  console.info('• Contract awaiting signatures   booking "ready-to-sign"    Acme ↔ Sophie')
+  console.info('• Completion confirmable now      booking "confirmable"      Goldsmith ↔ James')
+  console.info('• Review + dispute window open    booking "needs-review"     Acme ↔ Priya')
+  console.info('• Completed, dispute window closed booking "completed-older" Goldsmith ↔ Emma')
+  console.info('• Flagged review + message        booking "flagged-content"  Goldsmith ↔ Marcus')
+  console.info('• Confirmed booking / open dispute bookings "editorial" / "disputed"')
   console.info('')
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronLeft, BadgeCheck, Bookmark, Download, Lock } from 'lucide-react'
+import { ChevronLeft, BadgeCheck, Bookmark, Lock } from 'lucide-react'
 import { PageHeader, LoadingState, ErrorState, StatusBadge } from '@/components/dashboard'
 import { Stars } from '@/components/dashboard/stars'
 import { RemoteImage } from '@/components/dashboard/remote-image'
@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { useTalentProfile } from '@/lib/hooks/use-talent'
 import { useArtistReviews } from '@/lib/hooks/use-reviews'
 import { useTalentShortlist } from '@/lib/hooks/use-talent-shortlist'
-import { cn, formatDate } from '@/lib/utils'
+import { cn, formatDate, formatRating } from '@/lib/utils'
 
 const EXPERIENCE: Record<string, string> = {
   new_face: 'New face',
@@ -27,14 +27,14 @@ export function CasterTalentProfileClient({ artistId }: { artistId: string }) {
   const { isShortlisted, toggle } = useTalentShortlist()
 
   if (isPending) return <LoadingState variant="detail" />
-  if (isError || !artist) return <ErrorState message="We couldn’t load this profile." onRetry={() => void refetch()} />
+  if (isError || !artist)
+    return <ErrorState message="We couldn’t load this profile." onRetry={() => void refetch()} />
 
   const saved = isShortlisted(artist.id)
   const model = artist.modelStats
   const actor = artist.actorStats
-  const skills = (artist.skills ?? [])
+  const skills = artist.skills ?? []
   const portfolio = artist.portfolioItems ?? []
-  const compCardUrl = `${process.env['NEXT_PUBLIC_API_URL']}/api/v1/artists/${artist.id}/comp-card?download=1`
 
   return (
     <div className="space-y-6">
@@ -58,28 +58,28 @@ export function CasterTalentProfileClient({ artistId }: { artistId: string }) {
             >
               <Bookmark className={cn('h-4 w-4', saved && 'fill-primary text-primary')} />
             </Button>
-            <Button asChild variant="outline">
-              <a href={compCardUrl} target="_blank" rel="noopener noreferrer">
-                <Download className="mr-1.5 h-4 w-4" /> Comp card
-              </a>
-            </Button>
             <InviteToJobDialog artistId={artist.id} artistName={artist.firstName} />
           </div>
         }
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <Badge variant="secondary" className="capitalize">{artist.artistType}</Badge>
+        <Badge variant="secondary" className="capitalize">
+          {artist.artistType}
+        </Badge>
         {/* Everyone in the directory is admin-approved, which verifies their ID. */}
         <span className="inline-flex items-center gap-1 text-sm text-emerald-600">
           <BadgeCheck className="h-4 w-4" /> Verified
         </span>
-        <StatusBadge status={artist.availabilityStatus === 'available' ? 'active' : 'closed'} label={artist.availabilityStatus === 'available' ? 'Available' : 'Unavailable'} />
+        <StatusBadge
+          status={artist.availabilityStatus === 'available' ? 'active' : 'closed'}
+          label={artist.availabilityStatus === 'available' ? 'Available' : 'Unavailable'}
+        />
         {artist.ratingCount > 0 ? (
           <span className="flex items-center gap-1.5">
             <Stars value={artist.ratingAvg ?? 0} size={14} />
             <span className="text-sm text-muted-foreground">
-              {(artist.ratingAvg ?? 0).toFixed(1)} ({artist.ratingCount})
+              {formatRating(artist.ratingAvg)} ({artist.ratingCount})
             </span>
           </span>
         ) : (
@@ -98,7 +98,9 @@ export function CasterTalentProfileClient({ artistId }: { artistId: string }) {
           {artist.bio ? (
             <Card className="space-y-2 p-6">
               <h2 className="text-sm font-semibold text-foreground">About</h2>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{artist.bio}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                {artist.bio}
+              </p>
             </Card>
           ) : null}
 
@@ -107,8 +109,17 @@ export function CasterTalentProfileClient({ artistId }: { artistId: string }) {
               <h2 className="text-sm font-semibold text-foreground">Portfolio</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {portfolio.map((item) => (
-                  <div key={item.id} className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-                    <RemoteImage src={item.url} alt={item.caption ?? artist.firstName} fill sizes="200px" className="object-cover" />
+                  <div
+                    key={item.id}
+                    className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted"
+                  >
+                    <RemoteImage
+                      src={item.url}
+                      alt={item.caption ?? artist.firstName}
+                      fill
+                      sizes="200px"
+                      className="object-cover"
+                    />
                   </div>
                 ))}
               </div>
@@ -125,7 +136,9 @@ export function CasterTalentProfileClient({ artistId }: { artistId: string }) {
                   <li key={r.id} className="space-y-1 border-b border-border pb-3 last:border-0">
                     <div className="flex items-center justify-between">
                       <Stars value={r.rating} size={14} />
-                      <span className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(r.createdAt)}
+                      </span>
                     </div>
                     {r.comment ? <p className="text-sm text-foreground">{r.comment}</p> : null}
                   </li>
@@ -167,7 +180,12 @@ export function CasterTalentProfileClient({ artistId }: { artistId: string }) {
                 <Stat label="Equity member" value={actor.equityMember ? 'Yes' : 'No'} />
               </dl>
               {actor.spotlightUrl ? (
-                <a href={actor.spotlightUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                <a
+                  href={actor.spotlightUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
                   View Spotlight profile
                 </a>
               ) : null}
@@ -179,7 +197,9 @@ export function CasterTalentProfileClient({ artistId }: { artistId: string }) {
               <h2 className="text-sm font-semibold text-foreground">Skills</h2>
               <div className="flex flex-wrap gap-2">
                 {skills.map((s) => (
-                  <Badge key={s.id} variant="secondary">{s.skillValue}</Badge>
+                  <Badge key={s.id} variant="secondary">
+                    {s.skillValue}
+                  </Badge>
                 ))}
               </div>
             </Card>

@@ -21,7 +21,7 @@ export default function CasterBookingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Bookings"
-        description="Artists you’ve booked — contracts, escrow, and reviews live here."
+        description="Artists you’ve booked — contracts and reviews live here."
       />
 
       {isPending ? (
@@ -64,9 +64,6 @@ export default function CasterBookingsPage() {
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
                       <StatusBadge status={booking.status} />
-                      {booking.payment?.escrowStatus ? (
-                        <StatusBadge status={booking.payment.escrowStatus} />
-                      ) : null}
                     </div>
                   </div>
                 </Link>

@@ -106,20 +106,20 @@ enum BidStatus {
 }
 
 enum BookingStatus {
-  pending_payment
+  pending_contract
   confirmed
   completed
   cancelled
   disputed
 }
 
-enum EscrowStatus {
-  awaiting_payment
-  held
-  released
-  refunded
-  partially_refunded
-  disputed
+enum SubscriptionStatus {
+  active
+  trialing
+  past_due
+  canceled
+  incomplete
+  unpaid
 }
 
 enum ContractStatus {
@@ -308,6 +308,7 @@ model CasterProfile {
   jobs              Job[]
   bookings          Booking[]
   reviewsReceived   Review[]       @relation("RevieweeCaster")
+  subscription      CasterSubscription?
 
   @@map("caster_profiles")
 }
@@ -442,14 +443,15 @@ model Booking {
   // null for fixed jobs
 
   totalAmount         Decimal         @db.Decimal(10,2) @map("total_amount")
-  // The total charged to caster and held in escrow
+  // The agreed fee the caster pays the artist DIRECTLY, off-platform.
+  // The platform does not process or hold this amount.
   // For fixed: = agreedRate
   // For hourly: = agreedRate × agreedHours
 
   shootDate           DateTime        @map("shoot_date")
   shootLocation       String          @map("shoot_location")  // Full address
   callTime            DateTime?       @map("call_time")
-  status              BookingStatus   @default(pending_payment)
+  status              BookingStatus   @default(pending_contract)
   cancelledBy         String?         @map("cancelled_by")
   cancelledAt         DateTime?       @map("cancelled_at")
   cancellationReason  String?         @map("cancellation_reason")
@@ -458,7 +460,6 @@ model Booking {
   updatedAt           DateTime        @updatedAt @map("updated_at")
 
   contract            Contract?
-  payment             Payment?
   reviews             Review[]
   dispute             Dispute?
 
@@ -504,33 +505,27 @@ model Contract {
   @@map("contracts")
 }
 
-model Payment {
-  id                        String        @id @default(uuid())
-  bookingId                 String        @unique @map("booking_id")
-  booking                   Booking       @relation(fields: [bookingId], references: [id])
+model CasterSubscription {
+  id                     String              @id @default(uuid())
+  casterId               String              @unique @map("caster_id")
+  caster                 CasterProfile       @relation(fields: [casterId], references: [id])
 
-  stripePaymentIntentId     String        @unique @map("stripe_payment_intent_id")
-  stripeChargeId            String?       @map("stripe_charge_id")
-  stripeTransferId          String?       @map("stripe_transfer_id")
+  stripeCustomerId       String              @map("stripe_customer_id")
+  stripeSubscriptionId   String              @unique @map("stripe_subscription_id")
+  stripePriceId          String              @map("stripe_price_id")
 
-  grossAmount               Decimal       @db.Decimal(10,2) @map("gross_amount")
-  // = booking.totalAmount — what caster pays into escrow
+  status                 SubscriptionStatus  @default(incomplete)
+  // The caster is entitled to post jobs / accept bids only when
+  // status in (active, trialing) AND currentPeriodEnd > now().
 
-  platformCommissionRate    Decimal       @db.Decimal(4,2) @map("platform_commission_rate")
-  platformCommissionAmount  Decimal       @db.Decimal(10,2) @map("platform_commission_amount")
-  netArtistAmount           Decimal       @db.Decimal(10,2) @map("net_artist_amount")
-  // grossAmount - platformCommissionAmount
+  currentPeriodEnd       DateTime            @map("current_period_end")
+  cancelAtPeriodEnd      Boolean             @default(false) @map("cancel_at_period_end")
+  canceledAt             DateTime?           @map("canceled_at")
 
-  escrowStatus              EscrowStatus  @default(awaiting_payment) @map("escrow_status")
-  cancellationFeeAmount     Decimal?      @db.Decimal(10,2) @map("cancellation_fee_amount")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
 
-  paidAt                    DateTime?     @map("paid_at")
-  releasedAt                DateTime?     @map("released_at")
-  autoReleaseAt             DateTime      @map("auto_release_at")  // shoot_date + 48hrs
-  refundedAt                DateTime?     @map("refunded_at")
-  createdAt                 DateTime      @default(now()) @map("created_at")
-
-  @@map("payments")
+  @@map("caster_subscriptions")
 }
 
 model MessageThread {
@@ -670,7 +665,7 @@ model AdminLog {
 - `totalEstimate` (computed) = proposedRate × estimatedHours (shown to caster for comparison)
 - `agreedHours` on Booking = agreed number of hours (from bid or negotiated)
 - `totalAmount` on Booking = agreedRate × agreedHours
-- Escrow = totalAmount (full amount locked up front)
+- `totalAmount` is the agreed fee the caster pays the artist directly, off-platform — the platform never holds it
 - Contract shows: "Rate: £85/hr × 8 hours = £680"
 
 ### Displaying to Artists on the Job Feed
@@ -687,3 +682,26 @@ Hourly + open:             "Open — propose your hourly rate"
 - Fixed jobs: sort by `proposedRate` ascending (cheapest first option)
 - Hourly jobs: sort by `proposedRate × estimatedHours` ascending (total cost estimate)
 - Always show both the hourly rate AND the total estimate for hourly bids
+
+---
+
+## Caster Subscription Billing
+
+The platform's only revenue is a recurring **caster subscription** billed via
+Stripe Billing. Artists pay nothing, and the platform never touches job fees
+(those are paid caster→artist directly, off-platform).
+
+- One `CasterSubscription` row per caster (`@@unique` on `casterId`), synced from
+  Stripe Billing webhooks (`checkout.session.completed`, `customer.subscription.*`,
+  `invoice.payment_failed`).
+- **Subscription gate (lazy):** a caster may post a job and accept a bid (book
+  talent) only when the subscription is entitled:
+
+  ```
+  status in (active, trialing) AND currentPeriodEnd > now()
+  ```
+
+  Otherwise the service throws `SUBSCRIPTION_REQUIRED` (HTTP 402).
+- Browsing, messaging, contracts, reviews, and disputes remain free (no gate).
+- No escrow, no commission, no Stripe Connect, no artist payouts — those models
+  (`Payment`, `EscrowStatus`) were removed in the subscription pivot.

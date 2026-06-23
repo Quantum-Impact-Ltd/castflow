@@ -9,7 +9,7 @@ import {
   CalendarCheck,
   MessageSquare,
   Scale,
-  Wallet,
+  CreditCard,
   Star,
   BadgeCheck,
 } from 'lucide-react'
@@ -28,7 +28,7 @@ import { cn, formatDate } from '@/lib/utils'
 function iconForType(type: string): LucideIcon {
   if (type.startsWith('bid')) return FileText
   if (type.startsWith('booking') || type.startsWith('contract')) return CalendarCheck
-  if (type.startsWith('payment') || type === 'payout_sent') return Wallet
+  if (type.startsWith('subscription')) return CreditCard
   if (type.startsWith('dispute')) return Scale
   if (type === 'message_received') return MessageSquare
   if (type === 'review_received') return Star

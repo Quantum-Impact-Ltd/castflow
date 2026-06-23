@@ -9,6 +9,7 @@ import { StepStats } from '@/components/onboarding/steps/step-stats'
 import { StepSkills } from '@/components/onboarding/steps/step-skills'
 import { StepExperience } from '@/components/onboarding/steps/step-experience'
 import { StepPortfolio } from '@/components/onboarding/steps/step-portfolio'
+import { StepLinks } from '@/components/onboarding/steps/step-links'
 import { StepIdentity } from '@/components/onboarding/steps/step-identity'
 import { StepReview } from '@/components/onboarding/steps/step-review'
 import { useMyArtistProfile } from '@/lib/hooks/use-artist'
@@ -23,6 +24,7 @@ type StepKey =
   | 'skills'
   | 'experience'
   | 'portfolio'
+  | 'links'
   | 'identity'
   | 'review'
 
@@ -32,6 +34,7 @@ const MODEL_STEPS = [
   { key: 'stats', label: 'Stats' },
   { key: 'experience', label: 'Experience' },
   { key: 'portfolio', label: 'Portfolio' },
+  { key: 'links', label: 'Links' },
   { key: 'identity', label: 'ID' },
   { key: 'review', label: 'Review' },
 ] as const satisfies ReadonlyArray<{ key: StepKey; label: string }>
@@ -43,6 +46,7 @@ const ACTOR_STEPS = [
   { key: 'skills', label: 'Skills' },
   { key: 'experience', label: 'Experience' },
   { key: 'portfolio', label: 'Portfolio' },
+  { key: 'links', label: 'Links' },
   { key: 'identity', label: 'ID' },
   { key: 'review', label: 'Review' },
 ] as const satisfies ReadonlyArray<{ key: StepKey; label: string }>
@@ -61,9 +65,9 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
     tips: {
       heading: 'Not sure which to pick?',
       bullets: [
-        "Model is for photography and video where the work is primarily visual — fashion, editorial, commercial, e-commerce.",
+        'Model is for photography and video where the work is primarily visual — fashion, editorial, commercial, e-commerce.',
         "Actor is for jobs where you perform — TVC, film, voiceover, extra work. You'll get a skills section for accents, languages and training.",
-        "You can change your craft any time before submitting for review.",
+        'You can change your craft any time before submitting for review.',
       ],
     },
   },
@@ -73,9 +77,9 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
     tips: {
       heading: 'A few things to know',
       bullets: [
-        "You must be 18 or older — this is enforced and non-negotiable.",
+        'You must be 18 or older — this is enforced and non-negotiable.',
         "Your city helps casters filter the talent directory; pick the city you're based in, not where you're available.",
-        "Bios are optional but profiles with one get more shortlists.",
+        'Bios are optional but profiles with one get more shortlists.',
       ],
     },
   },
@@ -85,8 +89,8 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
     tips: {
       heading: 'A few notes',
       bullets: [
-        "Be accurate — casters book based on these and a no-show or mismatch on the day is grounds for a dispute.",
-        "Measurements are optional but high-quality fashion casting calls filter on them.",
+        'Be accurate — casters book based on these and a no-show or mismatch on the day is grounds for a dispute.',
+        'Measurements are optional but high-quality fashion casting calls filter on them.',
         "Skin tone is a visual swatch — pick the closest match; it doesn't need to be perfect.",
       ],
     },
@@ -99,7 +103,7 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
       bullets: [
         'Casters filter by these tags — being specific ("RP", "Estuary") beats generic ("British").',
         "Only list languages and skills you'd genuinely perform on a shoot. Padding triggers rejections.",
-        "You can add and remove these later from your profile.",
+        'You can add and remove these later from your profile.',
       ],
     },
   },
@@ -110,8 +114,8 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
       heading: 'How casters use this',
       bullets: [
         '"New face" isn\'t a downside — many brands actively look for fresh faces.',
-        "Indicative rates are optional. If you set them, expect more direct invites at that level.",
-        "You can always negotiate on a per-job basis through bids regardless of what you list here.",
+        'Indicative rates are optional. If you set them, expect more direct invites at that level.',
+        'You can always negotiate on a per-job basis through bids regardless of what you list here.',
       ],
     },
   },
@@ -121,10 +125,23 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
     tips: {
       heading: 'What casters look for',
       bullets: [
-        "A clear, recent headshot (eyes to camera, neutral or natural light).",
-        "A full-body shot in plain clothing so they can see your proportions.",
+        'A clear, recent headshot (eyes to camera, neutral or natural light).',
+        'A full-body shot in plain clothing so they can see your proportions.',
         'One or two "in action" shots — editorial, commercial, or a self-directed test.',
-        "Avoid heavy filters and group photos. One person per frame.",
+        'Avoid heavy filters and group photos. One person per frame.',
+      ],
+    },
+  },
+  links: {
+    title: 'Add your links',
+    subtitle:
+      'Showreel, website, and social profiles casters can explore. Optional but recommended.',
+    tips: {
+      heading: 'Worth adding',
+      bullets: [
+        'A showreel or portfolio site (YouTube, Vimeo, Behance, your own domain) gives casters more to go on.',
+        'Actors: add your Spotlight and IMDb. Models: Instagram and an agency/portfolio link.',
+        'You can add or change these any time from your profile — this step is optional.',
       ],
     },
   },
@@ -135,7 +152,7 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
       heading: 'Why we need this',
       bullets: [
         "Confirms you're 18+ and a real person — required by law for anyone we pay.",
-        "Stored encrypted in a private bucket. Only CastFlow admins can view it.",
+        'Stored encrypted in a private bucket. Only CastFlow admins can view it.',
         'Casters never see your document. Just a "Verified" badge on your profile.',
       ],
     },
@@ -146,9 +163,9 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
     tips: {
       heading: 'Last few things',
       bullets: [
-        "You can come back and edit until you submit. After submitting, edits are locked while admin reviews.",
-        "Expected turnaround is within 48 hours. We email you with the decision.",
-        "Rejections come with a specific reason — you can fix and resubmit.",
+        'You can come back and edit until you submit. After submitting, edits are locked while admin reviews.',
+        'Expected turnaround is within 48 hours. We email you with the decision.',
+        'Rejections come with a specific reason — you can fix and resubmit.',
       ],
     },
   },
@@ -192,7 +209,13 @@ function deriveFirstIncompleteStep(
         // Always considered done — you have a type from registration
         continue
       case 'personal':
-        if (!profile.firstName || !profile.lastName || !profile.dob || !profile.gender || !profile.city)
+        if (
+          !profile.firstName ||
+          !profile.lastName ||
+          !profile.dob ||
+          !profile.gender ||
+          !profile.city
+        )
           return i
         break
       case 'stats':
@@ -212,6 +235,9 @@ function deriveFirstIncompleteStep(
         if (photoCount < 3) return i
         break
       }
+      case 'links':
+        // Optional — never blocks forward progress.
+        continue
       case 'identity':
         if (!profile.idDocumentUrl) return i
         break
@@ -322,17 +348,15 @@ export default function ArtistOnboardingPage() {
         <div className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-400/30 bg-rose-400/[0.08] p-4">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
           <div className="space-y-1 text-sm">
-            <p className="font-medium text-white">
-              Your last application needs changes
-            </p>
+            <p className="font-medium text-white">Your last application needs changes</p>
             {profile.approvalNotes ? (
               <p className="whitespace-pre-wrap leading-relaxed text-white/75">
                 {profile.approvalNotes}
               </p>
             ) : (
               <p className="leading-relaxed text-white/65">
-                The admin didn&apos;t leave specific notes. Tighten anything
-                that feels weak and resubmit.
+                The admin didn&apos;t leave specific notes. Tighten anything that feels weak and
+                resubmit.
               </p>
             )}
             <p className="pt-1 text-xs text-white/55">
@@ -359,6 +383,9 @@ export default function ArtistOnboardingPage() {
       )}
       {currentStep.key === 'portfolio' && (
         <StepPortfolio profile={profile} onBack={goBack} onNext={goNext} />
+      )}
+      {currentStep.key === 'links' && (
+        <StepLinks profile={profile} onBack={goBack} onNext={goNext} />
       )}
       {currentStep.key === 'identity' && (
         <StepIdentity profile={profile} onBack={goBack} onNext={goNext} />

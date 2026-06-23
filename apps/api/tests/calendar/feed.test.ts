@@ -84,7 +84,6 @@ describe('CalendarService.buildFeed — ICS output', () => {
     'includes one VEVENT per confirmed/completed booking with UTC DTSTART/DTEND',
     async () => {
       const { artistUser, booking } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         bookingStatus: 'confirmed',
         contractStatus: 'pending_signatures',
       })
@@ -110,7 +109,6 @@ describe('CalendarService.buildFeed — ICS output', () => {
     'hides shoot LOCATION until the contract is fully_signed',
     async () => {
       const { artistUser, booking } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         contractStatus: 'pending_signatures',
         bookingStatus: 'confirmed',
       })
@@ -136,7 +134,6 @@ describe('CalendarService.buildFeed — ICS output', () => {
     'reveals LOCATION once the contract is fully_signed',
     async () => {
       const { artistUser, booking } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         contractStatus: 'fully_signed',
         bookingStatus: 'confirmed',
       })
@@ -154,10 +151,9 @@ describe('CalendarService.buildFeed — ICS output', () => {
   )
 
   it(
-    'omits cancelled / pending_payment / disputed bookings from the feed',
+    'omits cancelled / pending_contract / disputed bookings from the feed',
     async () => {
       const { artistUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         bookingStatus: 'cancelled',
         contractStatus: 'pending_signatures',
       })
@@ -172,7 +168,6 @@ describe('CalendarService.buildFeed — ICS output', () => {
     'caster role gets a feed scoped to their casted bookings',
     async () => {
       const { casterUser, booking } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         bookingStatus: 'confirmed',
         contractStatus: 'fully_signed',
       })

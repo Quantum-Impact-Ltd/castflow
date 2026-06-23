@@ -13,12 +13,14 @@ import type {
   RateSetBy,
   BidStatus,
   BookingStatus,
-  EscrowStatus,
+  SubscriptionStatus,
   ContractStatus,
   DisputeReason,
   DisputeStatus,
   DisputeResolution,
   PortfolioItemType,
+  PortfolioEntryType,
+  ProfileLinkType,
   CompanyType,
   InviteStatus,
   CancelledBy,
@@ -65,6 +67,7 @@ export interface ArtistProfile {
   actorStats?: ActorStats | null
   skills?: ArtistSkill[]
   portfolioItems?: PortfolioItem[]
+  links?: ProfileLink[]
 }
 
 export interface ModelStats {
@@ -106,12 +109,26 @@ export interface PortfolioItem {
   id: string
   artistProfileId: string
   type: PortfolioItemType
+  entryType: PortfolioEntryType
   url: string
   thumbnailUrl: string | null
+  title: string | null
+  description: string | null
+  links: string[]
   caption: string | null
   displayOrder: number
   isPrimary: boolean
   isApproved: boolean
+  createdAt: string
+}
+
+export interface ProfileLink {
+  id: string
+  artistProfileId: string
+  platform: ProfileLinkType
+  url: string
+  label: string | null
+  displayOrder: number
   createdAt: string
 }
 
@@ -225,7 +242,6 @@ export interface Booking {
   createdAt: string
   updatedAt: string
   contract?: Contract | null
-  payment?: Payment | null
 }
 
 export interface Contract {
@@ -255,20 +271,22 @@ export interface Contract {
   updatedAt: string
 }
 
-export interface Payment {
+/**
+ * Caster platform subscription — the only money CastFlow collects. Job fees
+ * are settled directly between caster and artist, off-platform. One row per
+ * caster, managed through Stripe Billing + the customer portal.
+ */
+export interface CasterSubscription {
   id: string
-  bookingId: string
-  grossAmount: number // = booking.totalAmount — charged to caster
-  platformCommissionRate: number // e.g. 15.00 for 15%
-  platformCommissionAmount: number
-  netArtistAmount: number // grossAmount - commissionAmount
-  escrowStatus: EscrowStatus
-  cancellationFeeAmount: number | null
-  paidAt: string | null
-  releasedAt: string | null
-  autoReleaseAt: string // shoot_date + 48hrs
-  refundedAt: string | null
+  casterId: string
+  stripeCustomerId: string
+  stripeSubscriptionId: string | null
+  status: SubscriptionStatus
+  priceId: string | null
+  currentPeriodEnd: string | null
+  cancelAtPeriodEnd: boolean
   createdAt: string
+  updatedAt: string
 }
 
 export interface MessageThread {
@@ -287,6 +305,7 @@ export interface Message {
   senderId: string
   content: string
   isFlagged: boolean
+  flagReason: string | null // set when auto-flagged or reported (e.g. "off_platform: ...")
   readAt: string | null
   createdAt: string
 }

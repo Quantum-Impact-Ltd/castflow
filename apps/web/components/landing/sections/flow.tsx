@@ -13,8 +13,8 @@ const STEPS = [
   },
   {
     n: '03',
-    title: 'Book + pay into escrow',
-    body: 'Click accept. Pay the agreed rate into a Stripe-held escrow account. Neither side can touch it yet.',
+    title: 'Book the artist',
+    body: 'Click accept. The booking is confirmed and the agreed rate is locked into the contract for both sides to see.',
   },
   {
     n: '04',
@@ -28,8 +28,8 @@ const STEPS = [
   },
   {
     n: '06',
-    title: 'Funds released',
-    body: 'Confirm completion to release escrow — or wait 48 hours and it auto-releases. The artist gets paid that day.',
+    title: 'Pay the artist directly',
+    body: 'Confirm completion for the record, then settle the agreed fee directly with the artist, off-platform. CastFlow never touches job fees.',
   },
 ]
 
@@ -49,8 +49,8 @@ export function FlowSection() {
             </div>
             <p className="text-lg leading-relaxed text-muted-foreground lg:col-span-6 lg:col-start-7 lg:pt-2">
               Every booking on CastFlow runs through the same six steps. Same
-              contract template, same escrow, same payout window. No bespoke
-              chases, no off-platform back-channels.
+              contract template, same clear terms every time. No bespoke chases,
+              no surprises.
             </p>
           </div>
         </Reveal>

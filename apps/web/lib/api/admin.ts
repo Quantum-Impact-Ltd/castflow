@@ -1,13 +1,13 @@
 import type {
   ArtistProfile,
   Booking,
+  Contract,
   Dispute,
   Job,
   Message,
   Review,
   User,
   AdminLog,
-  Payment,
 } from '@castflow/types'
 import { fetcher } from '@/lib/fetcher'
 import type { Init } from './types'
@@ -19,6 +19,20 @@ export interface AdminUserRow extends User {
   casterProfile?: { id: string; companyName: string } | null
 }
 
+export interface AdminUserActivity {
+  role: 'artist' | 'caster'
+  bids?: number
+  jobsPosted?: number
+  bookings: number
+  completedBookings: number
+  reviewsReceived: number
+  strikeCount?: number
+}
+
+export interface AdminUserDetail extends AdminUserRow {
+  activity?: AdminUserActivity | null
+}
+
 export function listUsers(
   filters: { role?: string; status?: string; q?: string; cursor?: string; limit?: number } = {},
   init?: Init
@@ -27,7 +41,7 @@ export function listUsers(
 }
 
 export function getUser(id: string, init?: Init) {
-  return fetcher<AdminUserRow>(`/admin/users/${id}`, init)
+  return fetcher<AdminUserDetail>(`/admin/users/${id}`, init)
 }
 
 export function setUserStatus(
@@ -83,42 +97,31 @@ export function removeJob(id: string, reason: string) {
 
 // ── Bookings ───────────────────────────────────────────────────────────────
 
+export interface AdminBookingListRow extends Booking {
+  job?: { title: string } | null
+  artist?: { firstName: string; lastName: string } | null
+  caster?: { companyName: string } | null
+}
+
 export function listAdminBookings(
   filters: { status?: string; cursor?: string; limit?: number } = {},
   init?: Init
 ) {
-  return fetcher<Booking[]>('/admin/bookings', { params: filters, ...init })
+  return fetcher<AdminBookingListRow[]>('/admin/bookings', { params: filters, ...init })
+}
+
+/** Booking detail carries the related job/artist/caster the API includes, so
+ *  the UI can show names (and resolve dispute parties by userId) without raw ids. */
+export interface AdminBookingDetail extends Booking {
+  job?: Pick<Job, 'id' | 'title'> | null
+  artist?: { id: string; userId: string; firstName: string; lastName: string } | null
+  caster?: { id: string; userId: string; companyName: string; contactName: string } | null
+  contract?: Contract | null
+  dispute?: Dispute | null
 }
 
 export function getAdminBooking(id: string, init?: Init) {
-  return fetcher<Booking>(`/admin/bookings/${id}`, init)
-}
-
-// ── Payments ───────────────────────────────────────────────────────────────
-
-export interface AdminPaymentRow extends Payment {
-  booking?: Pick<Booking, 'id' | 'jobId' | 'casterId' | 'artistId' | 'shootDate' | 'status'>
-}
-
-export function listAdminPayments(
-  filters: { escrowStatus?: string; cursor?: string; limit?: number } = {},
-  init?: Init
-) {
-  return fetcher<AdminPaymentRow[]>('/admin/payments', { params: filters, ...init })
-}
-
-export function forceReleaseEscrow(bookingId: string, notes: string) {
-  return fetcher<unknown>(`/admin/payments/bookings/${bookingId}/release`, {
-    method: 'POST',
-    body: { notes },
-  })
-}
-
-export function forceRefundEscrow(bookingId: string, notes: string) {
-  return fetcher<unknown>(`/admin/payments/bookings/${bookingId}/refund`, {
-    method: 'POST',
-    body: { notes },
-  })
+  return fetcher<AdminBookingDetail>(`/admin/bookings/${id}`, init)
 }
 
 // ── Disputes ───────────────────────────────────────────────────────────────
@@ -132,15 +135,121 @@ export function listAdminDisputes(
 
 // ── Flagged ────────────────────────────────────────────────────────────────
 
+export interface FlaggedMessageRow extends Message {
+  senderName: string | null
+  thread?: { jobId: string; casterId: string; artistId: string } | null
+}
+
+export interface FlaggedReviewRow extends Review {
+  reviewerName: string | null
+  revieweeName: string | null
+  flagReason?: string | null
+}
+
+export interface FlaggedParticipant {
+  profileId: string
+  userId: string
+  name: string
+}
+
+export interface FlaggedConversationMessage {
+  id: string
+  content: string
+  isFlagged: boolean
+  flagReason: string | null
+  createdAt: string
+  readAt: string | null
+  senderUserId: string
+  senderName: string
+  senderRole: 'caster' | 'artist' | 'unknown'
+  isSubject: boolean
+}
+
+export interface FlaggedReport {
+  id: string
+  reason: string
+  detail: string | null
+  status: 'open' | 'reviewing' | 'resolved' | 'dismissed'
+  createdAt: string
+  reporterUserId: string
+  reporterName: string
+  reporterRole: 'caster' | 'artist' | 'unknown'
+}
+
+export interface FlaggedMessageContext {
+  message: FlaggedMessageRow
+  job: { id: string; title: string } | null
+  participants: {
+    caster: FlaggedParticipant | null
+    artist: FlaggedParticipant | null
+  }
+  conversation: FlaggedConversationMessage[]
+  reports: FlaggedReport[]
+  flaggedCount: number
+  reportedParty: 'caster' | 'artist' | null
+}
+
 export function listFlaggedMessages(
   filters: { cursor?: string; limit?: number } = {},
   init?: Init
 ) {
-  return fetcher<Message[]>('/admin/flagged/messages', { params: filters, ...init })
+  return fetcher<FlaggedMessageRow[]>('/admin/flagged/messages', { params: filters, ...init })
+}
+
+export function getFlaggedMessageContext(id: string, init?: Init) {
+  return fetcher<FlaggedMessageContext>(`/admin/flagged/messages/${id}/context`, init)
 }
 
 export function listFlaggedReviews(filters: { cursor?: string; limit?: number } = {}, init?: Init) {
-  return fetcher<Review[]>('/admin/flagged/reviews', { params: filters, ...init })
+  return fetcher<FlaggedReviewRow[]>('/admin/flagged/reviews', { params: filters, ...init })
+}
+
+export function clearFlaggedMessage(id: string, notes?: string) {
+  return fetcher<Message>(`/admin/flagged/messages/${id}/clear`, {
+    method: 'POST',
+    body: { notes },
+  })
+}
+
+export function clearFlaggedReview(id: string, notes?: string) {
+  return fetcher<Review>(`/admin/flagged/reviews/${id}/clear`, { method: 'POST', body: { notes } })
+}
+
+export function removeFlaggedReview(id: string, notes?: string) {
+  return fetcher<Review>(`/admin/flagged/reviews/${id}/remove`, { method: 'POST', body: { notes } })
+}
+
+// ── Reports queue ────────────────────────────────────────────────────────────
+
+export interface AdminReportRow {
+  id: string
+  reporterId: string
+  reporterName: string | null
+  targetType: 'message_thread' | 'review'
+  targetId: string
+  targetLabel: string
+  reason: string
+  detail: string | null
+  status: 'open' | 'reviewing' | 'resolved' | 'dismissed'
+  reviewedById: string | null
+  reviewedAt: string | null
+  resolutionNote: string | null
+  createdAt: string
+}
+
+export function listReports(
+  filters: { status?: string; cursor?: string; limit?: number } = {},
+  init?: Init
+) {
+  return fetcher<AdminReportRow[]>('/admin/reports', { params: filters, ...init })
+}
+
+export function resolveReport(id: string, note?: string) {
+  return fetcher<AdminReportRow>(`/admin/reports/${id}/resolve`, { method: 'POST', body: { note } })
+}
+
+export function dismissReport(id: string, note?: string) {
+  return fetcher<AdminReportRow>(`/admin/reports/${id}/dismiss`, { method: 'POST', body: { note } })
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
@@ -152,7 +261,7 @@ export interface AdminAnalyticsSummary {
   pendingApplications: number
   openDisputes: number
   bookingsThisWeek: number
-  revenueThisMonth: number
+  activeSubscriptions: number
   newUsersWeekly: Array<{ weekStart: string; count: number }>
   jobsWeekly: Array<{ weekStart: string; count: number }>
   bookingFillRate: number
@@ -166,9 +275,14 @@ export function getAdminAnalytics(init?: Init) {
 
 // ── Logs ───────────────────────────────────────────────────────────────────
 
+export interface AdminLogRow extends AdminLog {
+  adminName: string | null
+  entityLabel: string | null
+}
+
 export function listAdminLogs(
   filters: { adminId?: string; cursor?: string; limit?: number } = {},
   init?: Init
 ) {
-  return fetcher<AdminLog[]>('/admin/logs', { params: filters, ...init })
+  return fetcher<AdminLogRow[]>('/admin/logs', { params: filters, ...init })
 }

@@ -6,7 +6,7 @@ const FOOTER_STRIP = [
   'Casting infrastructure',
   'Est. 2026',
   'Verified artists',
-  'Stripe-escrowed',
+  'Free for artists',
   'Contracts built in',
 ]
 
@@ -72,7 +72,7 @@ export function Footer() {
               CastFlow
             </Link>
             <p className="mt-5 max-w-xs text-sm font-medium leading-relaxed text-foreground/75">
-              The UK casting platform built on contracts, escrow payments, and
+              The UK casting platform built on contracts, verified talent, and
               reputation.
             </p>
           </div>
@@ -103,10 +103,10 @@ export function Footer() {
 
         <div className="mt-16 flex flex-col items-start justify-between gap-4 border-t border-border/60 pt-8 md:flex-row md:items-center">
           <p className="text-xs font-medium text-foreground/70">
-            © 2026 CastFlow Ltd · Made in the UK
+            © {new Date().getFullYear()} CastFlow Ltd · Made in the UK
           </p>
           <p className="text-xs font-medium text-foreground/70">
-            Casters pay. Artists keep 100% of every booking.
+            Casters subscribe. Artists join free.
           </p>
         </div>
       </div>

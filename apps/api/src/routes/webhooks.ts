@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type Stripe from 'stripe'
 import { stripe } from '../lib/stripe'
 import { env } from '../lib/env'
-import { PaymentService } from '../services/PaymentService'
+import { SubscriptionService } from '../services/SubscriptionService'
 
 export const webhookRoutes = new Hono()
 
@@ -29,67 +29,26 @@ webhookRoutes.post('/stripe', async (c) => {
     )
   }
 
+  // Caster subscription billing is the only money flow on the platform. Job
+  // fees are settled off-platform, so there are no payment-intent/charge/
+  // Connect events to handle here.
   switch (event.type) {
-    case 'payment_intent.amount_capturable_updated':
-    case 'payment_intent.succeeded': {
-      const intent = event.data.object
-      const chargeId =
-        typeof intent.latest_charge === 'string'
-          ? intent.latest_charge
-          : (intent.latest_charge?.id ?? null)
-      await PaymentService.markEscrowHeld(intent.id, chargeId)
+    case 'checkout.session.completed': {
+      await SubscriptionService.handleCheckoutCompleted(event.data.object)
       break
     }
-    case 'payment_intent.payment_failed': {
-      const intent = event.data.object
-      console.error(
-        '[stripe] payment_intent.payment_failed',
-        intent.id,
-        intent.last_payment_error?.message
-      )
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted': {
+      await SubscriptionService.handleSubscriptionUpserted(event.data.object)
       break
     }
-    case 'payment_intent.canceled': {
-      const intent = event.data.object
-      await PaymentService.markCanceledByIntent(intent.id)
-      break
-    }
-    case 'charge.refunded': {
-      const charge = event.data.object
-      const fullyRefunded = charge.amount_refunded >= charge.amount
-      await PaymentService.markRefundedByCharge(charge.id, fullyRefunded)
-      break
-    }
-    case 'charge.dispute.created': {
-      const dispute = event.data.object
-      const chargeId =
-        typeof dispute.charge === 'string' ? dispute.charge : (dispute.charge?.id ?? null)
-      if (chargeId) {
-        await PaymentService.markDisputedByCharge(chargeId)
-      }
-      break
-    }
-    case 'account.updated': {
-      // Connect Express account state changed — keep the cached
-      // payoutsEnabled flag in sync so releaseEscrow can gate without an RPC.
-      const account = event.data.object
-      await PaymentService.syncConnectAccountStatus({
-        id: account.id,
-        payouts_enabled: account.payouts_enabled,
-      })
-      break
-    }
-    case 'account.application.deauthorized': {
-      // Artist revoked our Connect access from the Stripe dashboard.
-      // Clear the binding so future releases throw PAYOUT_NOT_READY.
-      const account = event.account ?? event.data.object.id
-      if (typeof account === 'string') {
-        await PaymentService.clearConnectAccount(account)
-      }
+    case 'invoice.payment_failed': {
+      await SubscriptionService.handleInvoicePaymentFailed(event.data.object)
       break
     }
     default:
-      // Ignore unhandled types for now; record-only later if needed.
+      // Ignore unhandled types.
       break
   }
 

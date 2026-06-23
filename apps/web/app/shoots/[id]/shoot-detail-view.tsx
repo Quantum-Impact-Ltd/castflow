@@ -27,6 +27,7 @@ import { Reveal } from '@/components/landing/reveal'
 import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
 import { RemoteImage } from '@/components/dashboard/remote-image'
 import { formatCurrency, cn } from '@/lib/utils'
+import { ENABLE_MOCK_FALLBACK } from '@/lib/site'
 import { useAuthSession } from '@/providers/session-provider'
 import { useJob } from '@/lib/hooks/use-jobs'
 import {
@@ -50,9 +51,13 @@ const CATEGORY_LABEL: Record<string, string> = {
 export function ShootDetailView({ id }: Props) {
   const router = useRouter()
   // Live job detail first; fall back to mock when the id isn't a real job
-  // (e.g. the seeded demo shoots) so the page still renders richly.
+  // (e.g. the seeded demo shoots) — but only in demo/dev. On staging/prod an
+  // unknown id resolves to "Shoot not found" rather than fabricated detail.
   const { data: realJob, isLoading } = useJob(id)
-  const mock = useMemo(() => getMockShoot(id), [id])
+  const mock = useMemo(
+    () => (ENABLE_MOCK_FALLBACK ? getMockShoot(id) : null),
+    [id]
+  )
 
   // Real jobs render the same layout but with no enrichment extras (caster
   // stats, wardrobe, perks, cancellation policy, similar shoots). Those are
@@ -68,7 +73,7 @@ export function ShootDetailView({ id }: Props) {
   const handleApply = () => {
     if (!shoot) return
     if (!isAuthed) {
-      router.push(`/login?redirect=${encodeURIComponent(`/shoots/${shoot.id}`)}`)
+      router.push(`/login?next=${encodeURIComponent(`/shoots/${shoot.id}`)}`)
       return
     }
     if (!isArtist) {
@@ -392,8 +397,8 @@ export function ShootDetailView({ id }: Props) {
                 </p>
                 <p className="mt-1 text-xs text-foreground/60">
                   {shoot.paymentType === 'fixed'
-                    ? 'Flat fee · paid via escrow'
-                    : `Hourly · ~${shoot.shootDurationHours ?? 0}h estimated · paid via escrow`}
+                    ? 'Flat fee · paid directly by the caster'
+                    : `Hourly · ~${shoot.shootDurationHours ?? 0}h estimated · paid directly by the caster`}
                 </p>
 
                 <Separator className="my-6" />
@@ -416,8 +421,8 @@ export function ShootDetailView({ id }: Props) {
                   />
                   <KeyFact
                     icon={<ShieldCheck className="h-4 w-4" aria-hidden />}
-                    label="Escrow-secured payment"
-                    sub="Auto-released 48h after shoot day"
+                    label="Paid directly by the caster"
+                    sub="Off-platform — CastFlow takes no cut"
                   />
                 </ul>
 
@@ -433,7 +438,7 @@ export function ShootDetailView({ id }: Props) {
                 ) : (
                   <div className="mt-8">
                     <ShimmerButtonLink
-                      href={`/login?redirect=${encodeURIComponent(`/shoots/${shoot.id}`)}`}
+                      href={`/login?next=${encodeURIComponent(`/shoots/${shoot.id}`)}`}
                       className="h-12 w-full px-7 text-base font-medium"
                     >
                       Sign in to bid
@@ -535,7 +540,7 @@ function DetailRow({
               ••••• ••• ••
             </span>
             <Link
-              href={`/login?redirect=${encodeURIComponent(pathname ?? '/shoots')}`}
+              href={`/login?next=${encodeURIComponent(pathname ?? '/shoots')}`}
               className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 underline-offset-4 transition-colors hover:text-foreground hover:underline"
             >
               <Lock className="h-3 w-3" aria-hidden /> Sign in to view

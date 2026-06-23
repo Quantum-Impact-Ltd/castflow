@@ -118,7 +118,9 @@ export function MessageThreadView({ threadId, backHref }: MessageThreadViewProps
                     {m.isFlagged ? (
                       <p className="flex items-center gap-1 text-[11px] text-amber-600">
                         <AlertTriangle className="h-3 w-3" />
-                        Flagged — sharing personal contact details off-platform breaches our terms.
+                        {m.flagReason
+                          ? `Flagged — ${m.flagReason}`
+                          : 'Flagged — sharing personal contact details off-platform breaches our terms.'}
                       </p>
                     ) : null}
                   </div>

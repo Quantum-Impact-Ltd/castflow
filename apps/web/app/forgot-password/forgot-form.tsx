@@ -37,7 +37,7 @@ export function ForgotPasswordForm() {
           If an account exists for that email, we&apos;ve sent a password-reset
           link. Check your inbox.
         </p>
-        <p className="text-xs text-white/45">
+        <p className="text-xs text-white/70">
           Didn&apos;t arrive? Check spam, or wait a minute and try again.
         </p>
       </div>

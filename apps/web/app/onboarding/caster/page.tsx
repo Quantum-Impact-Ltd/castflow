@@ -40,8 +40,8 @@ const STEP_COPY: Record<(typeof STEPS)[number]['key'], StepCopy> = {
       bullets: [
         'Post a job — artists bid, you shortlist, accept the best fit.',
         'Browse talent — search the verified directory, invite specific artists.',
-        'Pay per booking — escrow via Stripe, released after the shoot.',
-        'No subscription required at launch.',
+        'Pay the artist directly, off-platform — CastFlow never touches job fees.',
+        'A simple caster subscription unlocks posting and booking. Artists join free.',
       ],
     },
   },

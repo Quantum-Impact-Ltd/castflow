@@ -2,14 +2,15 @@ import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface StarsProps {
-  /** Rating 0–5; supports halves via rounding for display. */
-  value: number
+  /** Rating 0–5; supports halves via rounding for display. May arrive as a Decimal string. */
+  value: number | string
   className?: string
   size?: number
 }
 
 export function Stars({ value, className, size = 16 }: StarsProps) {
-  const rounded = Math.round(value)
+  const numeric = typeof value === 'string' ? Number(value) : value
+  const rounded = Math.round(Number.isFinite(numeric) ? numeric : 0)
   return (
     <span
       className={cn('inline-flex items-center gap-0.5', className)}

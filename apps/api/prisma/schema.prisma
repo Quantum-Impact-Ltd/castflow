@@ -97,20 +97,20 @@ enum BidStatus {
 }
 
 enum BookingStatus {
-  pending_payment
+  pending_contract
   confirmed
   completed
   cancelled
   disputed
 }
 
-enum EscrowStatus {
-  awaiting_payment
-  held
-  released
-  refunded
-  partially_refunded
-  disputed
+enum SubscriptionStatus {
+  active
+  trialing
+  past_due
+  canceled
+  incomplete
+  unpaid
 }
 
 enum ContractStatus {
@@ -139,6 +139,33 @@ enum PortfolioItemType {
   video
 }
 
+// The kind of work a portfolio entry represents (a categorisation the artist
+// picks). The media type stays on PortfolioItemType (photo/video).
+enum PortfolioEntryType {
+  shoot
+  film
+  editorial
+  campaign
+  runway
+  commercial
+  other
+}
+
+// Professional / social link platforms an artist can attach to their profile.
+// Instagram also has a dedicated `instagramHandle` column kept for backward compat.
+enum ProfileLinkType {
+  website
+  instagram
+  youtube
+  vimeo
+  behance
+  tiktok
+  linkedin
+  imdb
+  spotlight
+  other
+}
+
 enum CompanyType {
   brand
   agency
@@ -157,6 +184,18 @@ enum CounterOfferStatus {
   accepted
   declined
   withdrawn
+}
+
+enum ReportTargetType {
+  message_thread
+  review
+}
+
+enum ReportStatus {
+  open
+  reviewing
+  resolved
+  dismissed
 }
 
 // ─── MODELS ───────────────────────────────────────────────────────────────────
@@ -271,13 +310,6 @@ model ArtistProfile {
   responseRate  Decimal? @map("response_rate") @db.Decimal(5, 2)
   strikeCount   Int      @default(0) @map("strike_count")
 
-  // Stripe Connect Express account id. Null until the artist starts the
-  // payout-setup flow. Cached `payoutsEnabled` mirrors Stripe's account
-  // capability so we can gate escrow release without an extra round-trip
-  // — but it's authoritative-on-Stripe; trust the cache only at write time.
-  stripeAccountId String? @unique @map("stripe_account_id")
-  payoutsEnabled  Boolean @default(false) @map("payouts_enabled")
-
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -285,6 +317,7 @@ model ArtistProfile {
   actorStats      ActorStats?
   skills          ArtistSkill[]
   portfolioItems  PortfolioItem[]
+  links           ProfileLink[]
   bids            Bid[]
   bookings        Booking[]
   invites         JobInvite[]
@@ -340,19 +373,38 @@ model ArtistSkill {
 }
 
 model PortfolioItem {
-  id              String            @id @default(uuid())
-  artistProfileId String            @map("artist_profile_id")
-  artistProfile   ArtistProfile     @relation(fields: [artistProfileId], references: [id])
+  id              String             @id @default(uuid())
+  artistProfileId String             @map("artist_profile_id")
+  artistProfile   ArtistProfile      @relation(fields: [artistProfileId], references: [id])
   type            PortfolioItemType
+  entryType       PortfolioEntryType @default(other) @map("entry_type")
   url             String
-  thumbnailUrl    String?           @map("thumbnail_url")
+  thumbnailUrl    String?            @map("thumbnail_url")
+  title           String?
+  description     String?
+  // Optional links related to this entry (published article, IMDb, Vimeo…).
+  links           String[]           @default([])
   caption         String?
-  displayOrder    Int               @map("display_order")
-  isPrimary       Boolean           @default(false) @map("is_primary")
-  isApproved      Boolean           @default(true) @map("is_approved")
-  createdAt       DateTime          @default(now()) @map("created_at")
+  displayOrder    Int                @map("display_order")
+  isPrimary       Boolean            @default(false) @map("is_primary")
+  isApproved      Boolean            @default(true) @map("is_approved")
+  createdAt       DateTime           @default(now()) @map("created_at")
 
   @@map("portfolio_items")
+}
+
+model ProfileLink {
+  id              String          @id @default(uuid())
+  artistProfileId String          @map("artist_profile_id")
+  artistProfile   ArtistProfile   @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  platform        ProfileLinkType
+  url             String
+  label           String?
+  displayOrder    Int             @default(0) @map("display_order")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@index([artistProfileId])
+  @@map("profile_links")
 }
 
 model CasterProfile {
@@ -378,7 +430,8 @@ model CasterProfile {
 
   jobs            Job[]
   bookings        Booking[]
-  reviewsReceived Review[]  @relation("RevieweeCaster")
+  reviewsReceived Review[]            @relation("RevieweeCaster")
+  subscription    CasterSubscription?
 
   @@map("caster_profiles")
 }
@@ -509,7 +562,7 @@ model Booking {
   shootDate             DateTime      @map("shoot_date")
   shootLocation         String        @map("shoot_location")
   callTime              DateTime?     @map("call_time")
-  status                BookingStatus @default(pending_payment)
+  status                BookingStatus @default(pending_contract)
   cancelledBy           String?       @map("cancelled_by")
   cancelledAt           DateTime?     @map("cancelled_at")
   cancellationReason    String?       @map("cancellation_reason")
@@ -518,7 +571,6 @@ model Booking {
   updatedAt             DateTime      @updatedAt @map("updated_at")
 
   contract Contract?
-  payment  Payment?
   reviews  Review[]
   dispute  Dispute?
 
@@ -564,31 +616,26 @@ model Contract {
   @@map("contracts")
 }
 
-model Payment {
-  id        String  @id @default(uuid())
-  bookingId String  @unique @map("booking_id")
-  booking   Booking @relation(fields: [bookingId], references: [id])
+// Caster platform subscription — the ONLY money CastFlow collects. Job fees
+// are paid directly between caster and artist, off-platform (no escrow, no
+// commission, no artist payouts). One subscription per caster, billed via
+// Stripe Billing. `currentPeriodEnd` is the source of truth for lazy gating
+// even if a Stripe webhook is missed.
+model CasterSubscription {
+  id                   String             @id @default(uuid())
+  casterId             String             @unique @map("caster_id")
+  caster               CasterProfile      @relation(fields: [casterId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String             @map("stripe_customer_id")
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  status               SubscriptionStatus @default(incomplete)
+  priceId              String?            @map("price_id")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
 
-  stripePaymentIntentId String  @unique @map("stripe_payment_intent_id")
-  stripeChargeId        String? @map("stripe_charge_id")
-  stripeTransferId      String? @map("stripe_transfer_id")
-
-  grossAmount              Decimal @map("gross_amount") @db.Decimal(10, 2)
-  platformCommissionRate   Decimal @map("platform_commission_rate") @db.Decimal(4, 2)
-  platformCommissionAmount Decimal @map("platform_commission_amount") @db.Decimal(10, 2)
-  netArtistAmount          Decimal @map("net_artist_amount") @db.Decimal(10, 2)
-
-  escrowStatus          EscrowStatus @default(awaiting_payment) @map("escrow_status")
-  cancellationFeeAmount Decimal?     @map("cancellation_fee_amount") @db.Decimal(10, 2)
-
-  paidAt        DateTime? @map("paid_at")
-  releasedAt    DateTime? @map("released_at")
-  autoReleaseAt DateTime  @map("auto_release_at")
-  refundedAt    DateTime? @map("refunded_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-
-  @@index([escrowStatus])
-  @@map("payments")
+  @@index([stripeCustomerId])
+  @@map("caster_subscriptions")
 }
 
 model MessageThread {
@@ -608,14 +655,15 @@ model MessageThread {
 }
 
 model Message {
-  id        String        @id @default(uuid())
-  threadId  String        @map("thread_id")
-  thread    MessageThread @relation(fields: [threadId], references: [id])
-  senderId  String        @map("sender_id")
-  content   String
-  isFlagged Boolean       @default(false) @map("is_flagged")
-  readAt    DateTime?     @map("read_at")
-  createdAt DateTime      @default(now()) @map("created_at")
+  id         String        @id @default(uuid())
+  threadId   String        @map("thread_id")
+  thread     MessageThread @relation(fields: [threadId], references: [id])
+  senderId   String        @map("sender_id")
+  content    String
+  isFlagged  Boolean       @default(false) @map("is_flagged")
+  flagReason String?       @map("flag_reason")
+  readAt     DateTime?     @map("read_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
 
   @@index([threadId, createdAt])
   @@map("messages")
@@ -705,4 +753,27 @@ model AdminLog {
   @@index([adminId])
   @@index([entityType, entityId])
   @@map("admin_logs")
+}
+
+// A persisted record of a user-submitted content report (vs. the in-message
+// `isFlagged`/`flagReason` markers). Stores WHO reported, WHY, and the
+// moderation outcome — so admins see real reporter identity instead of
+// inferring it, and reports remain queryable after flags are cleared.
+model ContentReport {
+  id             String           @id @default(uuid())
+  reporterId     String           @map("reporter_id") // User.id of the reporter
+  targetType     ReportTargetType @map("target_type")
+  targetId       String           @map("target_id") // threadId / reviewId
+  reason         String // harassment | off_platform | spam | other
+  detail         String?
+  status         ReportStatus     @default(open)
+  reviewedById   String?          @map("reviewed_by_id") // admin User.id
+  reviewedAt     DateTime?        @map("reviewed_at")
+  resolutionNote String?          @map("resolution_note")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@index([reporterId])
+  @@map("content_reports")
 }

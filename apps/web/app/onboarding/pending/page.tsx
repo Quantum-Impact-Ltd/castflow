@@ -80,7 +80,7 @@ export default function OnboardingPendingPage() {
             <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-rose-400/30 bg-rose-400/[0.08]">
               <AlertTriangle className="h-6 w-6 text-rose-300" />
             </div>
-            <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
+            <p className="font-mono text-[10px] tracking-[0.22em] text-white/70 uppercase">
               Changes requested
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
@@ -116,7 +116,7 @@ export default function OnboardingPendingPage() {
             <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-emerald-400/30 bg-emerald-400/[0.08]">
               <CheckCircle2 className="h-6 w-6 text-emerald-400" />
             </div>
-            <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
+            <p className="font-mono text-[10px] tracking-[0.22em] text-white/70 uppercase">
               Application approved
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
@@ -140,7 +140,7 @@ export default function OnboardingPendingPage() {
             <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-white/12 bg-white/[0.04]">
               <Clock className="h-6 w-6 text-[var(--cta-400)]" />
             </div>
-            <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
+            <p className="font-mono text-[10px] tracking-[0.22em] text-white/70 uppercase">
               Application submitted
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
@@ -172,7 +172,7 @@ export default function OnboardingPendingPage() {
 
               <Link
                 href="/"
-                className="inline-flex items-center text-sm text-white/45 transition hover:text-white"
+                className="inline-flex items-center text-sm text-white/70 transition hover:text-white"
               >
                 Back to homepage
                 <ArrowRight className="ml-1 h-4 w-4" />

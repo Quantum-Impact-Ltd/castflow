@@ -7,7 +7,6 @@ import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
 import { AppError } from '../errors'
 import { NotificationService } from './NotificationService'
-import { PaymentService } from './PaymentService'
 
 interface UserCtx {
   id: string
@@ -87,12 +86,6 @@ export class DisputeService {
         where: { id: bookingId },
         data: { status: 'disputed' },
       })
-      if (await tx.payment.findUnique({ where: { bookingId } })) {
-        await tx.payment.update({
-          where: { bookingId },
-          data: { escrowStatus: 'disputed' },
-        })
-      }
       return row
     })
 
@@ -147,9 +140,10 @@ export class DisputeService {
   }
 
   /**
-   * Admin resolves a dispute. For 'split' the splitArtistPct is required; the
-   * escrow is captured at that share and the remainder refunded. For
-   * full_release / full_refund we simply call the existing payment helpers.
+   * Admin resolves a dispute. The platform holds no job money, so resolution is
+   * a record only — it documents the admin's decision (and, for 'split', the
+   * agreed artist share) and notifies both parties. Any money owed is settled
+   * directly between caster and artist, off-platform.
    */
   static async adminResolve(user: UserCtx, bookingId: string, input: ResolveDisputeInput) {
     if (user.role !== 'admin') {
@@ -160,7 +154,6 @@ export class DisputeService {
       include: {
         booking: {
           include: {
-            payment: true,
             caster: { select: { userId: true } },
             artist: { select: { userId: true } },
           },
@@ -188,6 +181,26 @@ export class DisputeService {
         data: updates,
       })
 
+      // Close out the booking to match the recorded outcome. `escalated`
+      // leaves it `disputed` pending external action.
+      const nextBookingStatus =
+        input.resolution === 'full_refund_to_caster'
+          ? 'cancelled'
+          : input.resolution === 'escalated'
+            ? null
+            : 'completed' // full_release_to_artist | split → work stands
+      if (nextBookingStatus) {
+        await tx.booking.update({
+          where: { id: dispute.booking.id },
+          data: {
+            status: nextBookingStatus,
+            ...(nextBookingStatus === 'cancelled'
+              ? { cancellationReason: input.adminNotes ?? 'Dispute resolved in favour of caster' }
+              : {}),
+          },
+        })
+      }
+
       await tx.adminLog.create({
         data: {
           adminId: user.id,
@@ -199,47 +212,6 @@ export class DisputeService {
       })
       return row
     })
-
-    // Money movement — runs outside the resolution transaction because the
-    // Stripe calls are slow and we don't want them holding a DB transaction
-    // open. The payment helpers are idempotent on escrowStatus, so admin
-    // can safely re-invoke if a Stripe call fails mid-flight.
-    //
-    // Payment row may not exist if the booking never had escrow held — skip
-    // money movement in that case.
-    if (dispute.booking.payment) {
-      try {
-        switch (input.resolution) {
-          case 'full_release_to_artist':
-            await PaymentService.releaseEscrow(dispute.booking.id, { actor: 'auto' })
-            break
-          case 'full_refund_to_caster':
-            await PaymentService.refundEscrow(
-              dispute.booking.id,
-              input.adminNotes ?? 'Dispute resolved in favour of caster'
-            )
-            break
-          case 'split':
-            await PaymentService.partialRelease(dispute.booking.id, splitArtistPct, {
-              resolution: 'split',
-              reason: input.adminNotes ?? 'Dispute resolved with split',
-            })
-            break
-          case 'escalated':
-            // No money movement — admin keeps escrow frozen pending external action.
-            break
-        }
-      } catch (err) {
-        // Don't swallow — admin needs to know if the money move failed so
-        // they can retry from the Stripe dashboard. Log for ops, rethrow.
-        console.error('[DisputeService] money movement failed during resolve', {
-          disputeId: dispute.id,
-          resolution: input.resolution,
-          error: err instanceof Error ? err.message : String(err),
-        })
-        throw err
-      }
-    }
 
     // Notify both parties of the outcome.
     const body = `Admin resolved the dispute: ${input.resolution}${input.adminNotes ? ` — ${input.adminNotes}` : '.'}`

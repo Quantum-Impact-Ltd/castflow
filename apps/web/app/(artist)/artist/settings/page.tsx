@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { KeyRound, Mail, Wallet, Bell, Trash2, ArrowRight } from 'lucide-react'
+import { KeyRound, Mail, Bell, Trash2 } from 'lucide-react'
 import { PageHeader, LoadingState } from '@/components/dashboard'
 import { AvailabilityToggle } from '@/components/dashboard/availability-toggle'
 import { CalendarFeedCard } from '@/components/dashboard/calendar-feed-card'
@@ -15,20 +15,17 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { authClient } from '@/lib/auth-client'
 import { useMyArtistProfile } from '@/lib/hooks/use-artist'
-import { useConnectStatus } from '@/lib/hooks/use-payments'
 import { useNotificationPrefs, type NotificationPrefs } from '@/lib/hooks/use-notification-prefs'
 
 const PREF_LABELS: { key: keyof NotificationPrefs; label: string; hint: string }[] = [
   { key: 'bidUpdates', label: 'Bid updates', hint: 'Shortlisted, rejected, or accepted.' },
   { key: 'messages', label: 'Messages', hint: 'New messages from casters.' },
   { key: 'bookings', label: 'Bookings & contracts', hint: 'Confirmations, contracts, cancellations.' },
-  { key: 'payments', label: 'Payments', hint: 'Escrow held and payouts released.' },
   { key: 'reviews', label: 'Reviews', hint: 'When a caster reviews you.' },
 ]
 
 export default function ArtistSettingsPage() {
   const profile = useMyArtistProfile()
-  const connect = useConnectStatus()
   const { prefs, setPref } = useNotificationPrefs()
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -73,7 +70,7 @@ export default function ArtistSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Settings" description="Manage your account, payouts, and preferences." />
+      <PageHeader title="Settings" description="Manage your account and preferences." />
 
       {/* Availability */}
       <Card className="p-6">
@@ -158,28 +155,6 @@ export default function ArtistSettingsPage() {
             </li>
           ))}
         </ul>
-      </Card>
-
-      {/* Payouts */}
-      <Card className="flex items-center justify-between p-6">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Wallet className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="font-medium text-foreground">Payout account</p>
-            <p className="text-sm text-muted-foreground">
-              {connect.data?.payoutsEnabled
-                ? 'Connected — you can receive payouts.'
-                : 'Not connected yet — set up to get paid.'}
-            </p>
-          </div>
-        </div>
-        <Button asChild variant="outline">
-          <Link href="/artist/earnings/payout">
-            Manage <ArrowRight className="ml-1.5 h-4 w-4" />
-          </Link>
-        </Button>
       </Card>
 
       {/* Calendar */}

@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { Bookmark, MapPin, CalendarDays, Users } from 'lucide-react'
 import type { Job } from '@castflow/types'
@@ -21,9 +22,16 @@ interface JobCardProps {
   href: string
   /** Show the bookmark toggle (artist feed / saved list). */
   showSave?: boolean
+  /** Optional status pill rendered under the category row (e.g. the artist's
+   *  bid status on this job). Non-interactive — safe inside the card link. */
+  badge?: ReactNode
+  /** Optional call-to-action rendered as a sibling BELOW the card link (so it
+   *  is never nested inside an anchor). E.g. a "Bid now" / "View your bid"
+   *  button on the artist feed. */
+  action?: ReactNode
 }
 
-export function JobCard({ job, href, showSave = true }: JobCardProps) {
+export function JobCard({ job, href, showSave = true, badge, action }: JobCardProps) {
   const { isSaved, toggle } = useSavedJobs()
   const saved = isSaved(job.id)
   const spotsRemaining = Math.max(job.headcountRequired - job.headcountFilled, 0)
@@ -45,13 +53,14 @@ export function JobCard({ job, href, showSave = true }: JobCardProps) {
       ) : null}
 
       <Link href={href} className="flex flex-1 flex-col gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pr-8">
           <Badge variant="secondary" className="capitalize">
             {job.category}
           </Badge>
           {job.subcategory ? (
             <span className="text-xs text-muted-foreground">{job.subcategory}</span>
           ) : null}
+          {badge}
         </div>
 
         <h3 className="line-clamp-2 pr-8 font-medium tracking-[-0.01em] text-foreground">
@@ -75,6 +84,8 @@ export function JobCard({ job, href, showSave = true }: JobCardProps) {
 
         <p className="font-semibold text-foreground">{rateLabel(job)}</p>
       </Link>
+
+      {action ? <div className="border-t border-border pt-3">{action}</div> : null}
     </div>
   )
 }

@@ -28,7 +28,6 @@ describe('ContractService.generateForBooking', () => {
     async () => {
       const { booking, casterUser } = await createBookingScenario({
         totalAmount: 800,
-        artistPayoutsEnabled: true,
       })
 
       const contract = await ContractService.generateForBooking(
@@ -50,7 +49,6 @@ describe('ContractService.generateForBooking', () => {
     'is idempotent — re-generating returns the existing contract row',
     async () => {
       const { booking, casterUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
       })
       const first = await ContractService.generateForBooking(
         { id: casterUser.id, role: 'caster' },
@@ -71,8 +69,8 @@ describe('ContractService.generateForBooking', () => {
   it(
     'rejects non-party callers with FORBIDDEN',
     async () => {
-      const { booking } = await createBookingScenario({ artistPayoutsEnabled: true })
-      const outsider = await createBookingScenario({ artistPayoutsEnabled: true })
+      const { booking } = await createBookingScenario()
+      const outsider = await createBookingScenario()
 
       let caught: unknown
       try {
@@ -95,7 +93,6 @@ describe('ContractService.sign', () => {
     'first signature flips status to partially_signed, records timestamp + name',
     async () => {
       const { booking, casterUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         contractStatus: 'pending_signatures',
       })
 
@@ -116,7 +113,6 @@ describe('ContractService.sign', () => {
     'second signature flips status to fully_signed and triggers PDF render to R2',
     async () => {
       const { booking, casterUser, artistUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         contractStatus: 'pending_signatures',
       })
 
@@ -165,7 +161,6 @@ describe('ContractService.sign', () => {
     'rejects signing the same side twice (CONTRACT_ALREADY_SIGNED)',
     async () => {
       const { booking, casterUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         contractStatus: 'pending_signatures',
       })
       await ContractService.sign(
@@ -193,7 +188,6 @@ describe('ContractService.sign', () => {
     'rejects signing beyond the 72h window with INVALID_STATE',
     async () => {
       const { booking, casterUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         contractStatus: 'pending_signatures',
       })
       // Backdate the contract's createdAt to 73h ago.
@@ -221,7 +215,6 @@ describe('ContractService.sign', () => {
     'rejects empty / short signature names with VALIDATION_ERROR',
     async () => {
       const { booking, casterUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         contractStatus: 'pending_signatures',
       })
 

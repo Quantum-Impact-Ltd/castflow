@@ -9,7 +9,7 @@ interface Tier {
   name: string
   sub: string
   monthly: string
-  commission: string
+  note: string
   features: string[]
   cta: string
   popular?: boolean
@@ -21,12 +21,12 @@ const TIERS: Tier[] = [
     name: 'Starter',
     sub: 'Freelance producers and small brands',
     monthly: '£XX',
-    commission: 'X% per booking',
+    note: 'Flat monthly subscription',
     features: [
       '1 active job post',
       '1 seat',
       'Full talent search',
-      'Escrow + contracts',
+      'Contracts built in',
     ],
     cta: 'Choose Starter',
   },
@@ -35,7 +35,7 @@ const TIERS: Tier[] = [
     name: 'Studio',
     sub: 'Mid-size brands and boutique agencies',
     monthly: '£XX',
-    commission: 'X% per booking',
+    note: 'Flat monthly subscription',
     features: [
       '3 active job posts',
       '3 seats',
@@ -50,7 +50,7 @@ const TIERS: Tier[] = [
     name: 'Agency',
     sub: 'Full agencies and production houses',
     monthly: '£XX',
-    commission: 'X% per booking',
+    note: 'Flat monthly subscription',
     features: [
       'Unlimited job posts',
       '10 seats',
@@ -76,9 +76,9 @@ export function PricingPreviewSection() {
               </h2>
             </div>
             <p className="text-lg leading-relaxed text-muted-foreground lg:col-span-5 lg:pt-2">
-              One monthly subscription plus a small per-casting commission. Every
-              artist keeps 100% of their agreed rate. No surprise deductions, no
-              hidden fees, no platform skim from the talent side.
+              A flat monthly subscription for casters — that’s our only charge.
+              Artists join free. Job fees are paid directly between you and the
+              artist, off-platform. No commission, no platform cut.
             </p>
           </div>
         </Reveal>
@@ -119,7 +119,7 @@ export function PricingPreviewSection() {
                     </span>
                   </p>
                   <p className="mt-2 font-mono text-sm text-muted-foreground">
-                    + {tier.commission}
+                    {tier.note}
                   </p>
                 </div>
 
@@ -154,7 +154,7 @@ export function PricingPreviewSection() {
 
         <Reveal delay={240}>
           <p className="mt-12 text-center text-sm text-muted-foreground">
-            Artists keep 100% of every booking, no platform fee, ever.{' '}
+            Artists join free, no platform fee, ever.{' '}
             <Link
               href="/pricing"
               className="font-medium text-foreground underline-offset-4 hover:underline"

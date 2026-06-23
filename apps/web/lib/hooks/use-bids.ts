@@ -19,6 +19,7 @@ import {
   withdrawBid,
 } from '@/lib/api/bids'
 import { errorMessage } from './util'
+import { handleSubscriptionError } from './subscription-error'
 
 export function useMyBids(filters: { status?: string; cursor?: string; limit?: number } = {}) {
   return useQuery({
@@ -118,7 +119,11 @@ export function useAcceptBid(jobId: string) {
       void qc.invalidateQueries({ queryKey: queryKeys.bookings.caster() })
       toast.success('Bid accepted — booking created')
     },
-    onError: (err) => toast.error(errorMessage(err)),
+    onError: (err) => {
+      // Booking talent needs an active subscription; route to billing on 402
+      // instead of a dead-end toast.
+      if (!handleSubscriptionError(err)) toast.error(errorMessage(err))
+    },
   })
 }
 

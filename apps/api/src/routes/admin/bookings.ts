@@ -22,7 +22,6 @@ adminBookingRoutes.get('/', async (c) => {
       job: { select: { title: true } },
       artist: { select: { firstName: true, lastName: true } },
       caster: { select: { companyName: true } },
-      payment: { select: { escrowStatus: true } },
     },
   })
   const { items, nextCursor } = paginate(rows, limit)
@@ -36,7 +35,6 @@ adminBookingRoutes.get('/:id', async (c) => {
       job: true,
       artist: true,
       caster: true,
-      payment: true,
       contract: true,
       dispute: true,
     },

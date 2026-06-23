@@ -36,8 +36,8 @@ const FEATURES: FeatureDef[] = [
   },
   {
     icon: Wallet,
-    title: 'Stripe escrow built-in',
-    body: 'Caster funds are ring-fenced until the shoot is confirmed.',
+    title: 'Free for artists',
+    body: 'Casters pay a subscription. Artists never pay a fee.',
     area: 'lg:col-span-1',
   },
   {
@@ -48,8 +48,8 @@ const FEATURES: FeatureDef[] = [
   },
   {
     icon: Calendar,
-    title: 'Auto-release at +48h',
-    body: 'Payouts never get stuck — release happens whether or not the caster confirms.',
+    title: 'Pay direct, off-platform',
+    body: 'Settle the agreed fee directly with the artist — CastFlow never takes a cut.',
     area: 'lg:col-span-2',
   },
 ]
@@ -92,7 +92,7 @@ const ACTIVITY: ActivityItem[] = [
     id: 'a4',
     icon: Wallet,
     who: 'Daniel R.',
-    what: 'received a £680 payout',
+    what: 'signed a contract for an editorial shoot',
     when: '9m ago',
     accent: 'green',
   },
@@ -136,12 +136,12 @@ function HeroSection() {
             How it works
           </p>
           <h1 className="mt-6 max-w-4xl text-balance text-5xl font-medium leading-[1.04] tracking-[-0.02em] text-foreground sm:text-6xl lg:text-7xl">
-            From brief to <span className="font-serif font-normal italic">paid out,</span> in four
+            From brief to <span className="font-serif font-normal italic">booked,</span> in four
             steps.
           </h1>
           <p className="mt-8 max-w-2xl text-lg leading-relaxed text-foreground/75">
-            Post the shoot. Receive bids from verified UK artists. Book in one click. Pay through
-            escrow. No agents, no chasing invoices, no payment disputes.
+            Post the shoot. Receive bids from verified UK artists. Book in one click. Pay the artist
+            directly. No agents, no platform cut, no commission.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="rounded-full">
@@ -176,10 +176,10 @@ function StatsStripSection() {
       label: 'Average time from post to confirmed booking',
     },
     {
-      eyebrow: 'Protection',
-      value: 100,
+      eyebrow: 'Free',
+      value: 0,
       suffix: '%',
-      label: 'Of bookings paid through Stripe escrow',
+      label: 'Charged to artists — casters subscribe',
     },
     {
       eyebrow: 'Talent',
@@ -321,7 +321,7 @@ function LiveActivitySection() {
               </h2>
               <p className="mt-6 max-w-md text-base leading-relaxed text-foreground/75">
                 A glimpse of what flows through CastFlow on a normal weekday — jobs posted, bids
-                placed, shoots booked, payouts released.
+                placed, shoots booked, contracts signed.
               </p>
               <Button asChild className="mt-8 rounded-full">
                 <Link href="/register?role=caster">

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FileText, CalendarCheck, MessageSquare, Sparkles, ArrowRight, Wallet, Mail } from 'lucide-react'
+import { FileText, CalendarCheck, MessageSquare, Sparkles, ArrowRight, Mail } from 'lucide-react'
 import {
   PageHeader,
   StatCard,
@@ -20,7 +20,6 @@ import { useMyBids } from '@/lib/hooks/use-bids'
 import { useMyBookings } from '@/lib/hooks/use-bookings'
 import { useMyInvites } from '@/lib/hooks/use-invites'
 import { useThreads } from '@/lib/hooks/use-messages'
-import { useConnectStatus } from '@/lib/hooks/use-payments'
 import { formatDate } from '@/lib/utils'
 
 export default function ArtistDashboardPage() {
@@ -29,7 +28,6 @@ export default function ArtistDashboardPage() {
   const bookings = useMyBookings()
   const invites = useMyInvites({ status: 'pending' })
   const threads = useThreads()
-  const connect = useConnectStatus()
 
   if (profile.isPending) return <LoadingState rows={3} />
   if (profile.isError || !profile.data) {
@@ -67,20 +65,6 @@ export default function ArtistDashboardPage() {
           <p className="text-sm text-[var(--brand-700)]">
             You don’t have any reviews yet — land your first booking to start building your reputation.
           </p>
-        </div>
-      ) : null}
-
-      {connect.data && !connect.data.payoutsEnabled ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Wallet className="h-5 w-5 text-amber-600" />
-            <p className="text-sm text-amber-800">
-              Connect a bank account so you can be paid when a shoot completes.
-            </p>
-          </div>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/artist/earnings/payout">Set up payouts</Link>
-          </Button>
         </div>
       ) : null}
 

@@ -16,7 +16,9 @@ export function safeInternalRedirect(raw: string | null | undefined): string | n
 
   // Reject any control-character payload outright — browsers strip
   // tab/newline/CR from URLs before navigation, so an attacker could use
-  // them to dodge a prefix check (e.g. `/\tevil.com`).
+  // them to dodge a prefix check (e.g. `/\tevil.com`). Control chars in the
+  // class are intentional here.
+  // eslint-disable-next-line no-control-regex
   if (/[\x00-\x1f\x7f]/.test(raw)) return null
 
   const trimmed = raw.trim()

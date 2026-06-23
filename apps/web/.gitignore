@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# …but always commit the example templates so a fresh clone has them.
+!.env.example
+!.env.local.example
 
 # vercel
 .vercel
@@ -39,3 +42,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.claude-ws/

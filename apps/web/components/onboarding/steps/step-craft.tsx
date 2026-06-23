@@ -91,7 +91,7 @@ export function StepCraft({ currentType, onNext }: StepCraftProps) {
         })}
       </div>
 
-      <p className="text-xs text-white/45">
+      <p className="text-xs text-white/70">
         You can change this later — but only before submitting your profile for review.
       </p>
 

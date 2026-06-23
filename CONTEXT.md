@@ -7,14 +7,67 @@
 
 ## Current phase
 
-**Dashboard rebuild — all three roles complete** — the role dashboards were
-deleted and rebuilt from scratch per `DASHBOARD_PLAN.md` (repo root). **Artist
-(25 pages), caster (24), and admin (17) are all built end-to-end** and
-typecheck + lint clean. Remaining work is the Phase 0 backend pass (new
-endpoints + WebSocket broadcast) so it all runs live — see the list below.
+**Monetization pivot complete — caster subscription only** (2026-06-23, see the
+dated section immediately below). The platform no longer runs job escrow,
+commission, or artist payouts; the only platform charge is a recurring caster
+subscription (Stripe Billing), and job fees are paid caster→artist directly,
+off-platform. **This supersedes all prior escrow/Stripe-Connect/payout work in
+this file.**
+
+Prior to the pivot: **Dashboard rebuild — all three roles complete** — the role
+dashboards were deleted and rebuilt from scratch per `DASHBOARD_PLAN.md` (repo
+root). **Artist (25 pages), caster (24), and admin (17) are all built
+end-to-end** and typecheck + lint clean.
 
 Prior phase: the 2026-05 frontend audit remediation pass completed 2026-05-22
 (archived at `audit/2026-05-frontend-audit.md`).
+
+---
+
+## Monetization pivot — caster subscription only (2026-06-23)
+
+**Pivoted the monetization model from job escrow/commission to a caster-only
+recurring subscription.** The platform no longer touches job money at all.
+
+**What changed (implemented in code; docs updated this session):**
+- **Only platform charge is a recurring caster subscription** (Stripe Billing).
+  Artists pay nothing. The platform does NOT process job fees — casters pay
+  artists **directly, off-platform** (before/at/after the shoot).
+- **No escrow, no commission, no Stripe Connect, no artist payouts.**
+- **Subscription gate:** an active subscription is REQUIRED for a caster to
+  **post a job** and to **accept a bid** (book talent). Browsing, messaging,
+  contracts, reviews, and disputes remain free.
+- **Contracts, completion confirmation, reviews, and disputes are KEPT but are
+  record-only** (no money moves). The 50% cancellation fee is now **advisory
+  ToS text** (owed off-platform), not an enforced/escrow split.
+- **Booking lifecycle:** `pending_contract` → `confirmed` → `completed`, with
+  the job fee paid off-platform (was `pending_payment` → escrow flow).
+
+**Schema changes (require `bunx prisma db push`):**
+- REMOVED `Payment` model + `EscrowStatus` enum.
+- REMOVED `ArtistProfile.stripeAccountId` / `payoutsEnabled`.
+- RENAMED `BookingStatus.pending_payment` → `pending_contract`.
+- ADDED `CasterSubscription` model + `SubscriptionStatus` enum
+  (`active | trialing | past_due | canceled | incomplete | unpaid`).
+
+**API changes:**
+- NEW routes: `POST /api/v1/subscriptions/checkout`,
+  `POST /api/v1/subscriptions/portal`, `GET /api/v1/subscriptions/status`.
+- NEW error code `SUBSCRIPTION_REQUIRED` (HTTP 402).
+- NEW service `apps/api/src/services/SubscriptionService.ts`.
+- Stripe webhook now handles subscription events (`checkout.session.completed`,
+  `customer.subscription.*`, `invoice.payment_failed`) instead of payment intents.
+
+**Env changes:**
+- REMOVED `STRIPE_CONNECT_CLIENT_ID` and `PLATFORM_COMMISSION_RATE`.
+- ADDED `STRIPE_PRICE_ID`.
+
+**SUPERSEDED prior work:** all prior escrow / Stripe Connect / artist-payout /
+commission / cancellation-fee-split / dispute-payout-split entries below
+(notably the "Stripe Connect + artist payouts", "Money flows: split,
+cancellation fee, dispute payouts", "Force-release / force-refund escrow", and
+the payments test suites) are **superseded by this pivot** and describe the
+removed escrow model. They are retained for history only.
 
 ---
 
@@ -173,6 +226,363 @@ touched web files, Prettier, `prisma format`. Could NOT `db push` / runtime-veri
 **Next up:** the deferred schema-backed items (SavedJob / TalentShortlist /
 notificationPrefs / ContentReport + `prisma db push`); the G8/G9/G12 admin
 endpoints; then a full `next build` + E2E pass with the API/DB running.
+
+### Admin dashboard sweep — names, real stats, moderation, crash fix (this session)
+
+Fixed a batch of admin-panel issues (admin is out of brand-design scope; these
+are functional fixes):
+- **Crash (P0):** `/admin/payments/[id]` threw in `StatusBadge.humanise` because
+  the payments-list `select` omitted `booking.status/shootDate/id` (frontend read
+  `undefined`). Fixed the select **and** hardened `StatusBadge` to accept
+  `null|undefined` and render `—` instead of throwing.
+- **Raw IDs → names everywhere:** the convention is **name primary, raw id only
+  as a `title=` tooltip**. Booking/job detail now render caster company + artist
+  name (relations were already returned, frontend was showing the FK). Dispute
+  detail resolves raised-by/against via the booking's `artist.userId`/`caster.userId`
+  (no new endpoint). Flagged messages/reviews now join sender/reviewer/reviewee
+  names server-side; audit log joins admin name + best-effort entity label
+  (artist/user/job). Bookings list now shows job title + parties; jobs list shows
+  caster company.
+- **Disputes reason was blank:** `Dispute.reason` is free-text but the UI did
+  `REASON_LABEL[reason]` (enum-only) → undefined. Added a humanising fallback in
+  list + detail; seed dispute reason changed to the enum value `no_show_artist`.
+- **Analytics + overview empty:** `/admin/analytics/summary` returned a different
+  shape than the frontend expected. Rewrote it to return pendingApplications,
+  bookingsThisWeek, revenueThisMonth (commission paid this month), 8-week
+  newUsers/jobs series, bookingFillRate, disputeRate, avgTimeToBookingHours.
+- **Flagged moderation endpoints (G9):** `POST /admin/flagged/messages/:id/clear`,
+  `/reviews/:id/clear`, `/reviews/:id/remove` (soft `isRemoved`), each audit-logged.
+  Frontend buttons are now live (was "endpoint not available"). New hooks
+  `useClearFlaggedMessage/Review`, `useRemoveFlaggedReview`.
+- **User detail (G12):** endpoint now returns an `activity` block (live counts:
+  bids/jobs, bookings, completed, reviews, strikes); the page renders it instead
+  of the "requires an endpoint" placeholder. **Banned users no longer show
+  "Suspend"** — Suspend shows only from `active`; Ban only when not banned;
+  Reactivate only when not active.
+
+New frontend types in `lib/api/admin.ts`: `AdminUserDetail`+`AdminUserActivity`,
+`AdminBookingDetail`, `AdminBookingListRow`, `FlaggedMessageRow`,
+`FlaggedReviewRow`, `AdminLogRow`. All four workspaces typecheck + lint + format
+clean. **No schema change** (uses existing columns) — no `prisma db push` needed.
+
+### Artist dashboard sweep — same bug class as admin (this session)
+
+Audited all 34 artist-dashboard files (3 parallel agents) for the admin bug
+classes: API shape mismatch (UI reads a field the route's `select` omits),
+enum-on-free-text labels, raw-IDs, and wrong-state action gating. The artist
+side was largely clean (no raw-ID leaks; dispute reason is enum-constrained on
+every write path so its label lookup is safe; booking/bid/contract action gating
+matches the server rules). **Three real shape-mismatch bugs found + fixed:**
+- **Contract page showed £NaN** (`bookings/[id]/contract/contract-client.tsx`) —
+  a hand-rolled `formatGbp` ran `Intl.NumberFormat().format()` on `agreedRate`/
+  `totalAmount`, which are Prisma Decimal → arrive as JSON **strings** → `£NaN`.
+  Now delegates to the string-safe shared `formatCurrency` (`@/lib/utils`).
+- **Invited-job cards blank** (`JobInviteService.listForArtist`) — the job
+  `select` omitted `category`/`subcategory`/`locationCity`/`headcountRequired`/
+  `headcountFilled`/`rateSetBy`, but the "Invited to apply" rail renders a full
+  `<JobCard>` → blank category + city and **"0 spots remaining"** on every invite.
+  Widened the select. (The invites *list* page was unaffected — it uses a slim card.)
+- **Messages inbox/dashboard tile broken** (`MessageService.listInbox`) — the
+  service never populated the `ThreadSummary` contract's `counterparty.displayName`,
+  `lastMessagePreview`, or `unreadCount`, so every conversation showed
+  "Conversation" / "No messages yet" and the dashboard **Unread tile was always 0**.
+  `casterId`/`artistId` are plain FK columns (no relation), and `senderId` stores
+  `User.id`, so the fix batches counterparty names (caster sees artist first name,
+  artist sees caster company — per the contact-privacy rule) + a `groupBy` unread
+  count. Fixes the caster inbox too (shared contract). **No schema change.**
+
+API + web both typecheck + lint + format clean. No `prisma db push` needed.
+
+### Artist UX round 2 — rating crashes + bid flow + onboarding (this session)
+
+User-reported bugs + bid-flow audit. **Batch A (schema-free) — DONE:**
+- **Rating `.toFixed` crash (P0, repeated across the app):** `ratingAvg` is a
+  Prisma Decimal → JSON **string**, so `(x ?? 0).toFixed(1)` threw "is not a
+  function" and blanked the page. Hit `/artist/reviews` (reported) **plus** 4
+  more: caster bids list, caster talent profile, admin application review, and
+  the shared talent card. Added `formatRating()` to `lib/utils` + hardened
+  `Stars` to coerce; replaced all 5 unsafe sites. (Sites already using
+  `Number(x).toFixed` were safe and left as-is.)
+- **Hourly bid asked the artist to invent hours** despite the job's required
+  `shootDurationHours` (caster-set). Bid form now pre-fills estimated hours from
+  `job.shootDurationHours` — **read-only when the caster set the rate**, an
+  editable default when open-to-bid. Prevents the artist inflating escrow hours.
+- **Bid hardening:** client now enforces hours-required for hourly (was relying
+  on a server 400) and guards the `valueAsNumber`→NaN empty-field case.
+- **Shoot-date availability confirmation** added to the bid form (required
+  checkbox) — stops a caster paying escrow then discovering the artist isn't free.
+- **Withdraw now available to shortlisted bids** (the server already allowed it;
+  the UI only exposed it for pending).
+- **Onboarding no longer re-asks for name** — `step-personal` shows first/last
+  read-only (prefilled from sign-up, still submitted so the personal PATCH stays
+  valid); correction stays in profile settings.
+- **Review entries enriched** — `ReviewService.listForArtist`/`listForCaster` now
+  `include` the booking's job (id+title) + counterparty (caster companyName /
+  artist firstName). New web type `ReviewWithContext` (`lib/api/reviews.ts`).
+  `/artist/reviews` cards now show caster + job and link to the booking (was a
+  bare "From a caster" badge); the **public** artist profile `ReviewsBlock`
+  (`app/artists/[id]`) shows caster + job too (already rendered reviews; just thin).
+
+All web + api typecheck + lint + format clean.
+
+**Caster profile (answer to "do we have one?"):** No per-caster profile page
+exists — `app/casters/page.tsx` is the "For casters" marketing page, and artists
+only ever see a caster as a company name (+ logo on the booking detail). A real
+artist-visible/public caster profile (company, logo, type, website, jobs posted,
+artist-left rating via `Review.casterRevieweeId`) is folded into Batch B/C.
+
+**Decisions locked for the next batches (user-confirmed):**
+- **Message report → minimal flag** (Batch B): `reportThread` will set `isFlagged`
+  on the counterparty's messages + persist a reason → shows in the existing admin
+  flagged queue + the artist's existing flagged banner. No auto-hide (mirrors the
+  review-moderation model: flag/queue visible, removal is a separate admin action).
+- **Portfolio → typed entries** (Batch B, schema): each entry = entryType
+  (shoot/film/editorial/campaign/other) + image + title + description + optional
+  links. Touches schema, types, validators, UploadService + new edit endpoint,
+  and onboarding/profile/public/comp-card render sites.
+- **Professional links → new `ProfileLink` table** (Batch B, schema), mirroring
+  the `ArtistSkill` typed-child-rows + replace-all pattern (website/YouTube/
+  Behance/TikTok/other). Instagram + actor Spotlight stay as-is.
+- **Full-name reveal stays on confirmed booking** (current rule) — no change; the
+  messaging counterparty names already follow first-name/company until then.
+- **Comp card** (Batch C): brand-aligned redesign of the `@react-pdf` template,
+  after portfolio/links land so it can show the richer data.
+
+**Latent issues to verify during Batch B/C** (flagged by audit, not yet fixed):
+artist rate fields (`hourlyRate`/`halfDayRate`/`fullDayRate`) are collected in the
+UI via an ad-hoc `ProfileWithRates` cast but may **not persist** (no schema
+columns — verify); the public profile `AboutBlock` references `reelUrl`/`union`/
+`accents`/`languages` keys that **don't exist** on `ActorStats` (dead rows); no
+actor demo-reel field despite a `demo_reel` upload type existing.
+
+### Batch B — schema + backend DONE (this session); web data-layer + UI next
+
+⚠️ **REQUIRES `bunx prisma db push`** on next deploy — new columns/tables/enums
+(additive; old rows default cleanly). `prisma generate` already ran offline.
+
+**Schema (`schema.prisma`):**
+- `PortfolioItem` gained `entryType PortfolioEntryType @default(other)`, `title?`,
+  `description?`, `links String[] @default([])`. (Media type stays `type` photo/video.)
+- New `ProfileLink` model (id, artistProfileId→Cascade, platform ProfileLinkType,
+  url, label?, displayOrder) + `ArtistProfile.links ProfileLink[]`.
+- `Message.flagReason String?` (so reports carry a reason, mirroring Review).
+- New enums: `PortfolioEntryType` (shoot/film/editorial/campaign/runway/commercial/
+  other), `ProfileLinkType` (website/instagram/youtube/vimeo/behance/tiktok/linkedin/
+  imdb/spotlight/other).
+
+**Shared packages:** `@castflow/types` — PortfolioItem new fields + `ProfileLink`
+interface + `ArtistProfile.links`. `@castflow/validators` — `confirmUploadSchema`
+extended, `updatePortfolioItemSchema`, `profileLinkSchema` + `replaceLinksSchema`,
+`portfolioEntryTypeEnum`/`profileLinkTypeEnum`.
+
+**Backend services + routes:**
+- `UploadService.confirmUpload` persists new portfolio fields;
+  `UploadService.updatePortfolioItem` → `PATCH /uploads/portfolio/:id`.
+- `ArtistService.replaceLinks` → `PUT /artists/me/links`; `links` now included in
+  `getMyProfile` + `getPublicProfile`.
+- `MessageService.reportThread` flags the **counterparty's** messages
+  (`isFlagged` + `flagReason`) → admin flagged queue + artist in-thread banner.
+  **No auto-hide.** Admin flagged-messages uses `include`, so `flagReason` flows
+  through with no route change.
+
+All 4 workspaces typecheck + lint + format clean (mock `buildPortfolio` updated
+for the new required PortfolioItem fields).
+
+**Batch B web data-layer + UI — DONE (this session, after `prisma db push`):**
+- **Data layer:** `lib/api/uploads.ts` — `PortfolioEntryMeta`, `confirmUpload`
+  extended, `updatePortfolioItem`, `uploadFile` opts carry entry metadata;
+  `useUpdatePortfolioItem` hook. `lib/api/artists.ts` — `MyArtistProfile.links`,
+  `replaceLinks` + `useReplaceLinks`. `lib/api/caster.ts` — `PublicCasterProfile`
+  + `getPublicCaster` + `usePublicCaster` + `caster.public(id)` query key.
+- **Profile editor** (`profile/edit/edit-client.tsx`): new **Links tab** (add/remove
+  typed links, replace-all save, mirrors SkillsSection) + **Portfolio** now takes
+  entryType + title on upload and each entry has an **“Edit details” dialog**
+  (type/title/description/links via `useUpdatePortfolioItem`).
+- **Public artist profile** (`app/artists/[id]`): renders the links row (chips →
+  external) and the portfolio grid/lightbox now show entry title + description +
+  per-entry links.
+- **Public caster profile** (`app/casters/[id]` — NEW page + `caster-profile-view`):
+  company header, open public shoots, artist-left reviews. Backend
+  `CasterService.getPublicProfile` + `GET /casters/:id/public` (sanitised).
+
+All 4 workspaces typecheck + lint + format clean.
+
+**Batch B remaining (honest scope cut — next):**
+- **Onboarding enrichment** — `step-portfolio` still uses the simple uploader
+  (no entryType/title at onboarding) and there is **no links step in onboarding**.
+  Artists can do both in profile settings immediately after onboarding, but the
+  user asked for onboarding too — this is the outstanding piece.
+- **Caster-profile discoverability** — the page works by URL but isn't yet linked
+  from where artists see a caster (job detail / booking). Needs the caster id
+  surfaced on those views + a link.
+Then **Batch C**: brand comp-card redesign (`comp-card-pdf.ts`).
+
+### Cross-flow audit fixes — bid/caster/messaging/onboarding/moderation (this session)
+
+Eleven-item audit across artist, caster, messaging, onboarding, and moderation
+flows. All 4 workspaces typecheck + lint + format clean. **No schema change**
+beyond the already-pushed Batch B columns (so **no new `prisma db push`**) — the
+only type addition is `Message.flagReason` to `@castflow/types`, which already
+existed as a DB column.
+
+- **Bid "Submit" silently did nothing (P0):** the form prefilled `proposedRate`/
+  `estimatedHours` with Prisma **Decimal → JSON strings** via `setValue` during
+  render, so `zodResolver`'s `z.number()` rejected them — `handleSubmit`'s valid
+  branch never ran, and because those fields are read-only the artist saw a
+  filled rate with no actionable error. Fix: prefill moved into a `useEffect`
+  with `Number(...)` coercion; added an `onInvalid` handler so a click is never a
+  silent no-op (toast + surfaces the availability error which lives outside the
+  zod form). Caster-set + prefilled-hours jobs now submit / show inline errors.
+- **Bid portfolio picker** now shows entry title + type (was image-only).
+- **Re-bid after withdrawal (#4):** `BidService.submitBid` blocked on ANY
+  existing bid row (incl. `withdrawn`) via `@@unique([jobId,artistId])`. Now a
+  **withdrawn** bid is re-biddable — the row is reused (UPDATE → pending, reset
+  `submittedAt`, clear rejectionReason); active/rejected/accepted/expired still
+  block. UI: `/artist/jobs` shows "Bid again", bid detail shows "Submit a new
+  bid" (when job still active), "Hide jobs I've bid on" ignores withdrawn.
+- **Caster public profile (#6) data inconsistency:** header read denormalized
+  `jobsPosted`/`ratingAvg`/`ratingCount` (0 in seed) while the lists below read
+  live `activeJobs`/`reviews` → "0 shoots / no reviews" above 2 jobs + 1 review.
+  `CasterService.getPublicProfile` now **derives those counts live** (job count +
+  review aggregate). Also fixed **header overlap** (floating CardNav clearance →
+  `pt-28`) and redesigned the page (header card on a gradient, 3 stat tiles,
+  stronger hierarchy).
+- **Messaging flag UX (#7/#10):** `Message.flagReason` added to types; the
+  in-thread banner now shows the **real reason** (was hardcoded). `listInbox`
+  aggregates flagged messages per thread → `ThreadSummary.hasFlaggedContent`;
+  inbox rows show an **"Under review"** badge.
+- **Admin moderation (#8/#9):** new `GET /admin/flagged/messages/:id/context`
+  returns the **full conversation**, both participants (with userIds), the job,
+  and which party authored the flagged content. The flagged-message **detail
+  view was rebuilt**: participants split into **Reporter vs Reported party**
+  (deep-linked to their Users page), the whole thread rendered with the subject
+  message highlighted, and a "Review reported user" action. List "View author"
+  (→ generic /admin/users) replaced with **Investigate** + **View sender**
+  (deep-linked). Reporter identity is *inferred* (a report flags the
+  counterparty's messages) — a persisted `ContentReport` is still the richer
+  follow-up.
+- **Public profile lightbox (#5):** was `fixed inset-0` inside a transformed
+  ancestor (tabs/Reveal) → containing-block trap, rendered embedded. Now
+  **portaled to `document.body`** (true full-screen), with **prev/next nav**
+  (buttons + ←/→ keys + counter) and body-scroll lock.
+- **Onboarding parity (#2/#3):** `step-portfolio` now captures **entry type +
+  title** on upload and each entry has an **"Edit details"** dialog (shared
+  `components/portfolio/portfolio-entry-edit-dialog.tsx` + `lib/portfolio-meta.ts`,
+  reused from the profile editor's pattern). New **Links step** (`step-links.tsx`,
+  `useReplaceLinks`) added to both model + actor flows (optional, after
+  Portfolio). Onboarding now reaches feature parity — no need to jump to profile
+  settings straight after.
+
+**Caster-profile discoverability — DONE (this session):** "View {company}
+profile" link → `/casters/[id]` added on the artist **job detail**
+(`/artist/jobs/[id]`, via `job.casterId`) and **booking detail**
+(`/artist/bookings/[id]`, via `booking.caster.id`). Public `/shoots/[id]` left
+out on purpose (mock-fallback casterIds would 404).
+
+**Bid silent-fail (2nd cause) — FIXED:** `submitBidSchema.highlightedPortfolioItems`
+used `z.string().uuid()`, but portfolio IDs aren't UUID-shaped (seed = `pf_seed_…`).
+The per-element uuid error nested under `.0`, never surfaced as a visible field
+message → "please fix the highlighted fields" with everything filled. Relaxed to
+`z.string().min(1)` (these are internal IDs, not uuid-format user input).
+
+### ContentReport model + Batch C comp-card (this session)
+
+⚠️ **REQUIRES `bunx prisma db push`** — new `content_reports` table + 2 enums
+(`ReportTargetType`, `ReportStatus`). Additive; `prisma generate` already ran.
+
+- **Persisted `ContentReport`** (`reporterId`, `targetType`, `targetId`, `reason`,
+  `detail`, `status`, `reviewedById/At`, `resolutionNote`). `MessageService.reportThread`
+  now **creates a report** alongside flagging messages + notifying admins. The
+  admin flagged-message **context endpoint** (`GET /admin/flagged/messages/:id/context`)
+  returns a `reports[]` array with **real reporter identity** (name + role +
+  reason + status + date) — `reportedParty` is now derived from the report's
+  reporter (falls back to flagged-sender inference for auto-flagged threads).
+  Clearing a message flag **marks open reports on that thread resolved**
+  (reviewedBy/At + resolutionNote). UI: the moderation detail lists the real
+  reports (web type `FlaggedReport`).
+- **Batch C — comp-card redesign** ← **SUPERSEDED: feature removed entirely
+  (next session, below).**
+
+All 4 workspaces typecheck + lint + format clean.
+
+### Comp-card removed + ContentReport extended to reviews + admin Reports queue (this session)
+
+⚠️ Still requires the `content_reports` `prisma db push` from the prior session
+(no new schema change here — `content_reports` already covers the `review` target).
+
+- **Comp-card feature fully removed** (per request): deleted
+  `apps/api/src/templates/comp-card-pdf.ts`, `ArtistService.generateCompCard` +
+  its import, the `GET /artists/:id/comp-card` route, and both web entry points
+  (artist `profile/preview` "Download comp card" card + caster talent-profile
+  "Comp card" button). `@react-pdf/renderer` stays (still used by
+  `contract-pdf.ts`). No dead references remain (ignoring `.next` build cache).
+- **ContentReport extended to reviews:** `ReviewService.reportReview` (reviewee-only)
+  flags the review + creates a `ContentReport(targetType='review')` + notifies
+  admins (new `review_reported` notification type). New route
+  `POST /reviews/:id/report` (`reportReviewSchema` in `@castflow/validators`).
+  Web: `reportReview` + `useReportReview`; the artist **Reviews received** list
+  now has a per-review **Report** dialog (reason + detail) and a
+  "Reported — under review" badge once flagged.
+- **Admin Reports queue (NEW):** `GET /admin/reports?status=` (enriched with
+  reporter name + a target label — job title for threads, reviewee for reviews)
+  + `POST /admin/reports/:id/resolve|dismiss` (sets status + reviewedBy/At +
+  note, audit-logged). New web page `app/(admin)/admin/reports/page.tsx` (status
+  tabs: open/resolved/dismissed/all; resolve/dismiss actions; "Investigate" deep
+  link → flagged review detail, or the flagged messages tab for threads) + nav
+  entry "Reports" (`ShieldAlert`). Data layer: `AdminReportRow`, `listReports`,
+  `resolveReport`, `dismissReport`, `useReports`/`useResolveReport`/`useDismissReport`,
+  `queryKeys.admin.reports`.
+
+All 4 workspaces typecheck + lint + format clean.
+
+### Artist job feed enriched — no longer a `/shoots` duplicate (this session)
+
+`/artist/jobs` used to call the same `usePublicJobs` hook as the public
+`/shoots` page with no artist-specific signals — effectively a duplicate.
+Enriched **entirely client-side, no backend change** by composing `useMyBids`
+(jobId → bid status + bid id) and `useMyInvites({status:'pending'})` (invite-only
+jobs that never hit the public feed) over the feed:
+- **Per-card bid status badge** + contextual CTA — "Bid now" → `/artist/jobs/[id]/bid`
+  when no bid, "View your bid" → `/artist/bids/[id]` when one exists.
+- **"Invited to apply" rail** above the feed for pending invites (deduped from
+  the main list).
+- **"Hide jobs I've bid on"** toggle.
+- `JobCard` gained two optional generic slots (`badge`, `action`); the public
+  `/shoots` page passes neither, so it is unchanged. The bids/invites queries are
+  non-blocking — feed still renders if they error/load. Typecheck + lint clean.
+
+### Bugfix — caster onboarding "Finishing setup…" trap (this session)
+
+`StepCasterWelcome` gated its action cards on `useCompleteOnboarding().isSuccess`
+but the mutation had **no retry and no recovery path** — a single transient
+failure (e.g. the API restarting under `bun --watch`) left the caster stuck on
+the spinner forever, even though the copy claimed it was "retrying". Fix:
+`useCompleteOnboarding` now sets `retry: 3` + exponential `retryDelay` (safe —
+the endpoint no-ops when `onboardingCompletedAt` is already set), and the step
+renders a real error state with a manual **Retry** button once retries are
+exhausted. Success-gating (H17) is preserved. Both files typecheck + lint clean.
+
+### Seed + dashboard test guide (this session)
+
+- **`apps/api/prisma/seed.ts` extended** for full dashboard coverage. New
+  `seedBooking()` factory (job→bid→booking→contract→payment in one call);
+  `ensureArtist`/`ArtistSpec` gained `status`, `approvalNotes`,
+  `availabilityStatus`, `strikeCount`. Added scenarios the happy-path data
+  didn't reach: **ready-to-sign** (contract `pending_signatures`, both sign
+  paths + location-lock), **confirmable** (shoot yesterday → date-locked
+  completion now unlocked + manual release), **needs-review** (completed, no
+  reviews → review-writing + 72h dispute window), **auto-release-due** (escrow
+  overdue → lazy auto-release), **flagged-content** (flagged 2★ review +
+  flagged message for the admin moderation queue). New users: **rejected**
+  (Liam, with notes), **suspended** (Daniel), **banned** (Grace). Seed
+  typechecks clean (temp `tsconfig.seedcheck.json`, since `prisma/` is outside
+  the api `rootDir`) and is Prettier-formatted. Still idempotent; `FRESH=1`
+  wipes domain data only. No schema change — but run `bunx prisma db push`
+  first so `logo_url` + `cover_image_url` columns exist.
+- **`DASHBOARD_TESTING.md` (repo root)** — per-route manual test guide for all
+  artist (25) / caster (24) / admin (17) pages: which account, seed data seen,
+  steps, expected result, plus the 11 cross-cutting business-rule checks and a
+  5-minute smoke test. Flags Stripe/R2/localStorage-degraded surfaces honestly.
 
 ---
 

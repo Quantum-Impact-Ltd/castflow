@@ -40,7 +40,7 @@ const STEPS: StepDef[] = [
     num: '03',
     title: 'Book in one click',
     icon: Handshake,
-    body: 'Accept a bid and CastFlow generates the contract, locks the date, and captures the escrow.',
+    body: 'Accept a bid and CastFlow generates the contract, locks the date, and records the agreed rate.',
     details: [
       'E-signed under UK ECA 2000',
       'Shoot location revealed on sign',
@@ -49,13 +49,13 @@ const STEPS: StepDef[] = [
   },
   {
     num: '04',
-    title: 'Pay through escrow',
+    title: 'Pay the artist directly',
     icon: Wallet,
-    body: 'Funds release when the shoot is confirmed complete, or auto-release 48 hours later. Artists keep 100% of the agreed rate.',
+    body: 'After the shoot, confirm completion for the record and settle the agreed fee directly with the artist, off-platform.',
     details: [
-      'Stripe-held escrow on every booking',
-      'Auto-release at shoot date + 48h',
-      'Gross → commission → net always visible',
+      'CastFlow never touches job fees',
+      'Pay before, at, or after the shoot',
+      'Agreed rate on the contract for both sides',
     ],
   },
 ]

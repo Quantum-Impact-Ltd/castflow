@@ -23,7 +23,7 @@ import { ShimmerButtonLink } from '@/components/landing/shimmer-button-link'
 export const metadata: Metadata = {
   title: 'For casters — CastFlow',
   description:
-    'Cast verified UK models and actors in days. Search vetted talent, send invites, sign contracts, and pay through escrow — all in one place.',
+    'Cast verified UK models and actors in days. Search vetted talent, send invites, sign contracts, and pay artists directly — all in one place.',
 }
 
 const LOGOS = [
@@ -60,13 +60,13 @@ const FEATURES = [
   },
   {
     icon: Wallet,
-    title: 'Stripe escrow protection',
-    body: 'Funds ring-fenced until the shoot is confirmed. Auto-released at +48 hours so payouts never get stuck.',
+    title: 'Pay artists directly',
+    body: 'Settle the agreed fee directly with the artist, off-platform, on whatever terms suit you both. CastFlow never holds or takes a cut.',
   },
   {
     icon: Clock,
-    title: 'No late-payment chasing',
-    body: 'The platform handles payouts. Artists keep 100% of the agreed rate, and you get an itemised invoice for every booking.',
+    title: 'One simple subscription',
+    body: 'A flat monthly subscription is the platform’s only charge — no commission, no per-booking fee. Artists join free.',
   },
 ]
 
@@ -81,7 +81,7 @@ const COMPARISON: ComparisonRow[] = [
   { label: 'Casting director fee', agency: '£500–2,000', castflow: 'Included' },
   { label: 'Direct artist contact', agency: 'Mediated', castflow: 'After shortlist' },
   { label: 'Contracts', agency: 'Bespoke each time', castflow: 'Auto-generated' },
-  { label: 'Escrow protection', agency: 'No', castflow: 'Every booking' },
+  { label: 'Commission on bookings', agency: '10–20%', castflow: 'None' },
   { label: 'Dispute resolution', agency: 'Your problem', castflow: '72-hour window' },
   { label: 'Artist verification', agency: 'You vet them', castflow: 'ID + admin approved' },
 ]
@@ -116,8 +116,8 @@ export default function CastersPage() {
               </h1>
               <p className="mt-8 max-w-2xl text-lg leading-relaxed text-foreground/75">
                 Search 27,000+ ID-verified models and actors. Post a brief, review bids side by
-                side, book in one click, and pay through escrow. No agents, no admin, no chasing
-                invoices.
+                side, book in one click, and pay the artist directly. No agents, no admin, no
+                commission.
               </p>
 
               <div className="mt-10 flex flex-wrap items-center gap-6">
@@ -287,7 +287,7 @@ export default function CastersPage() {
                   <blockquote className="mt-6 text-balance font-serif text-3xl leading-[1.2] text-foreground sm:text-4xl">
                     &ldquo;We used to spend a week briefing agencies. With CastFlow we posted a
                     shoot at 4pm, had 18 bids by morning, and booked our talent before lunch. The
-                    escrow flow alone saved us three rounds of finance emails.&rdquo;
+                    contract flow alone saved us three rounds of finance emails.&rdquo;
                   </blockquote>
                   <div className="mt-8 flex items-center gap-4">
                     <Image

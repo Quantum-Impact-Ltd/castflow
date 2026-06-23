@@ -1,7 +1,6 @@
 import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
 import { AppError } from '../errors'
-import { PaymentService } from './PaymentService'
 import { NotificationService } from './NotificationService'
 
 interface UserCtx {
@@ -18,7 +17,6 @@ async function loadBookingForUser(bookingId: string, user: UserCtx) {
         select: { id: true, userId: true, firstName: true, lastName: true, artistType: true },
       },
       contract: true,
-      payment: true,
       job: { select: { id: true, title: true } },
     },
   })
@@ -65,17 +63,6 @@ export class BookingService {
           job: { select: { title: true, paymentType: true } },
           caster: { select: { companyName: true } },
           contract: { select: { status: true } },
-          payment: {
-            select: {
-              escrowStatus: true,
-              grossAmount: true,
-              platformCommissionAmount: true,
-              netArtistAmount: true,
-              autoReleaseAt: true,
-              releasedAt: true,
-              paidAt: true,
-            },
-          },
         },
       })
       const hasNext = rows.length > take
@@ -103,7 +90,6 @@ export class BookingService {
           job: { select: { title: true, paymentType: true } },
           artist: { select: { firstName: true, lastName: true } },
           contract: { select: { status: true } },
-          payment: { select: { escrowStatus: true } },
         },
       })
       const hasNext = rows.length > take
@@ -116,20 +102,14 @@ export class BookingService {
 
   static async getById(user: UserCtx, bookingId: string) {
     const booking = await loadBookingForUser(bookingId, user)
-    // Only re-fetch if the lazy auto-release actually mutated something.
-    if (booking.payment) {
-      const released = await PaymentService.maybeAutoRelease(booking.id)
-      if (released && released.escrowStatus !== booking.payment.escrowStatus) {
-        const fresh = await loadBookingForUser(bookingId, user)
-        return stripPreSignedFields(fresh)
-      }
-    }
     return stripPreSignedFields(booking)
   }
 
   /**
-   * Caster confirms shoot completion. Date-locked: must be on/after shootDate.
-   * Auto-releases escrow.
+   * Caster confirms the shoot happened. Date-locked: must be on/after
+   * shootDate. Record-only — the platform handles no job money, so this just
+   * closes out the booking. Payment is settled directly with the artist,
+   * off-platform.
    */
   static async confirmCompletion(user: UserCtx, bookingId: string) {
     if (user.role !== 'caster') {
@@ -147,24 +127,27 @@ export class BookingService {
         400
       )
     }
-    await PaymentService.releaseEscrow(booking.id, { actor: 'caster' })
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { status: 'completed', completionConfirmedAt: new Date() },
+    })
     return loadBookingForUser(bookingId, user)
   }
 
   /**
-   * Either party may cancel a confirmed booking. Fee and side-effect tier
-   * comes from PRD §10.6. The actual Stripe split (capturing the fee instead
-   * of refunding it back to the cancelling party) is part of the deferred
-   * "cancellation fee Stripe split" work — for now the fee is recorded on
-   * the Payment row and the full escrow is refunded.
+   * Either party may cancel a confirmed booking. The cancellation tier (PRD
+   * §10.6) drives advisory messaging + the artist strike system only — the
+   * platform holds no job money, so there is no fee split or refund to process.
+   * Any cancellation fee owed under the agreed terms is settled directly
+   * between caster and artist, off-platform.
    *
    *   Artist cancels:
-   *     >7 days   → no fee, full refund, no penalty
-   *     3–7 days  → no fee, full refund, warning  (TODO: strike system)
-   *     <48 h     → 50% fee, 50% refund, strike   (TODO: strike system)
+   *     >7 days   → no advisory fee
+   *     3–7 days  → no advisory fee, warning
+   *     <48 h     → 50% advisory fee owed to caster, strike
    *   Caster cancels:
-   *     >48 h     → no fee, full refund
-   *     <48 h     → 50% fee paid to artist, 50% refund to caster
+   *     >48 h     → no advisory fee
+   *     <48 h     → 50% advisory fee owed to artist
    */
   static async cancel(user: UserCtx, bookingId: string, reason: string) {
     if (!reason || reason.trim().length < 3) {
@@ -191,37 +174,6 @@ export class BookingService {
       else tier = 'under_48h'
     } else {
       tier = hoursUntilShoot < 48 ? 'under_48h' : 'more_than_48h'
-    }
-
-    if (booking.payment && booking.payment.escrowStatus === 'held') {
-      if (tier === 'under_48h') {
-        // Under-48h tier: artist receives 50% as cancellation fee, caster
-        // gets 50% refund. Try the Stripe partial-capture path. If the
-        // artist hasn't onboarded to Connect, fall back to a full refund
-        // and persist the fee amount for admin reconciliation.
-        try {
-          await PaymentService.partialRelease(booking.id, 50, {
-            reason,
-            resolution: 'cancellation_fee',
-          })
-        } catch (err) {
-          if (err instanceof AppError && err.code === 'PAYOUT_NOT_READY') {
-            console.warn('[BookingService] late-cancel fee fallback: artist not Connect-ready', {
-              bookingId: booking.id,
-            })
-            await PaymentService.refundEscrow(booking.id, reason)
-            await prisma.payment.update({
-              where: { bookingId: booking.id },
-              data: { cancellationFeeAmount: Number(booking.totalAmount) * 0.5 },
-            })
-          } else {
-            throw err
-          }
-        }
-      } else {
-        // Tiers above 48h: clean full refund, no fee.
-        await PaymentService.refundEscrow(booking.id, reason)
-      }
     }
 
     // Strike system (PRD §10.6): artist-initiated late cancels increment
@@ -255,6 +207,14 @@ export class BookingService {
       },
     })
 
+    // Under-48h cancellations carry an advisory 50% fee under the agreed terms,
+    // owed to the other party and settled directly off-platform (the platform
+    // doesn't process it).
+    const advisory =
+      tier === 'under_48h'
+        ? ` Under the cancellation terms, a 50% fee may be owed to you — arrange this directly with the other party.`
+        : ''
+
     // Notify the OTHER party — they already know if they cancelled.
     const otherUserId = cancellingParty === 'caster' ? booking.artist.userId : booking.caster.userId
     void NotificationService.notifyEvent({
@@ -264,7 +224,7 @@ export class BookingService {
           ? 'booking_cancelled_by_caster'
           : 'booking_cancelled_by_artist',
       title: 'Booking cancelled',
-      body: `${cancellingParty === 'caster' ? 'The caster' : 'The artist'} cancelled the booking for "${booking.job.title}": ${reason}`,
+      body: `${cancellingParty === 'caster' ? 'The caster' : 'The artist'} cancelled the booking for "${booking.job.title}": ${reason}.${advisory}`,
       relatedEntityType: 'booking',
       relatedEntityId: booking.id,
       email: { ctaUrl: `${env.FRONTEND_URL}/bookings/${booking.id}` },

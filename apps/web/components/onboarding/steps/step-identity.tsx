@@ -106,8 +106,9 @@ export function StepIdentity({ profile, onBack, onNext }: StepIdentityProps) {
           {idUrlQuery.isPending ? (
             <div className="h-32 animate-pulse rounded-xl bg-white/[0.03]" />
           ) : idUrlQuery.data?.contentTypeHint === 'image' ? (
-            // Browser auth not needed — the URL is presigned.
-            // eslint-disable-next-line @next/next/no-img-element
+            // Browser auth not needed — the URL is presigned. Plain <img>
+            // (not next/image) because the source is a short-lived presigned
+            // URL we don't want the Next image optimizer to cache.
             <img
               src={idUrlQuery.data.url}
               alt="Your uploaded ID document"

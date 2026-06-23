@@ -19,6 +19,7 @@ import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MOCK_SHOOTS } from '@/lib/mock/shoots'
+import { ENABLE_MOCK_FALLBACK } from '@/lib/site'
 import { formatCurrency, cn } from '@/lib/utils'
 
 type CategoryFilter = 'all' | 'model' | 'actor' | 'voiceover' | 'extra'
@@ -62,10 +63,12 @@ export function ShootsContent() {
   const [payment, setPayment] = useState<PaymentFilter>('all')
   const [sort, setSort] = useState<SortKey>('soonest')
 
-  // Live public feed first; fall back to mock data only when the backend
-  // returns nothing so the page still demos richly on a fresh platform.
+  // Live public feed. Only fall back to bundled mock shoots when
+  // ENABLE_MOCK_FALLBACK is set (demo/dev) — otherwise staging/prod show a
+  // real empty state instead of fabricated shoots.
   const { data } = usePublicJobs({ limit: 60 })
-  const allShoots = data && data.length > 0 ? data : MOCK_SHOOTS
+  const allShoots =
+    data && data.length > 0 ? data : ENABLE_MOCK_FALLBACK ? MOCK_SHOOTS : []
 
   const cities = useMemo(() => {
     const set = new Set<string>()
@@ -134,7 +137,7 @@ export function ShootsContent() {
               {SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase()}
             </p>
             <Link
-              href="/login?redirect=/shoots"
+              href="/login?next=/shoots"
               className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
             >
               Sign in to bid

@@ -10,8 +10,8 @@ const PILLARS = [
   },
   {
     n: '02',
-    title: 'Money held in escrow',
-    body: 'Payment goes into Stripe escrow at booking. Neither side can touch it until the shoot is confirmed complete, or 48 hours pass and the artist is auto-paid.',
+    title: 'Simple, honest pricing',
+    body: 'Casters pay one flat subscription to use CastFlow — that’s our only charge. Job fees are paid directly between caster and artist, off-platform. We never hold or take a cut. Artists join free.',
   },
   {
     n: '03',

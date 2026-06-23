@@ -1,18 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { Flag, MessageSquare, Star, ShieldAlert, ArrowUpRight } from 'lucide-react'
-import type { Message, Review } from '@castflow/types'
-import {
-  PageHeader,
-  LoadingState,
-  ErrorState,
-  EmptyState,
-} from '@/components/dashboard'
+import { Flag, MessageSquare, Star, ShieldCheck, Trash2, ArrowUpRight } from 'lucide-react'
+import type { FlaggedMessageRow, FlaggedReviewRow } from '@/lib/api/admin'
+import { PageHeader, LoadingState, ErrorState, EmptyState } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { useFlaggedMessages, useFlaggedReviews } from '@/lib/hooks/use-admin'
+import {
+  useFlaggedMessages,
+  useFlaggedReviews,
+  useClearFlaggedMessage,
+  useClearFlaggedReview,
+  useRemoveFlaggedReview,
+} from '@/lib/hooks/use-admin'
 
 // formatDate (shared util) is date-only; flagged content benefits from a
 // precise timestamp, so format locally without touching the shared helper.
@@ -28,15 +29,6 @@ function formatDateTime(value: string | null | undefined): string {
     minute: '2-digit',
   }).format(d)
 }
-
-function shortId(id: string): string {
-  return id.length > 10 ? `${id.slice(0, 8)}…` : id
-}
-
-// The moderation endpoints (clear flag / remove review) don't exist yet, so the
-// actions are deliberately disabled. This note keeps the UI honest.
-const ENDPOINT_NOTE =
-  'Moderation actions require a backend endpoint that isn’t available yet. To act now, suspend the author from the Users page.'
 
 export default function AdminFlaggedPage() {
   return (
@@ -81,48 +73,13 @@ function FlaggedMarker() {
   )
 }
 
-function ModerationFooter({
-  primaryLabel,
-  primaryTitle,
-  authorHref,
-}: {
-  primaryLabel: string
-  primaryTitle: string
-  authorHref: string
-}) {
-  return (
-    <div className="space-y-2 border-t border-border pt-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled
-          title={primaryTitle}
-          className="text-muted-foreground"
-        >
-          <ShieldAlert className="mr-1.5 h-4 w-4" /> {primaryLabel}
-        </Button>
-        <Button asChild variant="ghost" size="sm">
-          <Link href={authorHref}>
-            View author <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-          </Link>
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">{ENDPOINT_NOTE}</p>
-    </div>
-  )
-}
-
 function FlaggedMessages() {
   const { data, isPending, isError, refetch } = useFlaggedMessages({ limit: 100 })
 
   if (isPending) return <LoadingState rows={4} />
   if (isError) {
     return (
-      <ErrorState
-        message="We couldn’t load flagged messages."
-        onRetry={() => void refetch()}
-      />
+      <ErrorState message="We couldn’t load flagged messages." onRetry={() => void refetch()} />
     )
   }
   if (!data || data.length === 0) {
@@ -144,25 +101,20 @@ function FlaggedMessages() {
   )
 }
 
-function FlaggedMessageCard({ message }: { message: Message }) {
-  // flagReason may be added server-side later; render it only if present.
-  const flagReason = (message as Message & { flagReason?: string | null }).flagReason ?? null
+function FlaggedMessageCard({ message }: { message: FlaggedMessageRow }) {
+  const clear = useClearFlaggedMessage()
 
   return (
     <Card className="flex flex-col gap-3 p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <Link
             href={`/admin/flagged/${message.id}?type=message`}
             className="font-medium text-foreground hover:text-primary hover:underline"
           >
-            Message {shortId(message.id)}
+            {message.senderName ?? 'Unknown sender'}
           </Link>
-          <p className="text-xs text-muted-foreground">
-            Sender{' '}
-            <span className="font-mono">{shortId(message.senderId)}</span> ·{' '}
-            {formatDateTime(message.createdAt)}
-          </p>
+          <p className="text-xs text-muted-foreground">Sent {formatDateTime(message.createdAt)}</p>
         </div>
         <FlaggedMarker />
       </div>
@@ -171,17 +123,32 @@ function FlaggedMessageCard({ message }: { message: Message }) {
         {message.content || <span className="text-muted-foreground italic">No content</span>}
       </blockquote>
 
-      {flagReason ? (
+      {message.flagReason ? (
         <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Reason:</span> {flagReason}
+          <span className="font-medium text-foreground">Reason:</span> {message.flagReason}
         </p>
       ) : null}
 
-      <ModerationFooter
-        primaryLabel="Clear flag"
-        primaryTitle="Clearing flags requires a backend endpoint (not yet available)"
-        authorHref="/admin/users"
-      />
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={clear.isPending}
+          onClick={() => clear.mutate({ id: message.id })}
+        >
+          <ShieldCheck className="mr-1.5 h-4 w-4" /> {clear.isPending ? 'Clearing…' : 'Clear flag'}
+        </Button>
+        <Button asChild variant="ghost" size="sm">
+          <Link href={`/admin/flagged/${message.id}?type=message`}>
+            Investigate <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+          </Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm">
+          <Link href={`/admin/users/${message.senderId}`}>
+            View sender <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+          </Link>
+        </Button>
+      </div>
     </Card>
   )
 }
@@ -191,12 +158,7 @@ function FlaggedReviews() {
 
   if (isPending) return <LoadingState rows={4} />
   if (isError) {
-    return (
-      <ErrorState
-        message="We couldn’t load flagged reviews."
-        onRetry={() => void refetch()}
-      />
-    )
+    return <ErrorState message="We couldn’t load flagged reviews." onRetry={() => void refetch()} />
   }
   if (!data || data.length === 0) {
     return (
@@ -217,23 +179,23 @@ function FlaggedReviews() {
   )
 }
 
-function FlaggedReviewCard({ review }: { review: Review }) {
-  const flagReason = (review as Review & { flagReason?: string | null }).flagReason ?? null
+function FlaggedReviewCard({ review }: { review: FlaggedReviewRow }) {
+  const clear = useClearFlaggedReview()
+  const remove = useRemoveFlaggedReview()
+  const busy = clear.isPending || remove.isPending
 
   return (
     <Card className="flex flex-col gap-3 p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <Link
             href={`/admin/flagged/${review.id}?type=review`}
             className="font-medium text-foreground hover:text-primary hover:underline"
           >
-            Review {shortId(review.id)}
+            {review.reviewerName ?? 'Unknown reviewer'}
           </Link>
           <p className="text-xs text-muted-foreground">
-            Reviewer{' '}
-            <span className="font-mono">{shortId(review.reviewerId)}</span> ·{' '}
-            {formatDateTime(review.createdAt)}
+            on {review.revieweeName ?? 'unknown'} · {formatDateTime(review.createdAt)}
           </p>
         </div>
         <FlaggedMarker />
@@ -242,14 +204,12 @@ function FlaggedReviewCard({ review }: { review: Review }) {
       <Stars rating={review.rating} />
 
       <blockquote className="rounded-lg border border-border bg-muted/40 p-3 text-sm text-foreground">
-        {review.comment || (
-          <span className="text-muted-foreground italic">No written comment</span>
-        )}
+        {review.comment || <span className="text-muted-foreground italic">No written comment</span>}
       </blockquote>
 
-      {flagReason ? (
+      {review.flagReason ? (
         <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Reason:</span> {flagReason}
+          <span className="font-medium text-foreground">Reason:</span> {review.flagReason}
         </p>
       ) : null}
 
@@ -257,11 +217,25 @@ function FlaggedReviewCard({ review }: { review: Review }) {
         <p className="text-xs font-medium text-destructive">This review is already removed.</p>
       ) : null}
 
-      <ModerationFooter
-        primaryLabel="Remove review"
-        primaryTitle="Removing reviews requires a backend endpoint (not yet available)"
-        authorHref="/admin/users"
-      />
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-destructive hover:text-destructive"
+          disabled={busy || review.isRemoved}
+          onClick={() => remove.mutate({ id: review.id })}
+        >
+          <Trash2 className="mr-1.5 h-4 w-4" /> {remove.isPending ? 'Removing…' : 'Remove review'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={busy}
+          onClick={() => clear.mutate({ id: review.id })}
+        >
+          <ShieldCheck className="mr-1.5 h-4 w-4" /> {clear.isPending ? 'Clearing…' : 'Clear flag'}
+        </Button>
+      </div>
     </Card>
   )
 }

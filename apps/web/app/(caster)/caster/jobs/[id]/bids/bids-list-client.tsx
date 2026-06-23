@@ -51,7 +51,7 @@ import {
   useUndoRejectBid,
   useAcceptBid,
 } from '@/lib/hooks/use-bids'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatRating } from '@/lib/utils'
 
 type SortKey = 'submitted' | 'rate' | 'status'
 
@@ -75,7 +75,10 @@ export function BidsListClient({ jobId }: { jobId: string }) {
     return (
       <div className="space-y-4">
         <BackLink jobId={jobId} />
-        <ErrorState message="We couldn’t load the bids for this job." onRetry={() => void refetch()} />
+        <ErrorState
+          message="We couldn’t load the bids for this job."
+          onRetry={() => void refetch()}
+        />
       </div>
     )
   }
@@ -193,7 +196,10 @@ function BidCard({
               <StatusBadge status={bid.status} />
             </div>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              <Rating ratingAvg={artist?.ratingAvg ?? null} ratingCount={artist?.ratingCount ?? 0} />
+              <Rating
+                ratingAvg={artist?.ratingAvg ?? null}
+                ratingCount={artist?.ratingCount ?? 0}
+              />
             </p>
           </div>
         </div>
@@ -369,7 +375,7 @@ function RejectDialog({ jobId, bidId }: { jobId: string; bidId: string }) {
                     setOpen(false)
                     setReason('')
                   },
-                },
+                }
               )
             }
           >
@@ -394,7 +400,7 @@ export function Rating({
   return (
     <span className="inline-flex items-center gap-1">
       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-      {ratingAvg.toFixed(1)}
+      {formatRating(ratingAvg)}
       <span className="text-muted-foreground">
         ({ratingCount} {ratingCount === 1 ? 'review' : 'reviews'})
       </span>

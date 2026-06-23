@@ -2,9 +2,10 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { RemoteImage } from '@/components/dashboard/remote-image'
 import Link from 'next/link'
-import { Lock, MapPin, Star, Sparkles, ChevronLeft } from 'lucide-react'
+import { Lock, MapPin, Star, Sparkles, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import ProfileCard from '@/components/card/profile-card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -14,10 +15,24 @@ import { cn } from '@/lib/utils'
 import { useAuthSession } from '@/providers/session-provider'
 import { usePublicArtist } from '@/lib/hooks/use-talent'
 import { useArtistReviews } from '@/lib/hooks/use-reviews'
-import type { PortfolioItem, ArtistSkill, Review } from '@castflow/types'
+import type { ReviewWithContext } from '@/lib/api/reviews'
+import type { PortfolioItem, ArtistSkill } from '@castflow/types'
 
 interface Props {
   id: string
+}
+
+const LINK_PLATFORM_LABEL: Record<string, string> = {
+  website: 'Website',
+  instagram: 'Instagram',
+  youtube: 'YouTube',
+  vimeo: 'Vimeo',
+  behance: 'Behance',
+  tiktok: 'TikTok',
+  linkedin: 'LinkedIn',
+  imdb: 'IMDb',
+  spotlight: 'Spotlight',
+  other: 'Link',
 }
 
 const EXPERIENCE_LABEL: Record<string, string> = {
@@ -38,7 +53,7 @@ export function ArtistProfileView({ id }: Props) {
 
   const handleContactClick = () => {
     if (!isCaster) {
-      router.push(`/login?redirect=${encodeURIComponent(`/artists/${id}`)}`)
+      router.push(`/login?next=${encodeURIComponent(`/artists/${id}`)}`)
       return
     }
     router.push(`/caster/talent/${id}`)
@@ -189,7 +204,7 @@ export function ArtistProfileView({ id }: Props) {
                   </a>
                 ) : (
                   <Link
-                    href={`/login?redirect=${encodeURIComponent(`/artists/${id}`)}`}
+                    href={`/login?next=${encodeURIComponent(`/artists/${id}`)}`}
                     className="inline-flex items-center gap-1.5 text-foreground/60 transition-colors hover:text-foreground"
                   >
                     <Lock className="h-3 w-3" aria-hidden />
@@ -197,6 +212,23 @@ export function ArtistProfileView({ id }: Props) {
                   </Link>
                 ))}
             </div>
+
+            {(profile.links ?? []).length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {(profile.links ?? []).map((l) => (
+                  <a
+                    key={l.id}
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-[var(--surface-50)] px-3 py-1 text-xs text-foreground/70 transition-colors hover:text-foreground"
+                  >
+                    <ExternalLink className="h-3 w-3" aria-hidden />
+                    {l.label || LINK_PLATFORM_LABEL[l.platform] || l.platform}
+                  </a>
+                ))}
+              </div>
+            )}
 
             {profile.bio && (
               <p className="mt-6 max-w-2xl text-base leading-relaxed text-foreground/80">
@@ -254,13 +286,13 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
 }
 
 function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
-  const [active, setActive] = useState<PortfolioItem | null>(null)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
   // Track which thumbnail triggered the lightbox so we can return focus to it
   // when the user dismisses (a11y — see M10).
   const triggerRef = useRef<HTMLButtonElement | null>(null)
 
   const closeLightbox = () => {
-    setActive(null)
+    setActiveIndex(null)
     // Defer the focus restore one tick so the lightbox's unmount + any
     // focus-trap cleanup completes first.
     requestAnimationFrame(() => triggerRef.current?.focus())
@@ -273,13 +305,13 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {items.map((item) => (
+        {items.map((item, index) => (
           <button
             key={item.id}
             type="button"
             onClick={(e) => {
               triggerRef.current = e.currentTarget
-              setActive(item)
+              setActiveIndex(index)
             }}
             className={cn(
               'group relative aspect-[3/4] overflow-hidden rounded-xl border border-border/60 bg-[var(--surface-50)]',
@@ -303,28 +335,59 @@ function PortfolioGrid({ items }: { items: PortfolioItem[] }) {
                 className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
             )}
-            {item.caption && (
+            {(item.title || item.caption) && (
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                <p className="text-xs font-medium text-white">{item.caption}</p>
+                <p className="text-xs font-medium text-white">{item.title || item.caption}</p>
               </div>
             )}
           </button>
         ))}
       </div>
 
-      {active && <Lightbox item={active} onClose={closeLightbox} />}
+      {activeIndex !== null && (
+        <Lightbox
+          items={items}
+          index={activeIndex}
+          onIndex={setActiveIndex}
+          onClose={closeLightbox}
+        />
+      )}
     </>
   )
 }
 
-function Lightbox({ item, onClose }: { item: PortfolioItem; onClose: () => void }) {
+function Lightbox({
+  items,
+  index,
+  onIndex,
+  onClose,
+}: {
+  items: PortfolioItem[]
+  index: number
+  onIndex: (i: number) => void
+  onClose: () => void
+}) {
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
 
-  // ESC to close, Tab to cycle focus within the dialog. Initial focus lands
-  // on the close button. Return-focus to the trigger is handled by the
-  // parent's onClose so the close path is identical for ESC, ✕, and overlay
-  // click. (M10 — modal a11y.)
+  const item = items[index]!
+  const hasMany = items.length > 1
+  const goPrev = () => onIndex((index - 1 + items.length) % items.length)
+  const goNext = () => onIndex((index + 1) % items.length)
+
+  // Portal target only exists on the client. Mounting in an effect also lets us
+  // lock body scroll while the gallery is open.
+  useEffect(() => {
+    setMounted(true)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [])
+
+  // ESC closes, ←/→ navigate, Tab cycles focus within the dialog. (M10 — a11y.)
   useEffect(() => {
     closeBtnRef.current?.focus()
 
@@ -334,11 +397,18 @@ function Lightbox({ item, onClose }: { item: PortfolioItem; onClose: () => void 
         onClose()
         return
       }
+      if (e.key === 'ArrowLeft' && hasMany) {
+        e.preventDefault()
+        goPrev()
+        return
+      }
+      if (e.key === 'ArrowRight' && hasMany) {
+        e.preventDefault()
+        goNext()
+        return
+      }
       if (e.key !== 'Tab') return
 
-      // Lightweight focus trap: query the focusable elements inside the
-      // dialog at the moment Tab is pressed. The set is tiny (close button,
-      // optional video controls) so we don't bother memoising.
       const root = dialogRef.current
       if (!root) return
       const focusables = root.querySelectorAll<HTMLElement>(
@@ -360,47 +430,108 @@ function Lightbox({ item, onClose }: { item: PortfolioItem; onClose: () => void 
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [onClose, index, hasMany])
 
-  return (
+  if (!mounted) return null
+
+  // Rendered through a portal to document.body so a transformed/overflow-clipped
+  // ancestor (tabs, Reveal animations, the tilt card) can't trap the fixed
+  // overlay — it always covers the full viewport like a real gallery viewer.
+  return createPortal(
     <div
       ref={dialogRef}
       role="dialog"
       aria-modal
-      aria-label={item.caption ?? 'Portfolio item'}
+      aria-label={item.title ?? item.caption ?? 'Portfolio item'}
       onClick={onClose}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-6 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-200 sm:p-8"
     >
       <button
         ref={closeBtnRef}
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute right-6 top-6 text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-md"
+        className="absolute right-5 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg text-white/80 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
       >
         ✕
       </button>
-      <div onClick={(e) => e.stopPropagation()} className="max-h-[85vh] max-w-4xl">
+
+      {hasMany ? (
+        <>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              goPrev()
+            }}
+            aria-label="Previous"
+            className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white sm:left-6"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              goNext()
+            }}
+            aria-label="Next"
+            className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white sm:right-6"
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </>
+      ) : null}
+
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-full max-w-4xl flex-col items-center"
+      >
         {item.type === 'video' ? (
-          <video src={item.url} controls autoPlay className="max-h-[85vh] w-auto rounded-xl" />
+          <video src={item.url} controls autoPlay className="max-h-[78vh] w-auto rounded-xl" />
         ) : (
-          // Lightbox shows the full-size image; Image with fill won't work
-          // (no explicit dims). Use width=0/height=0 trick with style for
-          // intrinsic sizing while still going through the optimiser.
           <RemoteImage
             src={item.url}
             alt={item.caption ?? 'Portfolio image'}
             width={1600}
             height={1200}
             sizes="100vw"
-            className="max-h-[85vh] w-auto rounded-xl"
+            className="max-h-[78vh] w-auto rounded-xl"
             style={{ width: 'auto', height: 'auto' }}
             priority
           />
         )}
-        {item.caption && <p className="mt-4 text-center text-sm text-white/80">{item.caption}</p>}
+        <div className="mt-4 space-y-2 text-center">
+          {(item.title || item.caption) && (
+            <p className="text-sm font-medium text-white">{item.title || item.caption}</p>
+          )}
+          {item.description && (
+            <p className="mx-auto max-w-xl text-sm text-white/70">{item.description}</p>
+          )}
+          {item.links.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 pt-1">
+              {item.links.map((href) => (
+                <a
+                  key={href}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-xs text-white/80 hover:text-white"
+                >
+                  <ExternalLink className="h-3 w-3" aria-hidden /> Link
+                </a>
+              ))}
+            </div>
+          )}
+          {hasMany ? (
+            <p className="pt-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/50">
+              {index + 1} / {items.length}
+            </p>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -496,7 +627,7 @@ function AboutBlock({ profile }: { profile: ProfileForAbout }) {
   )
 }
 
-function ReviewsBlock({ reviews }: { reviews: Review[] }) {
+function ReviewsBlock({ reviews }: { reviews: ReviewWithContext[] }) {
   const visible = reviews.filter((r) => !r.isRemoved)
 
   if (visible.length === 0) {
@@ -531,6 +662,16 @@ function ReviewsBlock({ reviews }: { reviews: Review[] }) {
           {r.comment && (
             <p className="mt-3 text-sm leading-relaxed text-foreground/80">{r.comment}</p>
           )}
+          {r.booking?.caster?.companyName || r.booking?.job?.title ? (
+            <p className="mt-3 text-xs text-foreground/55">
+              {r.booking?.caster?.companyName ? (
+                <span className="font-medium text-foreground/75">
+                  {r.booking.caster.companyName}
+                </span>
+              ) : null}
+              {r.booking?.job?.title ? <> · {r.booking.job.title}</> : null}
+            </p>
+          ) : null}
         </li>
       ))}
     </ul>

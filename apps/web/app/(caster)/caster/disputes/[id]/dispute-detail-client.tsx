@@ -19,7 +19,7 @@ import { formatDate } from '@/lib/utils'
 const DISPUTE_REASON_LABEL: Record<DisputeReason, string> = {
   no_show_artist: 'Artist did not show up',
   no_show_caster: 'Caster did not show up',
-  payment_issue: 'Payment issue',
+  payment_issue: 'Fee dispute',
   quality_issue: 'Quality issue',
   other: 'Other',
 }
@@ -96,7 +96,7 @@ export function DisputeDetailClient({ bookingId }: { bookingId: string }) {
           <Field label="Resolution" value={resolutionLabel(dispute.resolution)} />
           {dispute.splitArtistPct !== null ? (
             <Field
-              label="Split"
+              label="Advisory split"
               value={`Artist ${dispute.splitArtistPct}% · Caster ${100 - dispute.splitArtistPct}%`}
             />
           ) : null}
@@ -106,7 +106,8 @@ export function DisputeDetailClient({ bookingId }: { bookingId: string }) {
       ) : (
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
           <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-          Escrow is frozen while this dispute is open. An admin will review both statements.
+          This dispute is open. An admin will review both statements and record an outcome — any
+          payment is settled directly between the parties off-platform.
         </div>
       )}
 
@@ -157,11 +158,11 @@ function Field({ label, value }: { label: string; value: string }) {
 function resolutionLabel(resolution: string | null): string {
   switch (resolution) {
     case 'full_release_to_artist':
-      return 'Full release to artist'
+      return 'Resolved for the artist'
     case 'full_refund_to_caster':
-      return 'Full refund to caster'
+      return 'Resolved for the caster'
     case 'split':
-      return 'Split between both parties'
+      return 'Shared responsibility'
     case 'escalated':
       return 'Escalated for legal review'
     default:

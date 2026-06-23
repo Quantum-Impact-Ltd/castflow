@@ -59,17 +59,3 @@ export function AuthField({
     </div>
   )
 }
-
-export function AuthDivider({ children }: { children?: ReactNode }) {
-  return (
-    <div className="relative my-6 text-center">
-      <span
-        aria-hidden
-        className="absolute inset-x-0 top-1/2 h-px bg-white/10"
-      />
-      <span className="relative inline-block bg-[var(--ink-900)]/80 px-3 font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45 backdrop-blur">
-        {children ?? 'or'}
-      </span>
-    </div>
-  )
-}

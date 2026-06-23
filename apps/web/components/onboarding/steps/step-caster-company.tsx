@@ -187,7 +187,7 @@ export function StepCasterCompany({ profile, onSkip, onNext }: StepCasterCompany
                   ? 'Drop to upload'
                   : 'Drag a logo here, or click to browse'}
             </p>
-            <p className="mt-1 text-[10px] text-white/45">
+            <p className="mt-1 text-[10px] text-white/70">
               PNG, JPG, WebP, or SVG · max {LOGO_LIMITS.maxSizeMb} MB
             </p>
           </div>

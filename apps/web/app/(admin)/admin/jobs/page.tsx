@@ -51,7 +51,10 @@ export default function AdminJobsPage() {
     const q = query.trim().toLowerCase()
     if (!q) return list
     return list.filter((job) => {
-      const haystack = [job.title, job.casterId, job.category].filter(Boolean).join(' ').toLowerCase()
+      const haystack = [job.title, job.casterId, job.category]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
       return haystack.includes(q)
     })
   }, [data, query])
@@ -121,15 +124,24 @@ export default function AdminJobsPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/admin/jobs/${job.id}`)}
                 >
-                  <TableCell className="max-w-xs truncate font-medium text-foreground">
-                    {job.title}
+                  <TableCell className="max-w-xs">
+                    <div className="truncate font-medium text-foreground">{job.title}</div>
+                    {job.caster?.companyName ? (
+                      <div className="truncate text-xs text-muted-foreground">
+                        {job.caster.companyName}
+                      </div>
+                    ) : null}
                   </TableCell>
                   <TableCell className="capitalize text-muted-foreground">{job.category}</TableCell>
                   <TableCell>
                     <StatusBadge status={job.status} />
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(job.shootDate)}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatDate(job.createdAt)}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(job.shootDate)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(job.createdAt)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

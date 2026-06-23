@@ -7,7 +7,6 @@ import {
   Lock,
   ShieldCheck,
   Scale,
-  Vault,
   UserCheck,
   AlertTriangle,
   FileSignature,
@@ -16,13 +15,12 @@ import { Nav } from '@/components/landing/nav'
 import { Footer } from '@/components/landing/footer'
 import { Reveal } from '@/components/landing/reveal'
 import { Button } from '@/components/ui/button'
-import { EscrowFlowSection } from './escrow-flow-section'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Trust & Safety — CastFlow',
   description:
-    'Every artist is ID-verified and over 18. Every booking is escrow-paid. Every dispute is reviewed by a human. Here is exactly how we keep both sides safe.',
+    'Every artist is ID-verified and over 18. Every booking is backed by a signed contract. Every dispute is reviewed by a human. Here is exactly how we keep both sides safe.',
 }
 
 interface Pillar {
@@ -43,14 +41,14 @@ const PILLARS: Pillar[] = [
     body: 'Date of birth is verified at sign-up. Any account under 18 is rejected on the spot and cannot bid, message, or be booked. Non-negotiable, no exceptions.',
   },
   {
-    icon: Vault,
-    title: 'Escrow on every booking',
-    body: 'Casters pay into a ring-fenced Stripe escrow at booking confirmation. Funds release only when the shoot is confirmed complete — or auto-release 48 hours after shoot date, whichever comes first.',
+    icon: FileSignature,
+    title: 'Signed contract on every booking',
+    body: 'Every booking is locked in by a contract both parties sign before the shoot. Payment is arranged directly between caster and artist, off-platform — CastFlow never touches job fees.',
   },
   {
     icon: Scale,
     title: '72-hour dispute window',
-    body: 'Either party can raise a dispute up to 72 hours after the shoot date. Funds freeze until a human admin reviews both sides and rules on the outcome. No bots making payout decisions.',
+    body: 'Either party can raise a dispute up to 72 hours after the shoot date. A human admin reviews both sides — the booking, the contract, and the messages — and rules on the outcome. No bots making decisions.',
   },
 ]
 
@@ -114,8 +112,8 @@ const SAFETY: SafetyRule[] = [
   },
   {
     icon: Lock,
-    title: 'No off-platform payments',
-    body: 'Asking to move payment off-platform is a ToS violation. Both accounts are flagged for review the moment it is reported.',
+    title: 'No circumventing the platform',
+    body: 'Arranging bookings off-platform to dodge a caster subscription is a ToS violation. Accounts involved are flagged for review the moment it is reported.',
   },
 ]
 
@@ -136,8 +134,8 @@ export default function TrustPage() {
                 <span className="font-serif font-normal italic">every booking.</span>
               </h1>
               <p className="mt-8 max-w-2xl text-lg leading-relaxed text-foreground/75">
-                Verified artists. Ring-fenced payments. Contracts on every job. Human reviewers on
-                every dispute. Here&apos;s exactly how we keep both sides safe.
+                Verified artists. Direct, transparent payment. Contracts on every job. Human
+                reviewers on every dispute. Here&apos;s exactly how we keep both sides safe.
               </p>
             </Reveal>
           </div>
@@ -204,8 +202,66 @@ export default function TrustPage() {
           </div>
         </section>
 
-        {/* Escrow flow */}
-        <EscrowFlowSection />
+        {/* Payment flow */}
+        <section className="w-full py-24 lg:py-32">
+          <div className="mx-auto w-full max-w-[90rem] px-6 lg:px-8">
+            <Reveal>
+              <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
+                <div>
+                  <p className="font-mono text-xs font-medium uppercase tracking-[0.22em] text-foreground/55">
+                    How payment works
+                  </p>
+                  <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
+                    You pay the artist directly.
+                  </h2>
+                  <p className="mt-6 text-base leading-relaxed text-foreground/75">
+                    CastFlow does not process job fees. The agreed rate is settled directly between
+                    caster and artist, off-platform, on your own terms. The platform’s only charge is
+                    a single recurring subscription for casters — artists pay nothing, ever.
+                  </p>
+                  <Button asChild className="mt-8 rounded-full">
+                    <Link href="/pricing">
+                      See pricing
+                      <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
+                    </Link>
+                  </Button>
+                </div>
+                <ul className="space-y-5">
+                  {[
+                    {
+                      icon: FileSignature,
+                      title: 'Sign the contract',
+                      body: 'Both parties sign a contract that locks in the rate, hours, and usage rights before the shoot.',
+                    },
+                    {
+                      icon: Lock,
+                      title: 'Agree the terms privately',
+                      body: 'Payment method and timing are arranged directly between you — CastFlow never holds or moves your money.',
+                    },
+                    {
+                      icon: ShieldCheck,
+                      title: 'Backed by dispute review',
+                      body: 'If something goes wrong, raise a dispute within 72 hours and a human admin reviews the full record.',
+                    },
+                  ].map((step) => (
+                    <li
+                      key={step.title}
+                      className="flex items-start gap-4 rounded-2xl border border-border bg-card p-6"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <step.icon className="h-5 w-5" aria-hidden />
+                      </span>
+                      <div>
+                        <p className="font-medium text-foreground">{step.title}</p>
+                        <p className="mt-1 text-sm leading-relaxed text-foreground/70">{step.body}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
+          </div>
+        </section>
 
         {/* Dispute resolution */}
         <section className="w-full bg-[var(--surface-50)] py-24 lg:py-32">
@@ -238,22 +294,26 @@ export default function TrustPage() {
                   </h3>
                   <ul className="mt-6 space-y-5">
                     <DisputeOutcome
-                      label="Full release"
-                      body="100% of escrow to the artist. Used when caster's complaint isn't substantiated."
+                      label="Find for the artist"
+                      body="Recorded outcome: the full agreed fee is due to the artist. Used when the caster's complaint isn't substantiated."
                     />
                     <DisputeOutcome
-                      label="Full refund"
-                      body="100% returned to the caster. Used when shoot didn't happen or breach is clear."
+                      label="Find for the caster"
+                      body="Recorded outcome: no fee is due. Used when the shoot didn't happen or breach is clear."
                     />
                     <DisputeOutcome
-                      label="Split decision"
-                      body="Custom percentage split — admin enters the exact ratio based on evidence."
+                      label="Advised split"
+                      body="A recommended share both parties settle directly — admin records the advised ratio based on evidence."
                     />
                     <DisputeOutcome
                       label="Strike + outcome"
                       body="Any of the above plus a strike on the offending account. Three strikes triggers a full review."
                     />
                   </ul>
+                  <p className="mt-6 text-sm leading-relaxed text-foreground/70">
+                    Outcomes are recorded for both parties. CastFlow doesn&apos;t hold or move money —
+                    any fee owed is settled directly between caster and artist, off-platform.
+                  </p>
                 </div>
               </div>
             </Reveal>

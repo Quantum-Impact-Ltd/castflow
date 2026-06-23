@@ -12,7 +12,7 @@ import {
   PauseCircle,
   PlayCircle,
 } from 'lucide-react'
-import type { AdminUserRow } from '@/lib/api/admin'
+import type { AdminUserRow, AdminUserDetail } from '@/lib/api/admin'
 import { PageHeader, LoadingState, ErrorState } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -98,15 +98,7 @@ export function UserDetailClient({ userId }: { userId: string }) {
 
           <LinkedProfileCard user={user} />
 
-          <Card className="space-y-2 p-6">
-            <h2 className="text-sm font-semibold text-foreground">Activity & moderation</h2>
-            <p className="text-sm text-muted-foreground">
-              Booking history, bid history, strikes, and payment history require a
-              dedicated user-detail endpoint. They aren’t carried on the current
-              admin user record, so they’re intentionally not shown here rather than
-              fabricated.
-            </p>
-          </Card>
+          <ActivityCard user={user} />
         </div>
 
         <div className="space-y-6">
@@ -146,17 +138,72 @@ function LinkedProfileCard({ user }: { user: AdminUserRow }) {
           <Row label="Profile type" value="Caster" />
         </dl>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          No profile is linked to this account.
-        </p>
+        <p className="text-sm text-muted-foreground">No profile is linked to this account.</p>
       )}
+    </Card>
+  )
+}
+
+function ActivityCard({ user }: { user: AdminUserDetail }) {
+  const activity = user.activity ?? null
+
+  if (!activity) {
+    return (
+      <Card className="space-y-2 p-6">
+        <h2 className="text-sm font-semibold text-foreground">Activity</h2>
+        <p className="text-sm text-muted-foreground">
+          No linked profile, so there’s no marketplace activity to show.
+        </p>
+      </Card>
+    )
+  }
+
+  const stats: { label: string; value: number }[] =
+    activity.role === 'artist'
+      ? [
+          { label: 'Bids submitted', value: activity.bids ?? 0 },
+          { label: 'Bookings', value: activity.bookings },
+          { label: 'Completed', value: activity.completedBookings },
+          { label: 'Reviews received', value: activity.reviewsReceived },
+          { label: 'Strikes', value: activity.strikeCount ?? 0 },
+        ]
+      : [
+          { label: 'Jobs posted', value: activity.jobsPosted ?? 0 },
+          { label: 'Bookings', value: activity.bookings },
+          { label: 'Completed', value: activity.completedBookings },
+          { label: 'Reviews received', value: activity.reviewsReceived },
+        ]
+
+  return (
+    <Card className="space-y-4 p-6">
+      <h2 className="text-sm font-semibold text-foreground">Activity</h2>
+      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        {stats.map((s) => (
+          <div key={s.label}>
+            <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              {s.label}
+            </dt>
+            <dd
+              className={
+                s.label === 'Strikes' && s.value > 0
+                  ? 'mt-0.5 text-2xl font-semibold text-destructive'
+                  : 'mt-0.5 text-2xl font-semibold text-foreground'
+              }
+            >
+              {s.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-xs text-muted-foreground">
+        Counts are live. Full booking/payment history lands with a dedicated history view.
+      </p>
     </Card>
   )
 }
 
 function ActionsCard({ user }: { user: AdminUserRow }) {
   const isActive = user.status === 'active'
-  const isSuspended = user.status === 'suspended'
   const isBanned = user.status === 'banned'
 
   return (
@@ -166,7 +213,9 @@ function ActionsCard({ user }: { user: AdminUserRow }) {
         <h2 className="text-sm font-semibold text-foreground">Actions</h2>
       </div>
       <div className="flex flex-col gap-2">
-        {!isSuspended ? (
+        {/* Suspend only makes sense from active — a banned/suspended account
+            can't be suspended again. */}
+        {isActive ? (
           <StatusActionDialog
             userId={user.id}
             email={user.email}
@@ -264,11 +313,7 @@ function StatusActionDialog({
         <div className="space-y-1.5">
           <Label htmlFor="status-reason">
             Reason{' '}
-            {reasonRequired ? (
-              <span className="text-destructive">(required)</span>
-            ) : (
-              '(optional)'
-            )}
+            {reasonRequired ? <span className="text-destructive">(required)</span> : '(optional)'}
           </Label>
           <Textarea
             id="status-reason"

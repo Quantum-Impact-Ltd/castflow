@@ -1,38 +1,19 @@
 import { mock } from 'bun:test'
 
-interface IntentRow {
-  id: string
-  status: 'requires_payment_method' | 'requires_capture' | 'succeeded' | 'canceled'
-  amount: number
-  amountCaptured: number
-  metadata: Record<string, string>
-}
+/**
+ * Stripe mock for the subscription-only money model. The platform's sole
+ * Stripe surface is caster Billing: Checkout, the customer portal, customer
+ * creation, subscription retrieval, and the webhook `constructEvent` verifier.
+ * There is no escrow / Connect / payout flow, so none of that is mocked.
+ */
 
-interface TransferCall {
+interface SubscriptionRow {
   id: string
-  amount: number
-  destination: string
-  source_transaction?: string
-  metadata: Record<string, string>
-  idempotencyKey?: string
-}
-
-interface AccountRow {
-  id: string
-  payouts_enabled: boolean
-  details_submitted: boolean
-  requirements: { currently_due: string[] }
-}
-
-interface AccountLinkRow {
-  url: string
-  expires_at: number
-}
-
-interface RefundRow {
-  id: string
-  payment_intent: string
-  amount: number
+  customer: string
+  status: string
+  current_period_end: number
+  cancel_at_period_end: boolean
+  priceId: string
 }
 
 interface ConstructEventStub {
@@ -42,12 +23,10 @@ interface ConstructEventStub {
 }
 
 interface StripeMockState {
-  intents: Map<string, IntentRow>
-  transfers: TransferCall[]
-  accounts: Map<string, AccountRow>
-  refunds: RefundRow[]
-  accountLinks: AccountLinkRow[]
-  nextAccountLink: AccountLinkRow
+  customers: Map<string, { id: string; email?: string; name?: string }>
+  subscriptions: Map<string, SubscriptionRow>
+  checkoutUrl: string
+  portalUrl: string
   // For webhooks/constructEvent
   nextEvent: ConstructEventStub | null
   constructEventThrows: Error | null
@@ -60,195 +39,108 @@ function uid(prefix: string): string {
 }
 
 export const stripeMockState: StripeMockState = {
-  intents: new Map(),
-  transfers: [],
-  accounts: new Map(),
-  refunds: [],
-  accountLinks: [],
-  nextAccountLink: { url: 'https://stripe.test/onboard', expires_at: Math.floor(Date.now() / 1000) + 3600 },
+  customers: new Map(),
+  subscriptions: new Map(),
+  checkoutUrl: 'https://stripe.test/checkout',
+  portalUrl: 'https://stripe.test/portal',
   nextEvent: null,
   constructEventThrows: null,
 }
 
 export function resetStripeMockState(): void {
-  stripeMockState.intents.clear()
-  stripeMockState.transfers.length = 0
-  stripeMockState.accounts.clear()
-  stripeMockState.refunds.length = 0
-  stripeMockState.accountLinks.length = 0
-  stripeMockState.nextAccountLink = {
-    url: 'https://stripe.test/onboard',
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-  }
+  stripeMockState.customers.clear()
+  stripeMockState.subscriptions.clear()
+  stripeMockState.checkoutUrl = 'https://stripe.test/checkout'
+  stripeMockState.portalUrl = 'https://stripe.test/portal'
   stripeMockState.nextEvent = null
   stripeMockState.constructEventThrows = null
 }
 
 /**
- * Seed an artist Connect account into the mock so `stripe.accounts.retrieve`
- * and downstream gating return the desired state. Callers can flip
- * `payouts_enabled` per-test.
+ * Pre-register a Stripe Subscription in the mock so a subsequent
+ * `stripe.subscriptions.retrieve` (used by `handleCheckoutCompleted`) finds it.
  */
-export function seedConnectAccount(args: {
+export function seedSubscription(args: {
   id: string
-  payoutsEnabled: boolean
-  detailsSubmitted?: boolean
-  requirementsDue?: string[]
-}): void {
-  stripeMockState.accounts.set(args.id, {
+  customer: string
+  status?: string
+  currentPeriodEnd?: number
+  cancelAtPeriodEnd?: boolean
+  priceId?: string
+}): SubscriptionRow {
+  const row: SubscriptionRow = {
     id: args.id,
-    payouts_enabled: args.payoutsEnabled,
-    details_submitted: args.detailsSubmitted ?? true,
-    requirements: { currently_due: args.requirementsDue ?? [] },
-  })
+    customer: args.customer,
+    status: args.status ?? 'active',
+    current_period_end: args.currentPeriodEnd ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+    cancel_at_period_end: args.cancelAtPeriodEnd ?? false,
+    priceId: args.priceId ?? 'price_test',
+  }
+  stripeMockState.subscriptions.set(args.id, row)
+  return row
 }
 
-/**
- * Pre-register a PaymentIntent in the mock so a subsequent capture/cancel
- * finds it. Tests that build Payment rows directly (skipping the Stripe-side
- * creation) call this to keep the mock state coherent.
- */
-export function seedPaymentIntent(args: {
-  id: string
-  amount: number
-  status?: 'requires_capture' | 'succeeded' | 'canceled'
-}): void {
-  stripeMockState.intents.set(args.id, {
-    id: args.id,
-    status: args.status ?? 'requires_capture',
-    amount: args.amount,
-    amountCaptured: 0,
-    metadata: {},
-  })
+function shapeSubscription(row: SubscriptionRow) {
+  return {
+    id: row.id,
+    customer: row.customer,
+    status: row.status,
+    current_period_end: row.current_period_end,
+    cancel_at_period_end: row.cancel_at_period_end,
+    items: { data: [{ price: { id: row.priceId } }] },
+  }
 }
 
 /**
  * Build the mocked `stripe` singleton. Each method is a `mock(...)` so tests
- * can assert call counts and args via `stripe.paymentIntents.capture.mock.calls`.
+ * can assert call counts and args via `stripe.<ns>.<fn>.mock.calls`.
  */
 export function buildStripeMock() {
-  const paymentIntents = {
-    create: mock(
-      async (
-        params: { amount: number; currency: string; metadata?: Record<string, string> },
-        _opts?: { idempotencyKey?: string }
-      ) => {
-        const id = uid('pi')
-        const row: IntentRow = {
-          id,
-          status: 'requires_capture',
-          amount: params.amount,
-          amountCaptured: 0,
-          metadata: params.metadata ?? {},
-        }
-        stripeMockState.intents.set(id, row)
-        return {
-          id,
-          status: row.status,
-          amount: row.amount,
-          client_secret: `cs_${id}_secret`,
-          latest_charge: `ch_${id}`,
-        }
-      }
-    ),
-    capture: mock(
-      async (
-        intentId: string,
-        params?: { amount_to_capture?: number },
-        _opts?: { idempotencyKey?: string }
-      ) => {
-        const row = stripeMockState.intents.get(intentId)
-        if (!row) throw new Error(`Mock Stripe: paymentIntent ${intentId} not found`)
-        if (row.status === 'succeeded') throw new Error('intent already captured')
-        if (row.status === 'canceled') throw new Error('intent canceled')
-        const captureAmount = params?.amount_to_capture ?? row.amount
-        row.amountCaptured = captureAmount
-        row.status = 'succeeded'
-        return { id: row.id, status: 'succeeded', amount_captured: captureAmount }
-      }
-    ),
-    cancel: mock(async (intentId: string, _params?: { cancellation_reason?: string }) => {
-      const row = stripeMockState.intents.get(intentId)
-      if (!row) throw new Error(`Mock Stripe: paymentIntent ${intentId} not found`)
-      row.status = 'canceled'
-      return { id: row.id, status: 'canceled' }
+  const customers = {
+    create: mock(async (params: { email?: string; name?: string; metadata?: Record<string, string> }) => {
+      const id = uid('cus')
+      stripeMockState.customers.set(id, { id, email: params.email, name: params.name })
+      return { id, email: params.email, name: params.name }
     }),
   }
 
-  const transfers = {
-    create: mock(
-      async (
-        params: {
-          amount: number
-          currency: string
-          destination: string
-          source_transaction?: string
-          metadata?: Record<string, string>
-        },
-        opts?: { idempotencyKey?: string }
-      ) => {
-        const id = uid('tr')
-        const call: TransferCall = {
-          id,
-          amount: params.amount,
-          destination: params.destination,
-          ...(params.source_transaction ? { source_transaction: params.source_transaction } : {}),
-          metadata: params.metadata ?? {},
-          ...(opts?.idempotencyKey ? { idempotencyKey: opts.idempotencyKey } : {}),
-        }
-        stripeMockState.transfers.push(call)
-        return { id, amount: params.amount, destination: params.destination }
-      }
-    ),
-  }
-
-  const accounts = {
-    create: mock(
-      async (params: { type: string; email?: string; metadata?: Record<string, string> }) => {
-        const id = uid('acct')
-        const row: AccountRow = {
-          id,
-          payouts_enabled: false,
-          details_submitted: false,
-          requirements: { currently_due: ['external_account'] },
-        }
-        stripeMockState.accounts.set(id, row)
-        return { id, ...row, type: params.type, email: params.email }
-      }
-    ),
-    retrieve: mock(async (accountId: string) => {
-      const row = stripeMockState.accounts.get(accountId)
+  const subscriptions = {
+    retrieve: mock(async (subscriptionId: string) => {
+      const row = stripeMockState.subscriptions.get(subscriptionId)
       if (!row) {
-        return {
-          id: accountId,
-          payouts_enabled: false,
-          details_submitted: false,
-          requirements: { currently_due: ['external_account'] },
+        // Default-shaped active subscription so callers don't blow up.
+        return shapeSubscription(
+          seedSubscription({ id: subscriptionId, customer: uid('cus') })
+        )
+      }
+      return shapeSubscription(row)
+    }),
+  }
+
+  const checkout = {
+    sessions: {
+      create: mock(
+        async (_params: {
+          mode: string
+          customer: string
+          line_items: unknown[]
+          success_url: string
+          cancel_url: string
+        }) => {
+          const id = uid('cs')
+          return { id, url: stripeMockState.checkoutUrl }
         }
-      }
-      return row
-    }),
+      ),
+    },
   }
 
-  const accountLinks = {
-    create: mock(async (_params: { account: string; type: string }) => {
-      const link = { ...stripeMockState.nextAccountLink }
-      stripeMockState.accountLinks.push(link)
-      return link
-    }),
-  }
-
-  const refunds = {
-    create: mock(async (params: { payment_intent: string; amount?: number }) => {
-      const id = uid('re')
-      const row: RefundRow = {
-        id,
-        payment_intent: params.payment_intent,
-        amount: params.amount ?? 0,
-      }
-      stripeMockState.refunds.push(row)
-      return row
-    }),
+  const billingPortal = {
+    sessions: {
+      create: mock(async (_params: { customer: string; return_url: string }) => {
+        const id = uid('bps')
+        return { id, url: stripeMockState.portalUrl }
+      }),
+    },
   }
 
   const webhooks = {
@@ -262,11 +154,10 @@ export function buildStripeMock() {
   }
 
   return {
-    paymentIntents,
-    transfers,
-    accounts,
-    accountLinks,
-    refunds,
+    customers,
+    subscriptions,
+    checkout,
+    billingPortal,
     webhooks,
   }
 }
@@ -278,13 +169,9 @@ export function buildStripeMock() {
 export const stripeMock = buildStripeMock()
 
 export function resetStripeMockCalls(): void {
-  stripeMock.paymentIntents.create.mockClear()
-  stripeMock.paymentIntents.capture.mockClear()
-  stripeMock.paymentIntents.cancel.mockClear()
-  stripeMock.transfers.create.mockClear()
-  stripeMock.accounts.create.mockClear()
-  stripeMock.accounts.retrieve.mockClear()
-  stripeMock.accountLinks.create.mockClear()
-  stripeMock.refunds.create.mockClear()
+  stripeMock.customers.create.mockClear()
+  stripeMock.subscriptions.retrieve.mockClear()
+  stripeMock.checkout.sessions.create.mockClear()
+  stripeMock.billingPortal.sessions.create.mockClear()
   stripeMock.webhooks.constructEvent.mockClear()
 }

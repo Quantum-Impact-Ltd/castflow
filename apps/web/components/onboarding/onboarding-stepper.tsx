@@ -31,7 +31,7 @@ export function OnboardingStepper({
       {/* Mobile: compact progress */}
       <div className="sm:hidden">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-mono tracking-[0.18em] text-white/45 uppercase">
+          <span className="font-mono tracking-[0.18em] text-white/70 uppercase">
             Step {currentIndex + 1} of {steps.length}
           </span>
           <span className="font-medium text-white">{steps[currentIndex]?.label}</span>
@@ -75,7 +75,7 @@ export function OnboardingStepper({
                     status === 'current' &&
                       'border-[var(--cta-400)] bg-[var(--cta-400)] text-[var(--ink-900)] ring-4 ring-[var(--cta-400)]/20',
                     status === 'upcoming' &&
-                      'border-white/15 bg-white/[0.03] text-white/45'
+                      'border-white/15 bg-white/[0.03] text-white/70'
                   )}
                 >
                   {status === 'done' ? <Check className="h-4 w-4" /> : i + 1}

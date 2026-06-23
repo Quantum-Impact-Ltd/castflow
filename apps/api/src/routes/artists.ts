@@ -7,6 +7,7 @@ import {
   artistExperienceSchema,
   updateArtistTypeSchema,
   replaceSkillsSchema,
+  replaceLinksSchema,
   updateAvailabilitySchema,
 } from '@castflow/validators'
 import { authenticate } from '../middleware/authenticate'
@@ -59,6 +60,13 @@ artistRoutes.put('/me/skills', authenticate, requireRole('artist'), async (c) =>
   const input = await parseBody(c, replaceSkillsSchema)
   const skills = await ArtistService.replaceSkills(user.id, input)
   return c.json({ success: true, data: skills })
+})
+
+artistRoutes.put('/me/links', authenticate, requireRole('artist'), async (c) => {
+  const user = c.get('user')
+  const input = await parseBody(c, replaceLinksSchema)
+  const links = await ArtistService.replaceLinks(user.id, input)
+  return c.json({ success: true, data: links })
 })
 
 artistRoutes.patch('/me/personal', authenticate, requireRole('artist'), async (c) => {
@@ -132,20 +140,4 @@ artistRoutes.get('/me/id-document/url', authenticate, requireRole('artist'), asy
 artistRoutes.get('/:id/public', async (c) => {
   const profile = await ArtistService.getPublicProfile(c.req.param('id') ?? '')
   return c.json({ success: true, data: profile })
-})
-
-/**
- * Comp-card PDF for an approved artist (Phase 2). Anyone with the profile id
- * can download it — comp-cards are explicitly public marketing artefacts.
- * Returns `application/pdf` for `?download=1`, otherwise inline.
- */
-artistRoutes.get('/:id/comp-card', async (c) => {
-  const buffer = await ArtistService.generateCompCard(c.req.param('id') ?? '')
-  const isDownload = c.req.query('download') === '1'
-  c.header('Content-Type', 'application/pdf')
-  c.header(
-    'Content-Disposition',
-    `${isDownload ? 'attachment' : 'inline'}; filename="comp-card.pdf"`
-  )
-  return c.body(new Uint8Array(buffer))
 })

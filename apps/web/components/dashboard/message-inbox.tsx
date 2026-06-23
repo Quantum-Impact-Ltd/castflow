@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Flag } from 'lucide-react'
 import { LoadingState, ErrorState, EmptyState, PageHeader } from '@/components/dashboard'
 import { useThreads } from '@/lib/hooks/use-messages'
 import { cn, formatDate } from '@/lib/utils'
@@ -39,13 +39,20 @@ export function MessageInbox({ basePath }: MessageInboxProps) {
                     <div className="flex items-center justify-between gap-2">
                       <p
                         className={cn(
-                          'truncate',
+                          'flex min-w-0 items-center gap-1.5 truncate',
                           unread > 0
                             ? 'font-semibold text-foreground'
                             : 'font-medium text-foreground'
                         )}
                       >
-                        {thread.counterparty?.displayName ?? 'Conversation'}
+                        <span className="truncate">
+                          {thread.counterparty?.displayName ?? 'Conversation'}
+                        </span>
+                        {thread.hasFlaggedContent ? (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                            <Flag className="h-2.5 w-2.5" /> Under review
+                          </span>
+                        ) : null}
                       </p>
                       <span className="shrink-0 text-xs text-muted-foreground">
                         {thread.lastMessageAt ? formatDate(thread.lastMessageAt) : ''}

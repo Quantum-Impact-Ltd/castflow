@@ -6,3 +6,11 @@ export const submitReviewSchema = z.object({
 })
 
 export type SubmitReviewInput = z.infer<typeof submitReviewSchema>
+
+// A reviewee reporting a review left about them (harassment / spam / inaccurate).
+export const reportReviewSchema = z.object({
+  reason: z.enum(['harassment', 'spam', 'inaccurate', 'other']),
+  detail: z.string().max(500).trim().optional(),
+})
+
+export type ReportReviewInput = z.infer<typeof reportReviewSchema>

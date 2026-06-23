@@ -298,7 +298,7 @@ const ReviewCard = forwardRef<HTMLDivElement, { section: Section; onEdit: () => 
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex items-center gap-1 text-xs text-white/45 transition hover:text-white"
+            className="inline-flex items-center gap-1 text-xs text-white/70 transition hover:text-white"
           >
             <Pencil className="h-3 w-3" />
             Edit
@@ -307,7 +307,7 @@ const ReviewCard = forwardRef<HTMLDivElement, { section: Section; onEdit: () => 
         <dl className="space-y-1.5">
           {section.rows.map((row) => (
             <div key={row.label} className="flex items-baseline gap-2 text-sm">
-              <dt className="w-20 shrink-0 text-xs text-white/45">{row.label}</dt>
+              <dt className="w-20 shrink-0 text-xs text-white/70">{row.label}</dt>
               <dd className="break-words text-white/85">{row.value}</dd>
             </div>
           ))}

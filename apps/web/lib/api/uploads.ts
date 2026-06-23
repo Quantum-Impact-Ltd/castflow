@@ -1,4 +1,13 @@
+import type { PortfolioItem, PortfolioEntryType } from '@castflow/types'
 import { fetcher } from '@/lib/fetcher'
+
+/** Metadata that turns a bare upload into a typed portfolio entry. */
+export interface PortfolioEntryMeta {
+  entryType?: PortfolioEntryType
+  title?: string
+  description?: string
+  links?: string[]
+}
 
 export type UploadType =
   | 'portfolio_photo'
@@ -26,16 +35,23 @@ export function getPresignedUrl(input: {
   })
 }
 
-export function confirmUpload(input: {
-  type: UploadType
-  key: string
-  caption?: string
-  isPrimary?: boolean
-}) {
+export function confirmUpload(
+  input: {
+    type: UploadType
+    key: string
+    caption?: string
+    isPrimary?: boolean
+  } & PortfolioEntryMeta
+) {
   return fetcher<unknown>('/uploads/confirm', { method: 'POST', body: input })
 }
 
-export interface UploadOptions {
+/** Edit an existing portfolio entry's metadata (image is fixed at upload). */
+export function updatePortfolioItem(id: string, input: PortfolioEntryMeta & { caption?: string }) {
+  return fetcher<PortfolioItem>(`/uploads/portfolio/${id}`, { method: 'PATCH', body: input })
+}
+
+export interface UploadOptions extends PortfolioEntryMeta {
   caption?: string
   isPrimary?: boolean
   /** 0–100. Called as bytes flow to R2 — useful for rendering a per-file
@@ -109,12 +125,16 @@ export async function uploadFile(
 
   await putWithProgress(uploadUrl, file, opts.onProgress, opts.signal)
 
-  const { caption, isPrimary } = opts
+  const { caption, isPrimary, entryType, title, description, links } = opts
   await confirmUpload({
     type,
     key,
     ...(caption !== undefined ? { caption } : {}),
     ...(isPrimary !== undefined ? { isPrimary } : {}),
+    ...(entryType !== undefined ? { entryType } : {}),
+    ...(title !== undefined ? { title } : {}),
+    ...(description !== undefined ? { description } : {}),
+    ...(links !== undefined ? { links } : {}),
   })
   return { publicUrl, key }
 }

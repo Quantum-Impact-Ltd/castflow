@@ -11,8 +11,7 @@
 import type { PublicArtistProfile } from '@/lib/api/talent'
 import type { Review } from '@castflow/types'
 
-const portrait = (seed: string) =>
-  `https://picsum.photos/seed/${seed}/900/1200`
+const portrait = (seed: string) => `https://picsum.photos/seed/${seed}/900/1200`
 
 function mockReviews(profileId: string): Review[] {
   return [
@@ -38,8 +37,7 @@ function mockReviews(profileId: string): Review[] {
       casterRevieweeId: null,
       reviewerRole: 'caster',
       rating: 5,
-      comment:
-        'Professional throughout — clear comms before the shoot, easy on the day.',
+      comment: 'Professional throughout — clear comms before the shoot, easy on the day.',
       isFlagged: false,
       isRemoved: false,
       createdAt: '2026-02-03T15:11:00.000Z',
@@ -66,8 +64,12 @@ function buildPortfolio(seed: string, count = 9) {
     id: `${seed}-pf-${i}`,
     artistProfileId: seed,
     type: 'photo' as const,
+    entryType: i === 0 ? ('editorial' as const) : ('shoot' as const),
     url: portrait(`${seed}-${i}`),
     thumbnailUrl: null,
+    title: i === 0 ? 'Editorial · AW26' : null,
+    description: null,
+    links: [] as string[],
     caption: i === 0 ? 'Editorial · AW26' : null,
     displayOrder: i,
     isPrimary: i === 0,
@@ -112,9 +114,24 @@ export const MOCK_ARTISTS: Record<string, PublicArtistProfile> = {
     },
     actorStats: null,
     skills: [
-      { id: 's1', artistProfileId: 'maya-okafor', skillType: 'movement', skillValue: 'Dance — contemporary' },
-      { id: 's2', artistProfileId: 'maya-okafor', skillType: 'language', skillValue: 'English (native)' },
-      { id: 's3', artistProfileId: 'maya-okafor', skillType: 'language', skillValue: 'Yoruba (conversational)' },
+      {
+        id: 's1',
+        artistProfileId: 'maya-okafor',
+        skillType: 'movement',
+        skillValue: 'Dance — contemporary',
+      },
+      {
+        id: 's2',
+        artistProfileId: 'maya-okafor',
+        skillType: 'language',
+        skillValue: 'English (native)',
+      },
+      {
+        id: 's3',
+        artistProfileId: 'maya-okafor',
+        skillType: 'language',
+        skillValue: 'Yoruba (conversational)',
+      },
       { id: 's4', artistProfileId: 'maya-okafor', skillType: 'sport', skillValue: 'Swimming' },
     ],
     portfolioItems: buildPortfolio('maya-okafor', 9),
@@ -149,7 +166,12 @@ export const MOCK_ARTISTS: Record<string, PublicArtistProfile> = {
       reelUrl: 'https://vimeo.com/example/reel',
     } as unknown as PublicArtistProfile['actorStats'],
     skills: [
-      { id: 's5', artistProfileId: 'daniel-reyes', skillType: 'accent', skillValue: 'Northern English' },
+      {
+        id: 's5',
+        artistProfileId: 'daniel-reyes',
+        skillType: 'accent',
+        skillValue: 'Northern English',
+      },
       { id: 's6', artistProfileId: 'daniel-reyes', skillType: 'accent', skillValue: 'RP' },
       { id: 's7', artistProfileId: 'daniel-reyes', skillType: 'language', skillValue: 'Spanish' },
       { id: 's8', artistProfileId: 'daniel-reyes', skillType: 'sport', skillValue: 'Boxing' },
@@ -193,7 +215,12 @@ export const MOCK_ARTISTS: Record<string, PublicArtistProfile> = {
     actorStats: null,
     skills: [
       { id: 's9', artistProfileId: 'iris-calloway', skillType: 'movement', skillValue: 'Ballet' },
-      { id: 's10', artistProfileId: 'iris-calloway', skillType: 'language', skillValue: 'English (native)' },
+      {
+        id: 's10',
+        artistProfileId: 'iris-calloway',
+        skillType: 'language',
+        skillValue: 'English (native)',
+      },
     ],
     portfolioItems: buildPortfolio('iris-calloway', 8),
   },
@@ -309,7 +336,12 @@ export const MOCK_ARTISTS: Record<string, PublicArtistProfile> = {
     },
     actorStats: null,
     skills: [
-      { id: 's15', artistProfileId: 'amelia-fitzgerald', skillType: 'movement', skillValue: 'Dance' },
+      {
+        id: 's15',
+        artistProfileId: 'amelia-fitzgerald',
+        skillType: 'movement',
+        skillValue: 'Dance',
+      },
     ],
     portfolioItems: buildPortfolio('amelia-fitzgerald', 5),
   },
@@ -419,8 +451,18 @@ export const MOCK_ARTISTS: Record<string, PublicArtistProfile> = {
       reelUrl: null,
     } as unknown as PublicArtistProfile['actorStats'],
     skills: [
-      { id: 's20', artistProfileId: 'jude-blackwell', skillType: 'sport', skillValue: 'Horse riding' },
-      { id: 's21', artistProfileId: 'jude-blackwell', skillType: 'movement', skillValue: 'Stage combat' },
+      {
+        id: 's20',
+        artistProfileId: 'jude-blackwell',
+        skillType: 'sport',
+        skillValue: 'Horse riding',
+      },
+      {
+        id: 's21',
+        artistProfileId: 'jude-blackwell',
+        skillType: 'movement',
+        skillValue: 'Stage combat',
+      },
     ],
     portfolioItems: buildPortfolio('jude-blackwell', 5),
   },

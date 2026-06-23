@@ -5,6 +5,7 @@ import type {
   ArtistExperienceInput,
   UpdateArtistTypeInput,
   ReplaceSkillsInput,
+  ReplaceLinksInput,
   UpdateAvailabilityInput,
 } from '@castflow/validators'
 import { prisma } from '../lib/prisma'
@@ -12,12 +13,17 @@ import { env } from '../lib/env'
 import { AppError } from '../errors'
 import { NotificationService } from './NotificationService'
 import { EmailService } from './EmailService'
-import { renderCompCardPdf } from '../templates/comp-card-pdf'
 
 async function getProfileByUser(userId: string) {
   const profile = await prisma.artistProfile.findUnique({
     where: { userId },
-    include: { modelStats: true, actorStats: true, skills: true, portfolioItems: true },
+    include: {
+      modelStats: true,
+      actorStats: true,
+      skills: true,
+      portfolioItems: { orderBy: { displayOrder: 'asc' } },
+      links: { orderBy: { displayOrder: 'asc' } },
+    },
   })
   if (!profile) {
     throw new AppError('NOT_FOUND', 'Artist profile not found', 404)
@@ -64,6 +70,7 @@ export class ArtistService {
         actorStats: true,
         skills: true,
         portfolioItems: { where: { isApproved: true }, orderBy: { displayOrder: 'asc' } },
+        links: { orderBy: { displayOrder: 'asc' } },
       },
     })
     if (!profile || profile.approvalStatus !== 'approved') {
@@ -84,8 +91,8 @@ export class ArtistService {
 
   /**
    * Delete the artist's account (PRD §8.13). Blocked while there are active
-   * bookings or escrow that hasn't cleared. Hard-deletes the user, which
-   * cascades to the profile/sessions/accounts via the onDelete relation.
+   * bookings. Hard-deletes the user, which cascades to the profile/sessions/
+   * accounts via the onDelete relation.
    *
    * NOTE for the DB-verified pass: accounts that have *historical*
    * (completed/cancelled) bookings will hit the Booking→ArtistProfile FK on a
@@ -95,25 +102,15 @@ export class ArtistService {
   static async deleteAccount(userId: string) {
     const profile = await getProfileByUser(userId)
     const activeBookings = await prisma.booking.count({
-      where: { artistId: profile.id, status: { in: ['pending_payment', 'confirmed', 'disputed'] } },
+      where: {
+        artistId: profile.id,
+        status: { in: ['pending_contract', 'confirmed', 'disputed'] },
+      },
     })
     if (activeBookings > 0) {
       throw new AppError(
         'CONFLICT',
         'You have active bookings. Resolve them before deleting your account.',
-        409
-      )
-    }
-    const pendingEscrow = await prisma.payment.count({
-      where: {
-        booking: { artistId: profile.id },
-        escrowStatus: { in: ['held', 'awaiting_payment'] },
-      },
-    })
-    if (pendingEscrow > 0) {
-      throw new AppError(
-        'CONFLICT',
-        'You have pending payouts that must clear before deletion.',
         409
       )
     }
@@ -245,6 +242,29 @@ export class ArtistService {
       return tx.artistSkill.findMany({
         where: { artistProfileId: profile.id },
         orderBy: { skillType: 'asc' },
+      })
+    })
+  }
+
+  /** Replace-all the artist's professional links (mirrors replaceSkills). */
+  static async replaceLinks(userId: string, input: ReplaceLinksInput) {
+    const profile = await getProfileByUser(userId)
+    return prisma.$transaction(async (tx) => {
+      await tx.profileLink.deleteMany({ where: { artistProfileId: profile.id } })
+      if (input.links.length > 0) {
+        await tx.profileLink.createMany({
+          data: input.links.map((l, i) => ({
+            artistProfileId: profile.id,
+            platform: l.platform,
+            url: l.url,
+            label: l.label ?? null,
+            displayOrder: i,
+          })),
+        })
+      }
+      return tx.profileLink.findMany({
+        where: { artistProfileId: profile.id },
+        orderBy: { displayOrder: 'asc' },
       })
     })
   }
@@ -439,71 +459,6 @@ export class ArtistService {
     })
 
     return updated
-  }
-
-  /**
-   * Render a comp-card PDF for a public, approved artist. Returns the raw
-   * Buffer so the route can stream it (no R2 caching for MVP — the data
-   * changes whenever the artist edits their profile, and rendering is
-   * cheap enough to do on demand).
-   */
-  static async generateCompCard(profileId: string): Promise<Buffer> {
-    const profile = await prisma.artistProfile.findUnique({
-      where: { id: profileId },
-      include: {
-        modelStats: true,
-        actorStats: true,
-        skills: true,
-        portfolioItems: {
-          where: { isApproved: true, type: 'photo' },
-          orderBy: { displayOrder: 'asc' },
-          take: 6,
-        },
-      },
-    })
-    if (!profile) throw new AppError('NOT_FOUND', 'Artist profile not found', 404)
-    if (profile.approvalStatus !== 'approved') {
-      throw new AppError('FORBIDDEN', 'Comp-card is only available for approved artists', 403)
-    }
-
-    return renderCompCardPdf({
-      firstName: profile.firstName,
-      artistType: profile.artistType,
-      city: profile.city ?? 'UK',
-      bio: profile.bio,
-      experienceLevel: profile.experienceLevel ?? 'new_face',
-      ratingAvg: profile.ratingAvg ? Number(profile.ratingAvg) : null,
-      ratingCount: profile.ratingCount,
-      jobsCompleted: profile.jobsCompleted,
-      modelStats: profile.modelStats
-        ? {
-            heightCm: profile.modelStats.heightCm,
-            dressSize: profile.modelStats.dressSize,
-            shoeSize: profile.modelStats.shoeSize,
-            bustCm: profile.modelStats.bustCm,
-            waistCm: profile.modelStats.waistCm,
-            hipCm: profile.modelStats.hipCm,
-            hairColour: profile.modelStats.hairColour,
-            eyeColour: profile.modelStats.eyeColour,
-            skinTone: profile.modelStats.skinTone,
-          }
-        : null,
-      actorStats: profile.actorStats
-        ? {
-            heightCm: profile.actorStats.heightCm,
-            hairColour: profile.actorStats.hairColour,
-            eyeColour: profile.actorStats.eyeColour,
-            voiceType: profile.actorStats.voiceType,
-            ageRangeMin: profile.actorStats.ageRangeMin,
-            ageRangeMax: profile.actorStats.ageRangeMax,
-          }
-        : null,
-      skills: profile.skills.map((s) => ({
-        skillType: s.skillType,
-        skillValue: s.skillValue,
-      })),
-      portfolioPhotos: profile.portfolioItems.map((p) => p.url),
-    })
   }
 
   /**

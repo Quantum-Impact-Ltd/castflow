@@ -33,9 +33,9 @@
 
 CastFlow is a UK-based online marketplace that connects brands, agencies, and production companies (called **Casters**) with professional models and actors (called **Artists**) for photo and video shoots.
 
-The platform works like a job board with a bidding system — casters post shoot jobs, artists bid for them, and the platform handles the booking, contract, and payment end to end.
+The platform works like a job board with a bidding system — casters post shoot jobs, artists bid for them, and the platform handles the booking and contract end to end. Job fees are paid directly between caster and artist, off-platform.
 
-The business is operated by a marketing agency that uses CastFlow for its own shoots, while also opening the platform to other casters on a subscription basis. All revenue, contracts, and payments flow through the platform.
+The business is operated by a marketing agency that uses CastFlow for its own shoots, while also opening the platform to other casters on a subscription basis. The platform's revenue is the recurring caster subscription; contracts and the booking record flow through the platform, while job fees are settled directly between the parties.
 
 **The MVP goal is a working, end-to-end platform that can:**
 
@@ -72,7 +72,7 @@ The platform sits in the middle and provides:
 - A structured job posting and bidding system
 - A verified directory of approved artists
 - Automated contracts with e-signatures
-- Secure escrow-based payments
+- A recurring caster subscription (job fees paid directly between caster and artist, off-platform)
 - A review and reputation system
 - A messaging system (all communication stays on-platform)
 
@@ -160,9 +160,10 @@ Same as the model persona, with different profile requirements — demo reel ins
 | In-platform messaging (unlocked on shortlist)     | ✅       |
 | Booking confirmation flow                         | ✅       |
 | Contract generation & e-signature                 | ✅       |
-| Escrow payment via Stripe                         | ✅       |
-| Post-shoot completion & payout                    | ✅       |
-| Cancellation with penalty logic                   | ✅       |
+| Caster subscription via Stripe Billing            | ✅       |
+| Subscription gate on job-post & bid-accept        | ✅       |
+| Post-shoot completion (record-only)               | ✅       |
+| Cancellation with advisory fee + penalty logic    | ✅       |
 | Dispute resolution                                | ✅       |
 | Reviews (both directions)                         | ✅       |
 | Email notifications                               | ✅       |
@@ -230,13 +231,11 @@ The admin panel is the operational control room. It is only accessible to intern
 - Click any job to see full detail including all bids on it
 - Actions: Remove job from platform (with reason), flag for review
 
-### 6.5 Booking & Payment Oversight
+### 6.5 Booking & Subscription Oversight
 
-- View all bookings with their payment status
-- See escrow status per booking (held / released / refunded / disputed)
-- Ability to force-release escrow in exceptional circumstances
-- Ability to issue a refund
-- Revenue summary: total platform commission earned by period
+- View all bookings with their status (job fees are settled off-platform — the platform shows the agreed fee, not a payment/escrow status)
+- View caster subscriptions and their status (active / trialing / past_due / canceled / etc.)
+- Revenue summary: subscription revenue (active subscribers / MRR) by period
 
 ### 6.6 Dispute Queue
 
@@ -366,11 +365,12 @@ Sorting and filtering bids by: date submitted, proposed rate, shortlisted status
 
 ### 7.6 Booking Flow (on accepting a bid)
 
+> Requires an active caster subscription — accepting a bid is gated.
+
 1. Confirmation modal showing: artist name, job, agreed rate, shoot date
-2. Payment screen — caster pays the agreed amount into secure escrow
-3. Booking is confirmed — both parties notified
-4. Contract is auto-generated — both parties sign it
-5. Full shoot details (address, call time) are revealed to the artist once contract is signed
+2. Booking is confirmed — both parties notified (the agreed fee is paid directly to the artist off-platform)
+3. Contract is auto-generated — both parties sign it
+4. Full shoot details (address, call time) are revealed to the artist once contract is signed
 
 ### 7.7 Messaging
 
@@ -380,13 +380,12 @@ Sorting and filtering bids by: date submitted, proposed rate, shortlisted status
 - All messages are stored permanently (used if a dispute arises)
 - No personal contact details (phone, personal email) should be shared before booking — this is in the Terms of Service and flagged to users
 
-### 7.8 Payments
+### 7.8 Subscription & Job Fees
 
-- Escrow model: caster pays the agreed rate into a secure Stripe account when the booking is confirmed
-- Platform commission is deducted from the artist's side at payout (not an extra charge to the caster)
-- After the shoot, caster clicks "Confirm Completion" to release the payment to the artist
-- If the caster does not confirm within 48 hours of the shoot date, payment is automatically released
-- Full payment history with downloadable invoices
+- Subscription: caster pays a recurring subscription (Stripe Billing) — the only platform charge. An active subscription is required to post a job and to accept a bid.
+- Job fees: the caster pays the agreed rate directly to the artist, off-platform. The platform never holds, processes, or releases job funds — no escrow, no commission, no payouts.
+- After the shoot, caster clicks "Confirm Completion" to close the booking and open reviews (record-only; no money moves).
+- Subscription management (plan, payment method, invoices) is handled via the Stripe billing portal.
 
 ### 7.9 Post-Shoot: Reviews
 
@@ -400,8 +399,8 @@ Sorting and filtering bids by: date submitted, proposed rate, shortlisted status
 - Edit company info, contact name
 - Change email and password
 - Notification preferences (which emails to receive)
-- Billing history
-- Delete account (blocked if there are active bookings or escrow funds held)
+- Billing & subscription (status, manage plan, invoices via Stripe portal)
+- Delete account (blocked if there are active bookings)
 
 ---
 
@@ -527,14 +526,12 @@ After a bid is accepted:
 - Contract available to review and sign
 - Once contract is signed, full shoot address is revealed
 - Caster's contact details (name + email) are shown
-- Booking detail shows: shoot date, time, location, agreed rate, net payout (after platform commission)
+- Booking detail shows: shoot date, time, location, agreed rate (paid directly by the caster, off-platform)
 
-### 8.9 Earnings Dashboard
+### 8.9 Bookings Summary
 
-- Summary: total earned (all time), pending payouts (in escrow), paid out
-- Per-booking breakdown: gross rate / platform commission / net payout / status
-- Stripe Connect setup: connect UK bank account for payouts (sort code + account number)
-- Payouts typically arrive within 2–3 business days of release
+- Summary of bookings: upcoming, completed, cancelled
+- Per-booking detail: job, caster, shoot date, agreed rate (settled directly with the caster, off-platform — the platform does not process or pay out job fees)
 
 ### 8.10 Messaging
 
@@ -558,21 +555,20 @@ Email notifications for all key events. In-app notification bell for real-time u
 - Edit profile details and portfolio (changes to certain fields may require re-review)
 - Change email and password
 - Notification preferences
-- Connect / manage payout bank account
 - Availability toggle
-- Delete account (blocked if there are active bookings or pending payouts)
+- Delete account (blocked if there are active bookings)
 
 ---
 
 ## 9. How the Platform Works — End to End
 
-This section describes the full lifecycle of a job from post to payout, in plain language.
+This section describes the full lifecycle of a job from post to completion, in plain language.
 
 ### 9.1 The Core Journey
 
 ```
 1. CASTER POSTS A JOB
-   A caster fills in a job post (5 minutes).
+   A caster (with an active subscription) fills in a job post (5 minutes).
    The job goes live and matching artists are notified.
 
 2. ARTISTS BID
@@ -588,29 +584,27 @@ This section describes the full lifecycle of a job from post to payout, in plain
    discuss the shoot before a decision is made.
 
 5. CASTER ACCEPTS A BID
-   The caster clicks "Accept" on their chosen artist.
+   The caster (with an active subscription) clicks "Accept" on their chosen artist.
    This triggers the booking flow.
 
-6. PAYMENT INTO ESCROW
-   The caster pays the agreed amount via Stripe.
-   The money is held securely — neither party can touch it yet.
-
-7. CONTRACT SIGNED
-   A contract is automatically generated with the key terms.
+6. CONTRACT SIGNED
+   A contract is automatically generated with the key terms,
+   including the agreed fee (paid directly between the parties).
    Both parties sign it with their typed name.
    Once both have signed, the full shoot address is revealed.
 
-8. SHOOT DAY
+7. SHOOT DAY
    The artist turns up. The shoot happens.
+   The caster pays the artist the agreed fee directly, off-platform.
 
-9. COMPLETION & PAYOUT
+8. COMPLETION
    The caster confirms the shoot went ahead.
-   The payment is released to the artist's bank account.
-   If the caster does nothing within 48 hours, payment is auto-released.
+   This closes the booking and opens reviews (record-only — no money moves
+   on the platform).
 
-10. REVIEWS
-    Both parties rate each other.
-    The review builds their reputation for future bookings.
+9. REVIEWS
+   Both parties rate each other.
+   The review builds their reputation for future bookings.
 ```
 
 ### 9.2 Multi-Artist Jobs
@@ -666,36 +660,41 @@ If a job requires more than one artist (headcount > 1):
 
 ### 10.6 Cancellation Policy
 
+The platform does not hold or move job fees, so cancellation outcomes are
+**advisory ToS terms** settled directly between the parties off-platform. The
+platform records the cancellation, applies warnings/strikes, and surfaces the
+advisory fee owed — it does not enforce or transfer any money.
+
 **Artist cancels a booking:**
 | How far in advance | Consequence |
 |---|---|
-| More than 7 days before shoot | Full escrow refunded to caster. No penalty. |
-| 3–7 days before shoot | Full escrow refunded to caster. Formal warning added to artist's profile. |
-| Under 48 hours before shoot | Artist receives 50% of agreed rate as a cancellation fee. Caster receives the other 50% refunded. Strike added to artist's profile. |
+| More than 7 days before shoot | No fee owed. No penalty. |
+| 3–7 days before shoot | No fee owed. Formal warning added to artist's profile. |
+| Under 48 hours before shoot | Artist owes the caster an advisory cancellation fee of 50% of the agreed rate (settled off-platform). Strike added to artist's profile. |
 
 Three strikes = account reviewed by admin. Artist may be suspended.
 
 **Caster cancels a booking:**
 | How far in advance | Consequence |
 |---|---|
-| More than 48 hours before shoot | Full escrow refunded to caster. No penalty. |
-| Under 48 hours before shoot | Artist receives 50% of agreed rate as a cancellation fee. Caster receives the other 50% refunded. |
+| More than 48 hours before shoot | No fee owed. No penalty. |
+| Under 48 hours before shoot | Caster owes the artist an advisory cancellation fee of 50% of the agreed rate (settled off-platform). |
 
 ### 10.7 Contract Rules
 
-- Contract is generated automatically when a booking is confirmed and payment is received.
+- Contract is generated automatically when a booking is confirmed.
 - Both parties must sign the contract within 72 hours.
 - If the artist has not signed within 72 hours, the caster is notified and may cancel without penalty.
 - The shoot address is only revealed to the artist once the contract is fully signed.
 - Contract terms are locked at the time of booking — they cannot be changed after both parties sign.
 
-### 10.8 Payment Rules
+### 10.8 Payment & Completion Rules
 
+- Job fees are paid by the caster directly to the artist, off-platform. The platform does not process, hold, or release job payments.
 - Casters cannot confirm shoot completion before the scheduled shoot date — this is date-locked.
-- If the caster does not confirm completion within 48 hours of the shoot date, payment is auto-released to the artist.
-- Once payment is released, it cannot be recalled (a dispute must be raised if there is an issue).
-- Disputes must be raised within 72 hours of the scheduled shoot date.
-- Attempting to pay an artist directly outside the platform is a Terms of Service violation and grounds for account banning.
+- Completion confirmation is a record-only milestone (it closes the booking and opens reviews); no money moves on the platform when it is confirmed.
+- Disputes must be raised within 72 hours of the scheduled shoot date. Disputes are a record-only conduct process — admin records the outcome but does not move funds.
+- Casters must hold an active subscription to post a job and to accept a bid (book talent).
 
 ### 10.9 Review Rules
 
@@ -716,37 +715,34 @@ Three strikes = account reviewed by admin. Artist may be suspended.
 
 ## 11. Payments & Money Flow
 
-### 11.1 How Escrow Works
+CastFlow does **not** process job payments. The only money the platform collects
+is a recurring **caster subscription**. Job fees are paid by the caster directly
+to the artist, off-platform.
 
-CastFlow uses Stripe's payment infrastructure. When a booking is confirmed:
+### 11.1 Caster Subscription (the only platform charge)
 
-1. The caster's payment is captured and held in escrow (a ring-fenced Stripe account).
-2. Neither party can access the funds while they're in escrow.
-3. When the shoot is completed and confirmed, the funds are released.
-4. Stripe deducts the platform commission and transfers the net amount to the artist's bank account.
+- CastFlow's sole revenue is a recurring caster subscription, billed via Stripe Billing.
+- Artists pay nothing — there is no charge to artists at any point.
+- An **active subscription is required** for a caster to **post a job** and to **accept a bid** (book talent). Browsing talent, messaging, contracts, reviews, and disputes remain free.
+- Casters subscribe and manage their plan via Stripe Checkout / the Stripe billing portal. Subscription status is read on the caster's billing screen.
+- There is one plan at launch.
 
-### 11.2 Platform Commission
+### 11.2 Job Fees (paid directly, off-platform)
 
-- A commission percentage is deducted from the artist's payout at the time of release.
-- The commission rate is set by the platform (configurable by admin).
-- The commission deduction is shown clearly at every step — on the bid confirmation, booking detail, and earnings screen. No surprises.
-- The caster pays the agreed rate in full. The commission comes out of the artist's side, not as an additional charge.
+- The caster pays the artist the agreed fee directly — before, at, or after the shoot — by whatever method the parties arrange.
+- There is no escrow, no platform commission, no Stripe Connect, and no artist payouts. The platform never holds or moves job funds.
+- The agreed fee is recorded on the booking and shown on the contract (the fixed/hourly amount), but it is settled directly between caster and artist.
 
-### 11.3 Artist Payouts
+### 11.3 Contracts, Completion & Disputes are Record-Only
 
-- Artists connect a UK bank account (sort code + account number) via Stripe Connect.
-- Payouts are initiated by Stripe automatically when escrow is released.
-- Typical arrival: 2–3 business days.
-- Artists can see the full breakdown: gross rate → platform commission deducted → net payout.
+- Contracts, completion confirmation, reviews, and disputes are kept as a record of the engagement and conduct — but no money moves on the platform through any of them.
+- Completion confirmation closes the booking and opens reviews; it does not trigger any payment.
+- If a dispute is raised, admin records and resolves the conduct outcome (and may apply strikes/warnings). There are no funds to freeze or move — any fee adjustment is settled off-platform between the parties.
 
-### 11.4 Cancellation Payments
+### 11.4 Cancellation Fees (advisory, off-platform)
 
-- If a late cancellation triggers a cancellation fee (under 48 hours), Stripe handles the split automatically: the cancellation fee portion goes to the injured party, the remainder is refunded to the cancelling party.
-
-### 11.5 Dispute Holds
-
-- If a dispute is raised, the escrow funds are frozen — no auto-release while a dispute is open.
-- Funds are only moved once admin resolves the dispute.
+- A late cancellation (under 48 hours) carries an advisory ToS fee of 50% of the agreed rate, owed by the cancelling party to the other party.
+- This fee is advisory and settled off-platform — the platform does not enforce or split it. The platform records the cancellation and applies warnings/strikes (see §10.6).
 
 ---
 
@@ -867,15 +863,15 @@ Onboarding shell, Personal info, Stats (model), Stats & skills (actor), Experien
 
 ### Artist Panel (21)
 
-Dashboard, My profile (view), Edit profile, Edit stats, Manage portfolio, Public profile view, Job feed, Job detail, Submit bid, My bids, Bid detail, Saved jobs, My bookings, Booking detail, Contract review & sign, Earnings dashboard, Payout settings, Messages inbox, Message thread, My reviews, Leave a review, Notifications, Raise dispute, Dispute detail, Account settings, Delete account.
+Dashboard, My profile (view), Edit profile, Edit stats, Manage portfolio, Public profile view, Job feed, Job detail, Submit bid, My bids, Bid detail, Saved jobs, My bookings, Booking detail, Contract review & sign, Messages inbox, Message thread, My reviews, Leave a review, Notifications, Raise dispute, Dispute detail, Account settings, Delete account.
 
 ### Caster Panel (29)
 
-Onboarding, Billing setup, Dashboard, My jobs, Post job (6 steps), Job detail, Edit job, Talent search, Artist public profile, Shortlisted talent, Bids for a job, Bid detail, My bookings, Booking detail, Booking payment, Contract review & sign, Confirm shoot completion, Messages inbox, Message thread, Leave a review, Raise dispute, Dispute detail, Account settings, Billing & subscription, Notification settings, Delete account.
+Onboarding, Dashboard, My jobs, Post job (6 steps), Job detail, Edit job, Talent search, Artist public profile, Shortlisted talent, Bids for a job, Bid detail, My bookings, Booking detail, Contract review & sign, Confirm shoot completion, Messages inbox, Message thread, Leave a review, Raise dispute, Dispute detail, Account settings, Billing & subscription, Notification settings, Delete account.
 
 ### Admin Panel (17)
 
-Dashboard, All users, User detail, Artist applications queue, Application review, All jobs, Job detail, All bookings, Booking detail, Payments dashboard, Payment detail, Disputes queue, Dispute detail, Flagged content, Flagged item review, Analytics, Admin log.
+Dashboard, All users, User detail, Artist applications queue, Application review, All jobs, Job detail, All bookings, Booking detail, Subscriptions dashboard, Subscription detail, Disputes queue, Dispute detail, Flagged content, Flagged item review, Analytics, Admin log.
 
 ### Shared / Utility (6)
 
@@ -925,7 +921,7 @@ _This section is for technical reference. Non-technical readers can skip it._
 | Authentication  | Better Auth              | Login, social auth, sessions         |
 | Database        | PostgreSQL + Prisma      | Data storage                         |
 | File Storage    | Cloudflare R2            | Portfolio images, ID docs, contracts |
-| Payments        | Stripe + Stripe Connect  | Escrow, payouts, commissions         |
+| Payments        | Stripe Billing           | Caster subscriptions (job fees paid off-platform) |
 | Email           | Resend                   | Transactional emails                 |
 | Real-time       | Hono WebSockets (native) | In-app messaging                     |
 | PDF Generation  | @react-pdf/renderer      | Contract PDFs                        |

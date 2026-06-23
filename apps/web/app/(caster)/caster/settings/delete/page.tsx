@@ -38,8 +38,8 @@ export default function CasterDeleteAccountPage() {
               <li>Be permanent — your data cannot be recovered</li>
             </ul>
             <p className="text-muted-foreground">
-              You can’t delete your account while you have active bookings or escrow funds held.
-              Resolve those first, or we’ll block the request.
+              You can’t delete your account while you have active bookings. Resolve those first, or
+              we’ll block the request.
             </p>
           </div>
         </div>

@@ -11,7 +11,7 @@ import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
 import { AppError } from '../errors'
 import { NotificationService } from './NotificationService'
-import { PaymentService } from './PaymentService'
+import { SubscriptionService } from './SubscriptionService'
 
 // Lazy expiry: a job is "live" while status='active' AND now < applicationDeadline.
 // We never run a scheduler; reads compute the effective state, writes flip on demand.
@@ -48,6 +48,7 @@ export class JobService {
 
   static async createJob(userId: string, input: CreateJobInput) {
     const casterId = await getCasterProfileId(userId)
+    await SubscriptionService.assertActiveSubscription(casterId)
 
     if (input.paymentType === 'hourly' && input.rateSetBy === 'caster' && !input.rateAmount) {
       throw new AppError('VALIDATION_ERROR', 'Hourly jobs require an hourly rate', 400, {
@@ -218,21 +219,13 @@ export class JobService {
   }
 
   /**
-   * Admin force-remove a job (PRD §6.5). Flips status to cancelled, expires
-   * pending/shortlisted bids, and refunds any held escrows on bookings that
-   * sprang from this job. Refunds run after the DB transaction so the Stripe
-   * cancel calls don't hold a long-running transaction open.
+   * Admin force-remove a job (PRD §6.5). Flips status to cancelled and expires
+   * pending/shortlisted bids. The platform holds no job money (fees are settled
+   * off-platform), so there is nothing to refund — the `reason` is retained for
+   * the admin audit trail via the calling route's AdminLog.
    */
-  static async adminRemove(jobId: string, reason: string) {
-    const job = await prisma.job.findUnique({
-      where: { id: jobId },
-      include: {
-        bookings: {
-          where: { payment: { is: { escrowStatus: 'held' } } },
-          select: { id: true },
-        },
-      },
-    })
+  static async adminRemove(jobId: string, _reason: string) {
+    const job = await prisma.job.findUnique({ where: { id: jobId } })
     if (!job) throw new AppError('NOT_FOUND', 'Job not found', 404)
     if (job.status === 'cancelled') return job
 
@@ -243,19 +236,6 @@ export class JobService {
         data: { status: 'expired' },
       })
     })
-
-    // Refund any in-flight escrows held against this job. Best-effort: log
-    // failures but don't stop the loop — admin gets the rest of the cleanup.
-    for (const booking of job.bookings) {
-      try {
-        await PaymentService.refundEscrow(booking.id, `Admin removed job: ${reason}`)
-      } catch (err) {
-        console.error('[JobService.adminRemove] refund failed', {
-          bookingId: booking.id,
-          error: err instanceof Error ? err.message : String(err),
-        })
-      }
-    }
 
     return prisma.job.findUnique({ where: { id: jobId } })
   }

@@ -1,30 +1,24 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronLeft, Download, Receipt } from 'lucide-react'
-import {
-  PageHeader,
-  StatusBadge,
-  LoadingState,
-  ErrorState,
-  EmptyState,
-  Money,
-} from '@/components/dashboard'
+import { useSearchParams } from 'next/navigation'
+import { ChevronLeft, CheckCircle2, CreditCard, XCircle } from 'lucide-react'
+import { PageHeader, StatusBadge, LoadingState, ErrorState } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { useMyBookings } from '@/lib/hooks/use-bookings'
+  useSubscriptionStatus,
+  useStartCheckout,
+  useOpenBillingPortal,
+} from '@/lib/hooks/use-subscriptions'
 import { formatDate } from '@/lib/utils'
 
 export default function CasterBillingPage() {
-  const { data: bookings, isPending, isError, refetch } = useMyBookings()
+  const { data, isPending, isError, refetch } = useSubscriptionStatus()
+  const checkout = useStartCheckout()
+  const portal = useOpenBillingPortal()
+  const searchParams = useSearchParams()
+  const checkoutResult = searchParams.get('checkout')
 
   return (
     <div className="space-y-6">
@@ -36,87 +30,89 @@ export default function CasterBillingPage() {
       </Link>
 
       <PageHeader
-        title="Billing"
-        description="Every shoot you’ve paid into escrow, with its current status."
+        title="Subscription"
+        description="CastFlow charges a single recurring subscription. Job fees are settled directly with the artist, off-platform."
       />
 
-      <Card className="flex items-start gap-3 bg-muted/40 p-4">
-        <Receipt className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          Downloadable PDF invoices are coming soon. In the meantime, each booking detail page shows
-          the full payment breakdown for your records.
-        </p>
-      </Card>
+      {checkoutResult === 'success' ? (
+        <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          Thanks for subscribing. Your subscription is now active — it may take a moment to reflect
+          below.
+        </div>
+      ) : null}
+      {checkoutResult === 'cancelled' ? (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          Checkout was cancelled. You haven’t been charged.
+        </div>
+      ) : null}
 
       {isPending ? (
-        <LoadingState rows={4} />
+        <LoadingState variant="detail" />
       ) : isError ? (
         <ErrorState
-          message="We couldn’t load your billing history right now."
+          message="We couldn’t load your subscription right now."
           onRetry={() => void refetch()}
         />
-      ) : bookings && bookings.length > 0 ? (
-        <Card className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Shoot</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Invoice</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {bookings.map((booking) => {
-                const status = booking.payment?.escrowStatus ?? booking.status
-                return (
-                  <TableRow key={booking.id}>
-                    <TableCell className="font-medium text-foreground">
-                      <Link
-                        href={`/caster/bookings/${booking.id}`}
-                        className="hover:text-primary hover:underline"
-                      >
-                        {booking.job?.title ?? 'Shoot'}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(booking.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Money amount={booking.totalAmount} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled
-                        title="Downloadable invoices are coming soon"
-                        className="text-muted-foreground"
-                      >
-                        <Download className="mr-1.5 h-4 w-4" /> Invoice
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </Card>
       ) : (
-        <EmptyState
-          title="No billing history yet"
-          description="Once you confirm and pay for a booking, it’ll show up here."
-          icon={<Receipt className="h-6 w-6" />}
-          action={
-            <Button asChild size="sm" variant="outline">
-              <Link href="/caster/bookings">View bookings</Link>
-            </Button>
-          }
-        />
+        <Card className="space-y-5 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground">Current plan</h2>
+            {data.status === 'none' ? (
+              <StatusBadge status="inactive" />
+            ) : (
+              <StatusBadge status={data.status} />
+            )}
+          </div>
+
+          {data.isActive ? (
+            <p className="text-sm text-muted-foreground">
+              Your subscription is active. You can post jobs and book talent.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              You need an active subscription to post jobs and accept bids. Browsing, messaging,
+              contracts, and reviews stay free.
+            </p>
+          )}
+
+          {data.currentPeriodEnd ? (
+            <div className="flex items-center justify-between border-t border-border pt-4 text-sm">
+              <span className="text-muted-foreground">
+                {data.cancelAtPeriodEnd ? 'Access ends' : 'Renews'}
+              </span>
+              <span className="font-medium text-foreground">
+                {formatDate(data.currentPeriodEnd)}
+              </span>
+            </div>
+          ) : null}
+
+          {data.cancelAtPeriodEnd ? (
+            <p className="text-xs text-muted-foreground">
+              Your subscription is set to cancel at the end of the current period. You’ll keep access
+              until then.
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap gap-3 border-t border-border pt-4">
+            {!data.isActive ? (
+              <Button onClick={() => checkout.mutate()} disabled={checkout.isPending}>
+                <CreditCard className="mr-1.5 h-4 w-4" />
+                {checkout.isPending ? 'Redirecting…' : 'Subscribe'}
+              </Button>
+            ) : null}
+            {data.hasCustomer ? (
+              <Button
+                variant="outline"
+                onClick={() => portal.mutate()}
+                disabled={portal.isPending}
+              >
+                {portal.isPending ? 'Redirecting…' : 'Manage billing'}
+              </Button>
+            ) : null}
+          </div>
+        </Card>
       )}
     </div>
   )

@@ -31,9 +31,7 @@ afterAll(async () => {
 async function completedBookingShotDaysAgo(daysAgo: number, totalAmount = 500) {
   const shootDate = new Date(Date.now() - daysAgo * DAY_MS)
   return createBookingScenario({
-    artistPayoutsEnabled: true,
     bookingStatus: 'completed',
-    escrowStatus: 'released',
     totalAmount,
     shootDate,
   })
@@ -84,7 +82,6 @@ describe('ReviewService.submit — submission window', () => {
     'rejects reviews on non-completed bookings (INVALID_STATE)',
     async () => {
       const { booking, casterUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         bookingStatus: 'confirmed',
         shootDate: new Date(Date.now() - 20 * DAY_MS),
       })
@@ -128,7 +125,7 @@ describe('ReviewService.submit — submission window', () => {
     'rejects non-party reviewer with FORBIDDEN',
     async () => {
       const { booking } = await completedBookingShotDaysAgo(20)
-      const outsider = await createBookingScenario({ artistPayoutsEnabled: true })
+      const outsider = await createBookingScenario()
 
       let caught: unknown
       try {

@@ -77,7 +77,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           icon={<Sparkles className="h-4 w-4" />}
           eyebrow="Brands, agencies & producers"
           title="I'm a caster"
-          body="Post shoots, find verified talent, book in days through escrow."
+          body="Post shoots, find verified talent, book in days. Simple caster subscription."
           imageUrl="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80"
           imageAlt="Cinema camera and crew on a production set"
         />

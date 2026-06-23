@@ -4,19 +4,13 @@ import {
   Users,
   ClipboardList,
   Scale,
-  PoundSterling,
+  CreditCard,
   CalendarCheck,
   TrendingUp,
   Briefcase,
   Timer,
 } from 'lucide-react'
-import {
-  PageHeader,
-  StatCard,
-  LoadingState,
-  ErrorState,
-  Money,
-} from '@/components/dashboard'
+import { PageHeader, StatCard, LoadingState, ErrorState } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
 import { useAdminAnalytics } from '@/lib/hooks/use-admin'
 
@@ -96,9 +90,9 @@ export default function AdminAnalyticsPage() {
           accent={data.openDisputes > 0}
         />
         <StatCard
-          label="Revenue this month"
-          value={<Money amount={data.revenueThisMonth} />}
-          icon={PoundSterling}
+          label="Active subscriptions"
+          value={data.activeSubscriptions}
+          icon={CreditCard}
         />
         <StatCard
           label="Bookings this week"

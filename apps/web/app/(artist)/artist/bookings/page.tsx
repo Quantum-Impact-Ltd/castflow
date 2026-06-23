@@ -21,7 +21,7 @@ export default function ArtistBookingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Your bookings"
-        description="Shoots you’ve been booked for — contracts, payouts, and reviews live here."
+        description="Shoots you’ve been booked for — contracts and reviews live here."
       />
 
       {isPending ? (
@@ -54,9 +54,7 @@ export default function ArtistBookingsPage() {
                       <Money amount={booking.agreedRate} />
                       {booking.paymentType === 'hourly' ? '/hr' : ''}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      Net <Money amount={booking.payment?.netArtistAmount} />
-                    </p>
+                    <p className="text-xs text-muted-foreground">Agreed rate</p>
                   </div>
                   <StatusBadge status={booking.status} />
                 </div>

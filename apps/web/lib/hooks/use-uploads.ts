@@ -6,7 +6,9 @@ import {
   uploadFile,
   deletePortfolioItem,
   setPrimaryPortfolioItem,
+  updatePortfolioItem,
   type UploadType,
+  type PortfolioEntryMeta,
 } from '@/lib/api/uploads'
 import { queryKeys } from '@/lib/query-keys'
 
@@ -16,7 +18,7 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Upload failed'
 }
 
-interface UploadInput {
+interface UploadInput extends PortfolioEntryMeta {
   file: File
   type: UploadType
   caption?: string
@@ -29,10 +31,24 @@ interface UploadInput {
 export function useUploadFile() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ file, type, caption, isPrimary, onProgress }: UploadInput) =>
+    mutationFn: ({
+      file,
+      type,
+      caption,
+      isPrimary,
+      onProgress,
+      entryType,
+      title,
+      description,
+      links,
+    }: UploadInput) =>
       uploadFile(file, type, {
         ...(caption !== undefined ? { caption } : {}),
         ...(isPrimary !== undefined ? { isPrimary } : {}),
+        ...(entryType !== undefined ? { entryType } : {}),
+        ...(title !== undefined ? { title } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(links !== undefined ? { links } : {}),
         ...(onProgress ? { onProgress } : {}),
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: myProfileKey }),
@@ -59,6 +75,19 @@ export function useDeletePortfolioItem() {
   return useMutation({
     mutationFn: (id: string) => deletePortfolioItem(id),
     onSuccess: () => void qc.invalidateQueries({ queryKey: myProfileKey }),
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+export function useUpdatePortfolioItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...input }: PortfolioEntryMeta & { id: string; caption?: string }) =>
+      updatePortfolioItem(id, input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: myProfileKey })
+      toast.success('Portfolio entry updated')
+    },
     onError: (err) => toast.error(errorMessage(err)),
   })
 }

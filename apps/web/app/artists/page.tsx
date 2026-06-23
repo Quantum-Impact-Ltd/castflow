@@ -24,7 +24,7 @@ import { TalentPreview } from './talent-preview'
 export const metadata: Metadata = {
   title: 'For artists — CastFlow',
   description:
-    'Get cast by verified UK casters and brands. Keep 100% of every agreed rate. Escrow on every booking. Bookings come to you.',
+    'Get cast by verified UK casters and brands. Keep 100% of every agreed rate — CastFlow is free for artists. Bookings come to you.',
 }
 
 const REASONS = [
@@ -35,13 +35,13 @@ const REASONS = [
   },
   {
     icon: Wallet,
-    title: 'Escrow on every shoot',
-    body: 'Caster funds are captured into Stripe escrow at booking. You shoot, then funds release. No more chasing invoices.',
+    title: 'Free for artists, always',
+    body: 'No listing fees, no subscription, no commission. Casters pay the platform — you keep the full agreed rate every time.',
   },
   {
     icon: BadgeCheck,
     title: 'Verified clients only',
-    body: 'Every caster has a real company on file and pays into escrow before you shoot. No shadow producers, no off-platform deals.',
+    body: 'Every caster has a real company on file and a signed contract on every booking. No shadow producers, no anonymous briefs.',
   },
   {
     icon: Star,
@@ -73,7 +73,7 @@ const STEPS = [
     n: '04',
     icon: CalendarCheck,
     title: 'Get booked & paid',
-    body: 'Sign the contract, do the shoot, get the payout. Typical: 2–3 business days into your UK bank.',
+    body: 'Sign the contract, do the shoot, get paid directly by the caster on agreed terms. CastFlow takes no cut.',
   },
 ]
 
@@ -87,16 +87,16 @@ const FAQS = [
     a: 'Any UK-based model or actor aged 18+. We hard-block under-18 sign-ups at registration. Approval is required before you can bid — typically within 24–48 hours of submission.',
   },
   {
-    q: 'How do payouts work?',
-    a: "When you're booked, the caster's payment goes into Stripe escrow. Once the shoot is confirmed complete (or auto-release fires at +48 hours), Stripe pays you directly to your connected UK bank — usually 2–3 business days.",
+    q: 'How does payment work?',
+    a: "Job fees are paid directly between you and the caster, off-platform, on whatever terms you agree — before, at, or after the shoot. CastFlow doesn't process, hold, or take a cut of your fee. The agreed rate is recorded on the signed contract so both sides have a clear written record.",
   },
   {
     q: "What if a caster doesn't pay?",
-    a: "They can't book you without putting funds into escrow first. If they go silent after the shoot, escrow auto-releases 48 hours after the shoot date. You always get paid.",
+    a: "Every booking is backed by a signed contract recording the agreed rate, so you have a written record both parties agreed to. If something goes wrong, you can raise a dispute within 72 hours of the shoot date and a human admin reviews the booking, the contract, and the messages.",
   },
   {
     q: 'Can I keep my agent?',
-    a: 'Yes. CastFlow is direct-to-talent, but if you have an agent representing you, you can list their contact under your profile settings. The agreed rate still pays out to your bank — your arrangement with your agent is between you two.',
+    a: 'Yes. CastFlow is direct-to-talent, but if you have an agent representing you, you can list their contact under your profile settings. The job fee is settled directly with the caster — your arrangement with your agent is between you two.',
   },
 ]
 
@@ -123,7 +123,7 @@ export default function ArtistsPage() {
                 </h1>
                 <p className="mt-8 max-w-xl text-lg leading-relaxed text-foreground/75">
                   Verified UK casters post shoots. You bid the rate that works. Every booking is
-                  escrow-paid before the shoot — so you never chase an invoice again.
+                  backed by a signed contract — and CastFlow is free for artists, always.
                 </p>
 
                 <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -153,13 +153,13 @@ export default function ArtistsPage() {
                     </p>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Paid out
+                      Booked
                     </span>
                   </div>
                   <p className="mt-6 text-6xl font-medium tracking-[-0.04em] text-foreground">
                     £4,280
                   </p>
-                  <p className="mt-2 text-sm text-foreground/70">Net to bank · 4 bookings</p>
+                  <p className="mt-2 text-sm text-foreground/70">Agreed fees · 4 bookings</p>
 
                   <div className="mt-8 space-y-3 border-t border-border/60 pt-6">
                     <PayoutLine label="Editorial · House of Linen" amount="£1,200" />
@@ -179,17 +179,17 @@ export default function ArtistsPage() {
             <div className="grid grid-cols-2 divide-border/60 lg:grid-cols-4 lg:divide-x">
               <StatTile eyebrow="Take-home" value={100} suffix="%" label="Of every agreed rate" />
               <StatTile
-                eyebrow="Protection"
-                value={100}
+                eyebrow="Cost to join"
+                value={0}
                 suffix="%"
-                label="Of bookings escrow-secured"
+                label="Free for artists — casters subscribe"
                 lastMobileBorder
               />
               <StatTile
-                eyebrow="Time to payout"
-                value={3}
-                suffix="d"
-                label="Typical Stripe transfer to UK bank"
+                eyebrow="On every booking"
+                value={1}
+                suffix=""
+                label="Signed contract recording the agreed rate"
               />
               <StatTile
                 eyebrow="Avg rating"
@@ -325,7 +325,7 @@ export default function ArtistsPage() {
                   Get started
                 </p>
                 <h2 className="mt-6 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-5xl">
-                  Four steps from sign-up to first payout.
+                  Four steps from sign-up to first booking.
                 </h2>
               </div>
             </Reveal>

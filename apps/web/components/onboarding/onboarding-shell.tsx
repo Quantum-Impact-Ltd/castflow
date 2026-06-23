@@ -97,7 +97,7 @@ export function OnboardingShell({
         <div className="grid gap-10 lg:grid-cols-[1fr_22rem]">
           <div>
             <div className="mb-7">
-              <p className="font-mono text-[10px] font-semibold tracking-[0.18em] text-white/45 uppercase">
+              <p className="font-mono text-[10px] font-semibold tracking-[0.18em] text-white/70 uppercase">
                 Step {currentIndex + 1} of {steps.length}
               </p>
               <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">

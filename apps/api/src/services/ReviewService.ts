@@ -174,6 +174,17 @@ export class ReviewService {
     return prisma.review.findMany({
       where: { artistRevieweeId: profileId, isRemoved: false },
       orderBy: { createdAt: 'desc' },
+      // Carry the job + caster context so the UI can show "from {caster} on
+      // {job}" and link through, rather than a bare "From a caster".
+      include: {
+        booking: {
+          select: {
+            id: true,
+            job: { select: { id: true, title: true } },
+            caster: { select: { id: true, companyName: true } },
+          },
+        },
+      },
     })
   }
 
@@ -181,6 +192,59 @@ export class ReviewService {
     return prisma.review.findMany({
       where: { casterRevieweeId: profileId, isRemoved: false },
       orderBy: { createdAt: 'desc' },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            job: { select: { id: true, title: true } },
+            artist: { select: { id: true, firstName: true } },
+          },
+        },
+      },
     })
+  }
+
+  /**
+   * Report a review left about you. Only the reviewee can report (admins handle
+   * everything else). Flags the review for the moderation queue + persists a
+   * ContentReport (reporter identity + reason) — mirrors the message-report
+   * model. Does NOT remove the review; removal stays an explicit admin action.
+   */
+  static async reportReview(user: UserCtx, reviewId: string, reason: string, detail?: string) {
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+      include: {
+        artistReviewee: { select: { userId: true } },
+        casterReviewee: { select: { userId: true } },
+      },
+    })
+    if (!review) throw new AppError('NOT_FOUND', 'Review not found', 404)
+    const revieweeUserId = review.artistReviewee?.userId ?? review.casterReviewee?.userId ?? null
+    if (revieweeUserId !== user.id) {
+      throw new AppError('FORBIDDEN', 'You can only report a review left about you', 403)
+    }
+
+    const flagReason = detail ? `${reason}: ${detail}` : reason
+    await prisma.$transaction([
+      prisma.review.update({ where: { id: reviewId }, data: { isFlagged: true, flagReason } }),
+      prisma.contentReport.create({
+        data: {
+          reporterId: user.id,
+          targetType: 'review',
+          targetId: reviewId,
+          reason,
+          detail: detail ?? null,
+        },
+      }),
+    ])
+
+    await NotificationService.notifyAdmins({
+      type: 'review_reported',
+      title: 'A review was reported',
+      body: `Reason: ${reason}${detail ? ` — ${detail}` : ''}`,
+      relatedEntityType: 'review',
+      relatedEntityId: reviewId,
+    })
+    return { ok: true as const }
   }
 }

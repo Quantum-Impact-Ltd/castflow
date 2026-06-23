@@ -383,7 +383,7 @@ describe('BidService.acceptBid', () => {
         bidA.id,
         '21 Test Street, EC1 2AB'
       )
-      expect(booking.status).toBe('pending_payment')
+      expect(booking.status).toBe('pending_contract')
       expect(booking.casterId).toBe(caster.id)
       expect(booking.artistId).toBe(artistA.id)
       expect(Number(booking.agreedRate)).toBe(500)

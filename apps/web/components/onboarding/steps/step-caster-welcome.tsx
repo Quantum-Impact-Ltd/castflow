@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Briefcase, Loader2, Users } from 'lucide-react'
+import { AlertCircle, ArrowRight, Briefcase, Loader2, Users } from 'lucide-react'
 import { useCompleteOnboarding } from '@/lib/hooks/use-caster'
 
 const ACTIONS = [
@@ -17,8 +17,7 @@ const ACTIONS = [
     href: '/caster/talent',
     icon: Users,
     title: 'Browse talent',
-    blurb:
-      "Search the directory of verified UK models and actors. Shortlist and invite directly.",
+    blurb: 'Search the directory of verified UK models and actors. Shortlist and invite directly.',
   },
 ] as const
 
@@ -38,25 +37,47 @@ export function StepCasterWelcome() {
   // Without this, a caster clicking 'Post a job' before the PATCH lands
   // would be bounced back here by the (caster)/layout gate (which checks
   // onboardingCompletedAt on every navigation) and lose context. (H17.)
+  //
+  // The mutation auto-retries (see useCompleteOnboarding). If it still fails
+  // after retries, surface a real error + manual Retry rather than spinning
+  // forever — otherwise a transient API blip traps the caster on this screen.
   if (!complete.isSuccess) {
+    const failed = complete.isError
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-5">
-          <Loader2 className="h-5 w-5 animate-spin text-[var(--cta-400)]" />
-          <div className="text-sm">
-            <p className="font-medium text-white">Finishing setup…</p>
+          {failed ? (
+            <AlertCircle className="h-5 w-5 shrink-0 text-red-400" />
+          ) : (
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-[var(--cta-400)]" />
+          )}
+          <div className="flex-1 text-sm">
+            <p className="font-medium text-white">
+              {failed ? 'Couldn’t finish setup' : 'Finishing setup…'}
+            </p>
             <p className="text-xs leading-relaxed text-white/60">
-              {complete.isError
-                ? 'Something went wrong — retrying.'
+              {failed
+                ? 'We couldn’t save the last step. Check your connection and try again.'
                 : 'Just a second — wiring up your account.'}
             </p>
           </div>
+          {failed && (
+            <button
+              type="button"
+              onClick={() => complete.mutate()}
+              className="shrink-0 rounded-lg bg-[var(--cta-400)] px-3 py-1.5 text-xs font-medium text-[var(--ink-900)] transition hover:opacity-90"
+            >
+              Retry
+            </button>
+          )}
         </div>
         {/* Skeleton placeholder for the cards so the layout doesn't jump. */}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="h-40 animate-pulse rounded-2xl bg-white/[0.03]" />
-          <div className="h-40 animate-pulse rounded-2xl bg-white/[0.03]" />
-        </div>
+        {!failed && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="h-40 animate-pulse rounded-2xl bg-white/[0.03]" />
+            <div className="h-40 animate-pulse rounded-2xl bg-white/[0.03]" />
+          </div>
+        )}
       </div>
     )
   }
@@ -76,9 +97,7 @@ export function StepCasterWelcome() {
                 <Icon className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-semibold tracking-tight text-white">
-                  {a.title}
-                </h3>
+                <h3 className="text-base font-semibold tracking-tight text-white">{a.title}</h3>
                 <p className="text-sm leading-relaxed text-white/60">{a.blurb}</p>
               </div>
               <span className="mt-auto inline-flex items-center font-mono text-[10px] font-medium tracking-[0.18em] text-[var(--cta-400)] uppercase">
@@ -93,9 +112,9 @@ export function StepCasterWelcome() {
       <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-5">
         <h3 className="text-sm font-semibold tracking-tight text-white">How payment works</h3>
         <p className="mt-2 text-sm leading-relaxed text-white/65">
-          You pay per booking, not upfront. When you accept an artist&apos;s bid, the
-          agreed amount is held in escrow via Stripe and released after the shoot. You can
-          add your card details at the booking step — no setup needed now.
+          CastFlow runs on a simple caster subscription — that&apos;s the only charge from us. Job
+          fees are paid directly to the artist, off-platform, on whatever terms suit you both.
+          CastFlow never holds or takes a cut of those fees. Artists join free.
         </p>
       </div>
 

@@ -6,7 +6,7 @@
 - **Framework:** Hono
 - **ORM:** Prisma (PostgreSQL)
 - **Auth:** Better Auth
-- **Payments:** Stripe + Stripe Connect
+- **Payments:** Stripe Billing (caster subscriptions only)
 - **Email:** Resend
 - **Storage:** Cloudflare R2 (S3-compatible via @aws-sdk/client-s3)
 - **WebSockets:** Hono native (`createBunWebSocket`)
@@ -36,7 +36,7 @@ apps/api/
 │   │   ├── bids.ts
 │   │   ├── bookings.ts
 │   │   ├── contracts.ts
-│   │   ├── payments.ts
+│   │   ├── subscriptions.ts
 │   │   ├── messages.ts
 │   │   ├── reviews.ts
 │   │   ├── disputes.ts
@@ -49,7 +49,6 @@ apps/api/
 │   │       ├── applications.ts
 │   │       ├── jobs.ts
 │   │       ├── bookings.ts
-│   │       ├── payments.ts
 │   │       ├── disputes.ts
 │   │       ├── flagged.ts
 │   │       ├── analytics.ts
@@ -59,7 +58,7 @@ apps/api/
 │   │   ├── BidService.ts
 │   │   ├── BookingService.ts
 │   │   ├── ContractService.ts
-│   │   ├── PaymentService.ts
+│   │   ├── SubscriptionService.ts
 │   │   ├── DisputeService.ts
 │   │   ├── NotificationService.ts
 │   │   ├── EmailService.ts
@@ -211,39 +210,49 @@ app.post('/webhooks/stripe', async (c) => {
 })
 ```
 
-## Idempotency on Payment Operations
+Events are now Stripe **Billing/subscription** events, not payment-intent events.
+The webhook syncs `CasterSubscription` state from:
 
-Every payment operation checks current state before acting:
+- `checkout.session.completed` — subscription created via Checkout
+- `customer.subscription.created` / `customer.subscription.updated` / `customer.subscription.deleted` — status + period sync
+- `invoice.payment_failed` — moves the subscription to `past_due` / `unpaid`
+
+## Idempotency on Subscription Operations
+
+Every subscription operation checks current state before acting:
 
 ```typescript
 // Always guard against double-execution
-if (payment.escrowStatus === 'released') {
-  return payment // Silent return — idempotent
+if (sub.status === 'active' && sub.stripeSubscriptionId === event.subscriptionId) {
+  return sub // Silent return — idempotent
 }
-if (payment.escrowStatus !== 'held') {
-  throw new AppError('INVALID_STATE', 'Cannot release from current state')
-}
+// Webhook re-deliveries must not create duplicate CasterSubscription rows —
+// upsert keyed on stripeSubscriptionId / casterId.
 ```
 
 ## Key Business Logic Locations
 
-| Logic                               | File                              |
-| ----------------------------------- | --------------------------------- |
-| Escrow release (manual + lazy auto) | `services/PaymentService.ts`      |
-| Cancellation fee calculation        | `services/BookingService.ts`      |
-| Contract PDF generation             | `services/ContractService.ts`     |
-| Dispute resolution payout split     | `services/DisputeService.ts`      |
-| Job expiry check (lazy)             | `services/JobService.ts`          |
-| Notification dispatch               | `services/NotificationService.ts` |
+| Logic                                        | File                              |
+| -------------------------------------------- | --------------------------------- |
+| Subscription gating + Stripe Billing         | `services/SubscriptionService.ts` |
+| Contract PDF generation                      | `services/ContractService.ts`     |
+| Dispute resolution (record-only)             | `services/DisputeService.ts`      |
+| Job expiry check (lazy)                      | `services/JobService.ts`          |
+| Notification dispatch                        | `services/NotificationService.ts` |
 
 ## Lazy Evaluation (No Background Jobs in MVP)
 
 Instead of scheduled jobs, check conditions at query time:
 
 ```typescript
-// Escrow auto-release — check when payment status is read
-if (payment.escrowStatus === 'held' && new Date() > payment.autoReleaseAt) {
-  return await PaymentService.releaseEscrow(bookingId)
+// Subscription gate — evaluate the caster's live entitlement on job-post / bid-accept.
+// A caster is entitled when the subscription is active or trialing AND not expired.
+const entitled =
+  sub != null &&
+  (sub.status === 'active' || sub.status === 'trialing') &&
+  sub.currentPeriodEnd > new Date()
+if (!entitled) {
+  throw new AppError('SUBSCRIPTION_REQUIRED', 'An active subscription is required', 402)
 }
 
 // Job expiry — filter in query, not via scheduler

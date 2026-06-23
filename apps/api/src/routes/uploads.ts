@@ -1,5 +1,9 @@
 import { Hono } from 'hono'
-import { presignedUrlSchema, confirmUploadSchema } from '@castflow/validators'
+import {
+  presignedUrlSchema,
+  confirmUploadSchema,
+  updatePortfolioItemSchema,
+} from '@castflow/validators'
 import { authenticate } from '../middleware/authenticate'
 import { rateLimitByUser } from '../middleware/rateLimit'
 import { UploadService } from '../services/UploadService'
@@ -54,6 +58,23 @@ uploadRoutes.delete('/portfolio/:id', async (c) => {
   const id = c.req.param('id')
   if (!id) throw new AppError('VALIDATION_ERROR', 'Missing portfolio item id', 400)
   const result = await UploadService.deletePortfolioItem(user.id, id)
+  return c.json({ success: true, data: result })
+})
+
+uploadRoutes.patch('/portfolio/:id', async (c) => {
+  const user = c.get('user')
+  const id = c.req.param('id')
+  if (!id) throw new AppError('VALIDATION_ERROR', 'Missing portfolio item id', 400)
+  const parsed = updatePortfolioItemSchema.safeParse(await c.req.json())
+  if (!parsed.success) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Invalid input',
+      400,
+      parsed.error.flatten().fieldErrors as Record<string, string[]>
+    )
+  }
+  const result = await UploadService.updatePortfolioItem(user.id, id, parsed.data)
   return c.json({ success: true, data: result })
 })
 

@@ -9,9 +9,16 @@ import {
   ShieldCheck,
   FileLock2,
   Bookmark,
+  Building2,
 } from 'lucide-react'
 import { ApiError } from '@/lib/fetcher'
-import { PageHeader, LoadingState, ErrorState, LockedField, StatusBadge } from '@/components/dashboard'
+import {
+  PageHeader,
+  LoadingState,
+  ErrorState,
+  LockedField,
+  StatusBadge,
+} from '@/components/dashboard'
 import { rateLabel } from '@/components/dashboard/job-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -89,7 +96,18 @@ export function ArtistJobDetailClient({ jobId }: { jobId: string }) {
         </Badge>
         {job.subcategory ? <Badge variant="outline">{job.subcategory}</Badge> : null}
         <StatusBadge status={job.status} />
-        {existingBid ? <StatusBadge status={existingBid.status} label={`Your bid: ${existingBid.status}`} /> : null}
+        {existingBid ? (
+          <StatusBadge status={existingBid.status} label={`Your bid: ${existingBid.status}`} />
+        ) : null}
+        {job.casterId ? (
+          <Link
+            href={`/casters/${job.casterId}`}
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            <Building2 className="h-3.5 w-3.5" /> View {job.caster?.companyName ?? 'company'}{' '}
+            profile
+          </Link>
+        ) : null}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -158,7 +176,8 @@ export function ArtistJobDetailClient({ jobId }: { jobId: string }) {
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
               This shoot has {job.requiresNda ? 'an NDA' : ''}
               {job.requiresNda && job.exclusivity ? ' and ' : ''}
-              {job.exclusivity ? 'an exclusivity clause' : ''}. You’ll agree to these in the contract.
+              {job.exclusivity ? 'an exclusivity clause' : ''}. You’ll agree to these in the
+              contract.
             </div>
           ) : null}
         </div>

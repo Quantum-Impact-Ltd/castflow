@@ -84,7 +84,6 @@ describe('Sensitive field gating', () => {
       'strips shootLocation + callTime when contract is not fully_signed',
       async () => {
         const { booking, casterUser } = await createBookingScenario({
-          artistPayoutsEnabled: true,
           contractStatus: 'pending_signatures',
         })
 
@@ -103,7 +102,6 @@ describe('Sensitive field gating', () => {
       async () => {
         const callTime = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         const { booking, casterUser } = await createBookingScenario({
-          artistPayoutsEnabled: true,
           contractStatus: 'fully_signed',
         })
         // Backfill a callTime on the booking so we can assert it's revealed.

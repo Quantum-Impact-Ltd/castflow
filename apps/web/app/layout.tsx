@@ -5,7 +5,7 @@ import { Providers } from '@/providers'
 import { SessionProvider, type ResolvedSession } from '@/providers/session-provider'
 import { SkipLink } from '@/components/a11y/skip-link'
 import { auth } from '@/lib/auth-server'
-import { SITE_URL, SITE_NAME, SITE_DEFAULT_OG } from '@/lib/site'
+import { SITE_URL, SITE_NAME, SITE_DEFAULT_OG, IS_PUBLIC_PRODUCTION } from '@/lib/site'
 import './globals.css'
 
 const geistSans = Geist({
@@ -30,26 +30,33 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  // Defence-in-depth alongside robots.ts: emit a global `noindex, nofollow`
+  // meta tag on every page of a non-production deploy. robots.txt is a
+  // request not to crawl; this also tells engines not to index pages they
+  // reach via direct links.
+  ...(IS_PUBLIC_PRODUCTION
+    ? {}
+    : { robots: { index: false, follow: false } }),
   title: {
     default: `${SITE_NAME} — UK Casting Marketplace`,
     template: `%s — ${SITE_NAME}`,
   },
   description:
-    'Cast verified UK models and actors in days. Contracts, escrow payments, and reviews built in.',
+    'Cast verified UK models and actors in days. Contracts and reviews built in. Casters subscribe — artists join free.',
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
     url: SITE_URL,
     title: `${SITE_NAME} — UK Casting Marketplace`,
     description:
-      'Cast verified UK models and actors in days. Contracts, escrow payments, and reviews built in.',
+      'Cast verified UK models and actors in days. Contracts and reviews built in. Casters subscribe — artists join free.',
     images: [{ url: SITE_DEFAULT_OG, width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${SITE_NAME} — UK Casting Marketplace`,
     description:
-      'Cast verified UK models and actors in days. Contracts, escrow payments, and reviews built in.',
+      'Cast verified UK models and actors in days. Contracts and reviews built in. Casters subscribe — artists join free.',
     images: [SITE_DEFAULT_OG],
   },
 }

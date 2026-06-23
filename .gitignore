@@ -38,3 +38,4 @@ prisma/migrations/*.sql
 
 # Bun
 bun.lockb
+.claude-ws/

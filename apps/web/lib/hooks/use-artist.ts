@@ -9,6 +9,7 @@ import type {
   ArtistExperienceInput,
   UpdateArtistTypeInput,
   ReplaceSkillsInput,
+  ReplaceLinksInput,
   UpdateAvailabilityInput,
 } from '@castflow/validators'
 import {
@@ -16,6 +17,7 @@ import {
   getMyIdDocumentUrl,
   updateArtistType,
   replaceSkills,
+  replaceLinks,
   updatePersonal,
   updateModelStats,
   updateActorStats,
@@ -68,6 +70,18 @@ export function useReplaceSkills() {
   return useMutation({
     mutationFn: (input: ReplaceSkillsInput) => replaceSkills(input),
     onSuccess: () => void qc.invalidateQueries({ queryKey: myProfileKey }),
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+export function useReplaceLinks() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ReplaceLinksInput) => replaceLinks(input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: myProfileKey })
+      toast.success('Links updated')
+    },
     onError: (err) => toast.error(errorMessage(err)),
   })
 }

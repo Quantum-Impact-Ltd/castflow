@@ -11,7 +11,7 @@ import {
   resetPasswordSchema,
   type ResetPasswordInput,
 } from '@castflow/validators'
-import { AuthField, AuthInput } from '@/components/auth/auth-form-fields'
+import { AuthField } from '@/components/auth/auth-form-fields'
 import { PasswordInput } from '@/components/auth/password-input'
 import { PasswordStrengthMeter } from '@/components/auth/password-strength-meter'
 import { useResetPassword } from '@/lib/hooks/use-auth'
@@ -75,7 +75,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         htmlFor="password"
         error={form.formState.errors.password?.message}
         hint={
-          <span className="text-[10px] uppercase tracking-[0.16em] text-white/40">
+          <span className="text-[10px] uppercase tracking-[0.16em] text-white/70">
             8+ chars · 1 num · 1 sym
           </span>
         }

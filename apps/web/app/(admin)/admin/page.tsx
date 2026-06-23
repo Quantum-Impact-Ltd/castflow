@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Users, ClipboardList, Scale, PoundSterling, CalendarCheck, Flag, ArrowRight } from 'lucide-react'
-import { PageHeader, StatCard, LoadingState, ErrorState, Money } from '@/components/dashboard'
+import { Users, ClipboardList, Scale, CreditCard, CalendarCheck, Flag, ArrowRight } from 'lucide-react'
+import { PageHeader, StatCard, LoadingState, ErrorState } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
 import { useAdminAnalytics } from '@/lib/hooks/use-admin'
 
@@ -41,10 +41,9 @@ export default function AdminDashboardPage() {
           accent={data.openDisputes > 0}
         />
         <StatCard
-          label="Revenue this month"
-          value={<Money amount={data.revenueThisMonth} />}
-          icon={PoundSterling}
-          href="/admin/payments"
+          label="Active subscriptions"
+          value={data.activeSubscriptions}
+          icon={CreditCard}
         />
         <StatCard
           label="Bookings this week"

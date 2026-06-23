@@ -8,7 +8,7 @@ import { InviteToJobDialog } from '@/components/dashboard/invite-to-job-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useTalentShortlist } from '@/lib/hooks/use-talent-shortlist'
-import { cn } from '@/lib/utils'
+import { cn, formatRating } from '@/lib/utils'
 
 interface TalentCardProps {
   artist: PublicArtistProfile
@@ -71,9 +71,7 @@ export function TalentCard({ artist }: TalentCardProps) {
           {artist.ratingCount > 0 ? (
             <>
               <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              <span className="font-medium text-foreground">
-                {(artist.ratingAvg ?? 0).toFixed(1)}
-              </span>
+              <span className="font-medium text-foreground">{formatRating(artist.ratingAvg)}</span>
               <span className="text-muted-foreground">({artist.ratingCount})</span>
             </>
           ) : (

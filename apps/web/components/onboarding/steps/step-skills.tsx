@@ -114,7 +114,7 @@ export function StepSkills({ profile, onBack, onNext }: StepSkillsProps) {
         />
       ))}
 
-      <p className="text-xs text-white/45">
+      <p className="text-xs text-white/70">
         Casters search by these tags. Be specific — &ldquo;RP&rdquo; beats &ldquo;British&rdquo;.
       </p>
 
@@ -154,7 +154,7 @@ function SkillCategory({ definition, values, onAdd, onRemove }: SkillCategoryPro
     <div className="space-y-2.5">
       <div className="flex items-baseline justify-between gap-2">
         <Label className="text-sm font-medium text-white/85">{definition.label}</Label>
-        <span className="text-xs tabular-nums text-white/40">{values.length}</span>
+        <span className="text-xs tabular-nums text-white/70">{values.length}</span>
       </div>
 
       <div className="flex gap-2">
@@ -196,7 +196,7 @@ function SkillCategory({ definition, values, onAdd, onRemove }: SkillCategoryPro
         </div>
       )}
 
-      <p className="text-xs text-white/45">{definition.helper}</p>
+      <p className="text-xs text-white/70">{definition.helper}</p>
     </div>
   )
 }

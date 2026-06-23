@@ -31,7 +31,7 @@ import { formatDate } from '@/lib/utils'
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: 'All statuses' },
-  { value: 'pending_payment', label: 'Awaiting payment' },
+  { value: 'pending_contract', label: 'Awaiting contract' },
   { value: 'confirmed', label: 'Confirmed' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
@@ -48,10 +48,7 @@ export default function AdminBookingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Bookings"
-        description="Every confirmed engagement across the platform."
-      />
+      <PageHeader title="Bookings" description="Every confirmed engagement across the platform." />
 
       <div className="flex justify-end">
         <Select value={status} onValueChange={setStatus}>
@@ -96,8 +93,16 @@ export default function AdminBookingsPage() {
                   className="cursor-pointer"
                   onClick={() => router.push(`/admin/bookings/${booking.id}`)}
                 >
-                  <TableCell className="font-mono text-xs text-foreground">
-                    {booking.id.slice(0, 8)}
+                  <TableCell>
+                    <div className="font-medium text-foreground">
+                      {booking.job?.title ?? `Booking ${booking.id.slice(0, 8)}`}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {booking.artist
+                        ? `${booking.artist.firstName} ${booking.artist.lastName}`
+                        : '—'}
+                      {booking.caster ? ` · ${booking.caster.companyName}` : ''}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={booking.status} />

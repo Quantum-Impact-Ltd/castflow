@@ -125,41 +125,6 @@ export function useAdminBooking(id: string | undefined) {
   })
 }
 
-// ── Payments ───────────────────────────────────────────────────────────────
-
-export function useAdminPayments(filters: { escrowStatus?: string; limit?: number } = {}) {
-  return useQuery({
-    queryKey: queryKeys.admin.payments(filters),
-    queryFn: ({ signal }) => admin.listAdminPayments(filters, { signal }),
-  })
-}
-
-export function useForceRelease() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ bookingId, notes }: { bookingId: string; notes: string }) =>
-      admin.forceReleaseEscrow(bookingId, notes),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['admin', 'payments'] })
-      toast.success('Escrow released')
-    },
-    onError: (err) => toast.error(errorMessage(err)),
-  })
-}
-
-export function useForceRefund() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ bookingId, notes }: { bookingId: string; notes: string }) =>
-      admin.forceRefundEscrow(bookingId, notes),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['admin', 'payments'] })
-      toast.success('Escrow refunded')
-    },
-    onError: (err) => toast.error(errorMessage(err)),
-  })
-}
-
 // ── Disputes ───────────────────────────────────────────────────────────────
 
 export function useAdminDisputes(filters: { status?: string; limit?: number } = {}) {
@@ -183,6 +148,83 @@ export function useFlaggedReviews(filters: { limit?: number } = {}) {
     queryKey: queryKeys.admin.flaggedReviews(filters),
     queryFn: ({ signal }) => admin.listFlaggedReviews(filters, { signal }),
   })
+}
+
+export function useFlaggedMessageContext(id: string) {
+  return useQuery({
+    // Keyed under ['admin','flagged',…] so clearing a flag invalidates it too.
+    queryKey: ['admin', 'flagged', 'message', id, 'context'] as const,
+    queryFn: ({ signal }) => admin.getFlaggedMessageContext(id, { signal }),
+    enabled: Boolean(id),
+  })
+}
+
+function useFlaggedModeration<T extends { id: string; notes?: string }>(
+  fn: (vars: T) => Promise<unknown>,
+  successMsg: string
+) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin', 'flagged'] })
+      toast.success(successMsg)
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+export function useClearFlaggedMessage() {
+  return useFlaggedModeration<{ id: string; notes?: string }>(
+    ({ id, notes }) => admin.clearFlaggedMessage(id, notes),
+    'Flag cleared'
+  )
+}
+
+export function useClearFlaggedReview() {
+  return useFlaggedModeration<{ id: string; notes?: string }>(
+    ({ id, notes }) => admin.clearFlaggedReview(id, notes),
+    'Flag cleared'
+  )
+}
+
+export function useRemoveFlaggedReview() {
+  return useFlaggedModeration<{ id: string; notes?: string }>(
+    ({ id, notes }) => admin.removeFlaggedReview(id, notes),
+    'Review removed'
+  )
+}
+
+// ── Reports queue ────────────────────────────────────────────────────────────
+
+export function useReports(filters: { status?: string; limit?: number } = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.reports(filters),
+    queryFn: ({ signal }) => admin.listReports(filters, { signal }),
+  })
+}
+
+function useReportAction(
+  fn: (vars: { id: string; note?: string }) => Promise<unknown>,
+  successMsg: string
+) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin', 'reports'] })
+      toast.success(successMsg)
+    },
+    onError: (err) => toast.error(errorMessage(err)),
+  })
+}
+
+export function useResolveReport() {
+  return useReportAction(({ id, note }) => admin.resolveReport(id, note), 'Report resolved')
+}
+
+export function useDismissReport() {
+  return useReportAction(({ id, note }) => admin.dismissReport(id, note), 'Report dismissed')
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────

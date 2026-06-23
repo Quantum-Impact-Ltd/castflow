@@ -11,6 +11,7 @@ import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MOCK_ARTISTS } from '@/lib/mock/artists'
+import { ENABLE_MOCK_FALLBACK } from '@/lib/site'
 import { cn } from '@/lib/utils'
 
 type TypeFilter = 'all' | 'model' | 'actor'
@@ -49,11 +50,17 @@ const EXPERIENCE_LABEL: Record<Exclude<ExperienceFilter, 'all'>, string> = {
 }
 
 export function TalentContent() {
-  // Live public directory first; fall back to mock talent only when the
-  // backend returns nothing so the page still demos richly on a fresh platform.
+  // Live public directory. On a fresh platform with no results we only fall
+  // back to bundled mock talent when ENABLE_MOCK_FALLBACK is set (demo/dev) —
+  // otherwise staging/prod show a real empty state, never fabricated artists.
   const { data } = useTalentSearch({ limit: 60 })
   const allArtists = useMemo(
-    () => (data && data.length > 0 ? data : Object.values(MOCK_ARTISTS)),
+    () =>
+      data && data.length > 0
+        ? data
+        : ENABLE_MOCK_FALLBACK
+          ? Object.values(MOCK_ARTISTS)
+          : [],
     [data]
   )
   const [query, setQuery] = useState('')
@@ -141,7 +148,7 @@ export function TalentContent() {
               {SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase()}
             </p>
             <Link
-              href="/login?redirect=/talent"
+              href="/login?next=/talent"
               className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
             >
               Sign in as a caster to shortlist
@@ -548,7 +555,7 @@ function FinalCta() {
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-background/70">
               Sign up as a caster to unlock direct messaging, side-by-side bid comparison, and
-              built-in escrow payments.
+              built-in contracts.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
               <Button

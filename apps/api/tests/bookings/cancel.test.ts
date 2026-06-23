@@ -1,11 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test'
 import { BookingService } from '../../src/services/BookingService'
 import { prisma } from '../../src/lib/prisma'
-import { stripe } from '../../src/lib/stripe'
 import { AppError } from '../../src/errors'
 import { createBookingScenario, createTestAdmin } from '../helpers/factories'
 import { cleanupTestData } from '../helpers/cleanup'
-import { resetStripeMockCalls, resetStripeMockState, stripeMockState } from '../helpers/stripe-mock'
+import { resetStripeMockCalls, resetStripeMockState } from '../helpers/stripe-mock'
 
 const TEST_TIMEOUT = 30_000
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -22,13 +21,16 @@ afterAll(async () => {
   await cleanupTestData()
 }, 60_000)
 
+/**
+ * Cancellation no longer moves money — the platform holds no job funds. The
+ * tiers still compute, but they only drive advisory messaging + the artist
+ * strike system. These tests assert booking state + strike behaviour only.
+ */
 describe('BookingService.cancel', () => {
   it(
     'rejects empty/short reason with VALIDATION_ERROR',
     async () => {
-      const { booking, artistUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
-      })
+      const { booking, artistUser } = await createBookingScenario()
 
       let caught: unknown
       try {
@@ -42,10 +44,9 @@ describe('BookingService.cancel', () => {
   )
 
   it(
-    'artist cancelling >7d ahead: no fee, full refund via refundEscrow, no strike',
+    'artist cancelling >7d ahead: booking cancelled, no strike',
     async () => {
       const { booking, artistUser, artist } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         shootDate: new Date(Date.now() + 14 * DAY_MS),
       })
 
@@ -55,12 +56,10 @@ describe('BookingService.cancel', () => {
         'schedule conflict'
       )
 
-      const fresh = await prisma.payment.findUnique({ where: { bookingId: booking.id } })
-      expect(fresh?.escrowStatus).toBe('refunded')
-      // Refund path uses paymentIntents.cancel, NOT capture or transfer.
-      expect(stripe.paymentIntents.cancel).toHaveBeenCalledTimes(1)
-      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled()
-      expect(stripe.transfers.create).not.toHaveBeenCalled()
+      const fresh = await prisma.booking.findUnique({ where: { id: booking.id } })
+      expect(fresh?.status).toBe('cancelled')
+      expect(fresh?.cancelledBy).toBe('artist')
+      expect(fresh?.cancellationReason).toBe('schedule conflict')
 
       const freshArtist = await prisma.artistProfile.findUnique({ where: { id: artist.id } })
       expect(freshArtist?.strikeCount).toBe(0)
@@ -69,10 +68,9 @@ describe('BookingService.cancel', () => {
   )
 
   it(
-    'artist cancelling under 48h: partialRelease(50, cancellation_fee) + strike increment',
+    'artist cancelling under 48h: booking cancelled + strike increment',
     async () => {
       const { booking, artistUser, artist } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         shootDate: new Date(Date.now() + 24 * HOUR_MS), // 24h ahead
         totalAmount: 1000,
       })
@@ -83,17 +81,9 @@ describe('BookingService.cancel', () => {
         'cant make it'
       )
 
-      const fresh = await prisma.payment.findUnique({ where: { bookingId: booking.id } })
-      expect(fresh?.escrowStatus).toBe('partially_refunded')
-      expect(Number(fresh?.cancellationFeeAmount ?? 0)).toBe(500)
-
-      // Partial capture of 50% of £1000 → 50000 pence
-      expect(stripe.paymentIntents.capture).toHaveBeenCalledWith(fresh?.stripePaymentIntentId, {
-        amount_to_capture: 50000,
-      })
-      const transferCall = stripeMockState.transfers.at(-1)
-      expect(transferCall?.amount).toBe(42500) // 50000 - 15% commission
-      expect(transferCall?.metadata.resolution).toBe('cancellation_fee')
+      const fresh = await prisma.booking.findUnique({ where: { id: booking.id } })
+      expect(fresh?.status).toBe('cancelled')
+      expect(fresh?.cancelledBy).toBe('artist')
 
       const freshArtist = await prisma.artistProfile.findUnique({ where: { id: artist.id } })
       expect(freshArtist?.strikeCount).toBe(1)
@@ -102,42 +92,9 @@ describe('BookingService.cancel', () => {
   )
 
   it(
-    'artist cancelling under 48h but NOT Connect-ready: falls back to full refund + cancellationFeeAmount recorded',
-    async () => {
-      const { booking, artistUser, artist } = await createBookingScenario({
-        artistStripeAccountId: null, // not onboarded → PAYOUT_NOT_READY
-        shootDate: new Date(Date.now() + 24 * HOUR_MS),
-        totalAmount: 1000,
-      })
-
-      await BookingService.cancel(
-        { id: artistUser.id, role: 'artist' },
-        booking.id,
-        'cant make it'
-      )
-
-      const fresh = await prisma.payment.findUnique({ where: { bookingId: booking.id } })
-      // Full refund path (paymentIntents.cancel), with the fee amount persisted
-      // for admin reconciliation.
-      expect(fresh?.escrowStatus).toBe('refunded')
-      expect(Number(fresh?.cancellationFeeAmount ?? 0)).toBe(500)
-      expect(stripe.paymentIntents.cancel).toHaveBeenCalledTimes(1)
-      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled()
-      expect(stripe.transfers.create).not.toHaveBeenCalled()
-
-      // Strike still increments — the artist cancelled inside the late window,
-      // independent of whether the Stripe fee capture went through.
-      const freshArtist = await prisma.artistProfile.findUnique({ where: { id: artist.id } })
-      expect(freshArtist?.strikeCount).toBe(1)
-    },
-    TEST_TIMEOUT
-  )
-
-  it(
-    'caster cancelling >48h ahead: full refund, no fee, no strike on artist',
+    'caster cancelling >48h ahead: booking cancelled, no strike on artist',
     async () => {
       const { booking, casterUser, artist } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         shootDate: new Date(Date.now() + 10 * DAY_MS),
       })
 
@@ -147,9 +104,9 @@ describe('BookingService.cancel', () => {
         'shoot delayed'
       )
 
-      const fresh = await prisma.payment.findUnique({ where: { bookingId: booking.id } })
-      expect(fresh?.escrowStatus).toBe('refunded')
-      expect(fresh?.cancellationFeeAmount).toBeNull()
+      const fresh = await prisma.booking.findUnique({ where: { id: booking.id } })
+      expect(fresh?.status).toBe('cancelled')
+      expect(fresh?.cancelledBy).toBe('caster')
 
       const freshArtist = await prisma.artistProfile.findUnique({ where: { id: artist.id } })
       expect(freshArtist?.strikeCount).toBe(0)
@@ -158,10 +115,9 @@ describe('BookingService.cancel', () => {
   )
 
   it(
-    'caster cancelling under 48h: partialRelease(50, cancellation_fee) to artist, no strike',
+    'caster cancelling under 48h: booking cancelled, no strike on artist',
     async () => {
       const { booking, casterUser, artist } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         shootDate: new Date(Date.now() + 12 * HOUR_MS),
         totalAmount: 600,
       })
@@ -172,9 +128,8 @@ describe('BookingService.cancel', () => {
         'shoot fell through'
       )
 
-      const fresh = await prisma.payment.findUnique({ where: { bookingId: booking.id } })
-      expect(fresh?.escrowStatus).toBe('partially_refunded')
-      expect(Number(fresh?.cancellationFeeAmount ?? 0)).toBe(300)
+      const fresh = await prisma.booking.findUnique({ where: { id: booking.id } })
+      expect(fresh?.status).toBe('cancelled')
 
       // Caster cancelling does NOT increment strike on the artist.
       const freshArtist = await prisma.artistProfile.findUnique({ where: { id: artist.id } })
@@ -189,7 +144,6 @@ describe('BookingService.cancel', () => {
       const admin = await createTestAdmin()
       // Seed the artist with 2 prior strikes so the next late cancel hits 3.
       const { booking, artistUser, artist } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         shootDate: new Date(Date.now() + 12 * HOUR_MS),
       })
       await prisma.artistProfile.update({
@@ -218,12 +172,10 @@ describe('BookingService.cancel', () => {
   )
 
   it(
-    'cancelling an already-cancelled booking is idempotent (returns the row, no Stripe call)',
+    'cancelling an already-cancelled booking is idempotent (returns the row)',
     async () => {
       const { booking, casterUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         bookingStatus: 'cancelled',
-        escrowStatus: 'refunded',
       })
 
       const result = await BookingService.cancel(
@@ -232,8 +184,6 @@ describe('BookingService.cancel', () => {
         'already cancelled'
       )
       expect(result.id).toBe(booking.id)
-      expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled()
-      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled()
     },
     TEST_TIMEOUT
   )
@@ -242,9 +192,7 @@ describe('BookingService.cancel', () => {
     'cancelling a completed booking throws INVALID_STATE',
     async () => {
       const { booking, casterUser } = await createBookingScenario({
-        artistPayoutsEnabled: true,
         bookingStatus: 'completed',
-        escrowStatus: 'released',
       })
 
       let caught: unknown

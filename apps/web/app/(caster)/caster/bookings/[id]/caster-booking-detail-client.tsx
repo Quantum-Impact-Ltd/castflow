@@ -12,9 +12,7 @@ import {
   AlertTriangle,
   Star,
   Ban,
-  CreditCard,
   CheckCircle2,
-  Banknote,
 } from 'lucide-react'
 import { ApiError } from '@/lib/fetcher'
 import {
@@ -23,7 +21,6 @@ import {
   ErrorState,
   LockedField,
   StatusBadge,
-  CommissionBreakdown,
   Money,
 } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
@@ -44,7 +41,6 @@ import {
   useCancelBooking,
   useConfirmCompletion,
 } from '@/lib/hooks/use-bookings'
-import { useReleaseEscrow } from '@/lib/hooks/use-payments'
 import { formatDate } from '@/lib/utils'
 
 const HOUR_MS = 60 * 60 * 1000
@@ -54,7 +50,6 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
   const { data: booking, isPending, isError, error, refetch } = useBooking(bookingId)
   const cancel = useCancelBooking(bookingId)
   const confirmCompletion = useConfirmCompletion(bookingId)
-  const release = useReleaseEscrow(bookingId)
 
   const [cancelOpen, setCancelOpen] = useState(false)
   const [reason, setReason] = useState('')
@@ -78,7 +73,6 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
   }
 
   const contract = booking.contract ?? null
-  const payment = booking.payment ?? null
   const locationUnlocked = contract?.status === 'fully_signed'
 
   const shootTime = new Date(booking.shootDate).getTime()
@@ -97,26 +91,18 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
       : booking.artist.firstName
     : 'Artist'
 
-  // Payment action: escrow not yet funded.
-  const needsPayment =
-    payment?.escrowStatus === 'awaiting_payment' || booking.status === 'pending_payment'
-
   // Contract action: shown until the contract is fully signed/voided.
   const showContractAction =
     !contract ||
     contract.status === 'pending_signatures' ||
     contract.status === 'partially_signed'
 
-  // Completion confirm: only once escrow is held and the booking is confirmed.
-  const canShowConfirm =
-    booking.status === 'confirmed' && payment?.escrowStatus === 'held'
+  // Completion confirm: only once the booking is confirmed (contract signed).
+  const canShowConfirm = booking.status === 'confirmed'
   const confirmUnlocked = shootHasPassed
 
-  // Optional manual release: escrow held and the shoot date has passed.
-  const canRelease = payment?.escrowStatus === 'held' && shootHasPassed
-
   // Cancellation allowed while the booking is still live.
-  const canCancel = booking.status === 'pending_payment' || booking.status === 'confirmed'
+  const canCancel = booking.status === 'pending_contract' || booking.status === 'confirmed'
 
   // Dispute window: within 72h after the shoot date.
   const canDispute =
@@ -128,13 +114,7 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
   const canReview =
     booking.status === 'completed' && now >= reviewOpensAt && now <= reviewClosesAt
 
-  const noActions =
-    !needsPayment &&
-    !canShowConfirm &&
-    !canRelease &&
-    !canReview &&
-    !canDispute &&
-    !canCancel
+  const noActions = !canShowConfirm && !canReview && !canDispute && !canCancel
 
   function submitCancellation() {
     const trimmed = reason.trim()
@@ -160,7 +140,7 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
       {booking.status === 'disputed' ? (
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          Escrow is frozen while a dispute is open. Funds won’t move until an admin resolves it.
+          A dispute is open on this booking. An admin will review it and follow up with both parties.
         </div>
       ) : null}
 
@@ -168,14 +148,6 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
           The shoot location and call time are revealed once both parties have signed the contract.
-        </div>
-      ) : null}
-
-      {canShowConfirm ? (
-        <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-          <Clock className="mt-0.5 h-4 w-4 shrink-0" />
-          If you don’t confirm completion within 48 hours of the shoot date, payment auto-releases to
-          the artist.
         </div>
       ) : null}
 
@@ -229,24 +201,18 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
             </dl>
           </Card>
 
-          {payment ? (
-            <Card className="space-y-4 p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-foreground">Payment</h2>
-                <StatusBadge status={payment.escrowStatus} />
-              </div>
-              <CommissionBreakdown
-                gross={payment.grossAmount}
-                commissionRate={payment.platformCommissionRate}
-                commissionAmount={payment.platformCommissionAmount}
-                net={payment.netArtistAmount}
-              />
-              <p className="text-xs text-muted-foreground">
-                You pay the agreed rate in full. Platform commission is deducted from the artist’s
-                payout.
-              </p>
-            </Card>
-          ) : null}
+          <Card className="space-y-3 p-6">
+            <h2 className="text-sm font-semibold text-foreground">Payment</h2>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Agreed total</span>
+              <span className="text-lg font-semibold text-foreground">
+                <Money amount={booking.totalAmount} />
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Paid directly to the artist, off-platform. CastFlow does not process job payments.
+            </p>
+          </Card>
         </div>
 
         <div className="space-y-4">
@@ -258,11 +224,14 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
             <p className="text-sm text-muted-foreground">{rateLabel}</p>
             <Separator />
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total into escrow</span>
+              <span className="text-muted-foreground">Agreed total</span>
               <span className="font-medium text-foreground">
                 <Money amount={booking.totalAmount} />
               </span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Paid directly to the artist, off-platform.
+            </p>
           </Card>
 
           <Card className="space-y-3 p-6">
@@ -287,14 +256,6 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
           <Card className="space-y-3 p-6">
             <h2 className="text-sm font-semibold text-foreground">Actions</h2>
 
-            {needsPayment ? (
-              <Button asChild className="w-full">
-                <Link href={`/caster/bookings/${booking.id}/pay`}>
-                  <CreditCard className="mr-1.5 h-4 w-4" /> Pay into escrow
-                </Link>
-              </Button>
-            ) : null}
-
             {canShowConfirm ? (
               <div
                 className="w-full"
@@ -314,18 +275,6 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
                   </p>
                 ) : null}
               </div>
-            ) : null}
-
-            {canRelease ? (
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={release.isPending}
-                onClick={() => release.mutate()}
-              >
-                <Banknote className="mr-1.5 h-4 w-4" />
-                {release.isPending ? 'Releasing…' : 'Release payment now'}
-              </Button>
             ) : null}
 
             {canReview ? (
@@ -375,12 +324,12 @@ export function CasterBookingDetailClient({ bookingId }: { bookingId: string }) 
           <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
             <PolicyRow
               label="48 hours or more before the shoot"
-              value="The full amount is refunded to you. No penalty."
+              value="No cancellation fee. As payment is settled directly with the artist, nothing is owed."
               active={msUntilShoot >= 48 * HOUR_MS}
             />
             <PolicyRow
               label="Less than 48 hours before the shoot"
-              value="The artist receives 50% of the agreed rate as a cancellation fee; the remainder is refunded to you."
+              value="A cancellation fee of 50% of the agreed rate is owed to the artist, payable directly off-platform."
               active={msUntilShoot < 48 * HOUR_MS}
             />
           </div>

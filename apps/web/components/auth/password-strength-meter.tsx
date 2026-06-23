@@ -63,7 +63,7 @@ export function PasswordStrengthMeter({
 
   if (!password) return null
 
-  const level = LEVELS[score] ?? LEVELS[0]!
+  const level = LEVELS[score] ?? LEVELS[0]
 
   return (
     <div className="space-y-2">

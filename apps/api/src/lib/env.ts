@@ -11,7 +11,10 @@ const envSchema = z.object({
 
   STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
   STRIPE_WEBHOOK_SECRET: z.string().startsWith('whsec_'),
-  STRIPE_CONNECT_CLIENT_ID: z.string().min(1),
+  // Recurring price the caster subscribes to. This is the ONLY money the
+  // platform collects — job fees are settled off-platform between caster and
+  // artist. Checkout/portal return URLs are derived from FRONTEND_URL.
+  STRIPE_PRICE_ID: z.string().startsWith('price_'),
 
   R2_ACCOUNT_ID: z.string().min(1),
   R2_ACCESS_KEY_ID: z.string().min(1),
@@ -28,8 +31,6 @@ const envSchema = z.object({
   CONTACT_INBOX_EMAIL: z.string().email().default('hello@castflow.co.uk'),
 
   FRONTEND_URL: z.string().url(),
-
-  PLATFORM_COMMISSION_RATE: z.coerce.number().min(0).max(100).default(15),
 
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),

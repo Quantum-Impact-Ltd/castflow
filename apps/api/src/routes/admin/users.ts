@@ -59,7 +59,47 @@ adminUserRoutes.get('/:id', async (c) => {
     include: { artistProfile: true, casterProfile: true },
   })
   if (!user) throw new AppError('NOT_FOUND', 'User not found', 404)
-  return c.json({ success: true, data: user })
+
+  // Real activity figures so the detail page doesn't have to fabricate or omit
+  // them. Counts only (no full history tables yet) — cheap and honest.
+  let activity: {
+    role: 'artist' | 'caster'
+    bids?: number
+    jobsPosted?: number
+    bookings: number
+    completedBookings: number
+    reviewsReceived: number
+    strikeCount?: number
+  } | null = null
+
+  if (user.artistProfile) {
+    const profileId = user.artistProfile.id
+    const [bids, bookings, completedBookings, reviewsReceived] = await Promise.all([
+      prisma.bid.count({ where: { artistId: profileId } }),
+      prisma.booking.count({ where: { artistId: profileId } }),
+      prisma.booking.count({ where: { artistId: profileId, status: 'completed' } }),
+      prisma.review.count({ where: { artistRevieweeId: profileId, isRemoved: false } }),
+    ])
+    activity = {
+      role: 'artist',
+      bids,
+      bookings,
+      completedBookings,
+      reviewsReceived,
+      strikeCount: user.artistProfile.strikeCount,
+    }
+  } else if (user.casterProfile) {
+    const profileId = user.casterProfile.id
+    const [jobsPosted, bookings, completedBookings, reviewsReceived] = await Promise.all([
+      prisma.job.count({ where: { casterId: profileId } }),
+      prisma.booking.count({ where: { casterId: profileId } }),
+      prisma.booking.count({ where: { casterId: profileId, status: 'completed' } }),
+      prisma.review.count({ where: { casterRevieweeId: profileId, isRemoved: false } }),
+    ])
+    activity = { role: 'caster', jobsPosted, bookings, completedBookings, reviewsReceived }
+  }
+
+  return c.json({ success: true, data: { ...user, activity } })
 })
 
 adminUserRoutes.post('/:id/status', async (c) => {

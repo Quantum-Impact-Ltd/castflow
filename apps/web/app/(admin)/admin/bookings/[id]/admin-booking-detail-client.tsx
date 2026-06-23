@@ -1,21 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  ChevronLeft,
-  CalendarDays,
-  Clock,
-  PoundSterling,
-  Scale,
-  Ban,
-} from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, PoundSterling, Scale, Ban } from 'lucide-react'
 import { ApiError } from '@/lib/fetcher'
 import {
   PageHeader,
   LoadingState,
   ErrorState,
   StatusBadge,
-  CommissionBreakdown,
   Money,
 } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
@@ -55,7 +47,6 @@ export function AdminBookingDetailClient({ bookingId }: { bookingId: string }) {
   }
 
   const contract = booking.contract ?? null
-  const payment = booking.payment ?? null
   const hasDispute = booking.status === 'disputed' || Boolean(dispute)
   const isHourly = booking.paymentType === 'hourly'
 
@@ -71,8 +62,8 @@ export function AdminBookingDetailClient({ bookingId }: { bookingId: string }) {
 
       <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
         <Scale className="mt-0.5 h-4 w-4 shrink-0" />
-        This is a read-only view. Act on escrow from the payments page and on disputes from the
-        dispute page.
+        This is a read-only view. Job fees are settled directly between caster and artist,
+        off-platform. Act on disputes from the dispute page.
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -80,19 +71,23 @@ export function AdminBookingDetailClient({ bookingId }: { bookingId: string }) {
           <Card className="space-y-4 p-6">
             <h2 className="text-sm font-semibold text-foreground">Booking details</h2>
             <dl className="grid gap-4 sm:grid-cols-2">
-              <Detail icon={CalendarDays} label="Shoot date" value={formatDate(booking.shootDate)} />
               <Detail
-                icon={Clock}
-                label="Payment type"
-                value={isHourly ? 'Hourly' : 'Fixed'}
+                icon={CalendarDays}
+                label="Shoot date"
+                value={formatDate(booking.shootDate)}
               />
+              <Detail icon={Clock} label="Payment type" value={isHourly ? 'Hourly' : 'Fixed'} />
               <Detail
                 icon={PoundSterling}
                 label="Agreed rate"
                 value={`${formatMoney(booking.agreedRate)}${isHourly ? '/hr' : ''}`}
               />
               {isHourly ? (
-                <Detail icon={Clock} label="Agreed hours" value={`${booking.agreedHours ?? '—'} hrs`} />
+                <Detail
+                  icon={Clock}
+                  label="Agreed hours"
+                  value={`${booking.agreedHours ?? '—'} hrs`}
+                />
               ) : null}
               <Detail
                 icon={PoundSterling}
@@ -102,10 +97,21 @@ export function AdminBookingDetailClient({ bookingId }: { bookingId: string }) {
               <Detail
                 icon={CalendarDays}
                 label="Completion confirmed"
-                value={booking.completionConfirmedAt ? formatDate(booking.completionConfirmedAt) : 'Not yet'}
+                value={
+                  booking.completionConfirmedAt
+                    ? formatDate(booking.completionConfirmedAt)
+                    : 'Not yet'
+                }
               />
-              <Detail label="Caster ID" value={booking.casterId} mono />
-              <Detail label="Artist ID" value={booking.artistId} mono />
+              <Detail label="Caster" value={booking.caster?.companyName ?? booking.casterId} />
+              <Detail
+                label="Artist"
+                value={
+                  booking.artist
+                    ? `${booking.artist.firstName} ${booking.artist.lastName}`
+                    : booking.artistId
+                }
+              />
             </dl>
           </Card>
 
@@ -130,20 +136,19 @@ export function AdminBookingDetailClient({ bookingId }: { bookingId: string }) {
             </Card>
           ) : null}
 
-          {payment ? (
-            <Card className="space-y-4 p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-foreground">Payment</h2>
-                <StatusBadge status={payment.escrowStatus} />
-              </div>
-              <CommissionBreakdown
-                gross={payment.grossAmount}
-                commissionRate={payment.platformCommissionRate}
-                commissionAmount={payment.platformCommissionAmount}
-                net={payment.netArtistAmount}
-              />
-            </Card>
-          ) : null}
+          <Card className="space-y-3 p-6">
+            <h2 className="text-sm font-semibold text-foreground">Payment</h2>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Agreed total</span>
+              <span className="font-medium text-foreground">
+                <Money amount={booking.totalAmount} />
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Settled directly between caster and artist, off-platform. CastFlow does not process job
+              payments.
+            </p>
+          </Card>
         </div>
 
         <div className="space-y-4">
@@ -161,18 +166,6 @@ export function AdminBookingDetailClient({ bookingId }: { bookingId: string }) {
             ) : (
               <p className="text-sm text-muted-foreground">No contract generated yet.</p>
             )}
-          </Card>
-
-          <Card className="space-y-3 p-6">
-            <h2 className="text-sm font-semibold text-foreground">Escrow actions</h2>
-            <p className="text-sm text-muted-foreground">
-              Force-release or refund escrow from the payments console.
-            </p>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/admin/payments">
-                <PoundSterling className="mr-1.5 h-4 w-4" /> Open payments
-              </Link>
-            </Button>
           </Card>
 
           {hasDispute ? (
@@ -241,7 +234,11 @@ function Detail({
       <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
         {Icon ? <Icon className="h-3.5 w-3.5" /> : null} {label}
       </div>
-      <p className={mono ? 'mt-1 break-all font-mono text-xs text-foreground' : 'mt-1 text-sm text-foreground'}>
+      <p
+        className={
+          mono ? 'mt-1 break-all font-mono text-xs text-foreground' : 'mt-1 text-sm text-foreground'
+        }
+      >
         {value}
       </p>
     </div>

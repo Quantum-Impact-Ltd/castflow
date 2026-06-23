@@ -57,8 +57,9 @@ export function Hero() {
             <p
               className={`mt-10 max-w-[42ch] text-pretty text-lg leading-relaxed text-foreground/75 sm:text-xl animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-[700ms] [animation-delay:520ms] ${easeOutQuart} ${motionGuard}`}
             >
-              Verified UK models and actors. Contracts, escrow payments, and
-              reviews, built in. The professional rail for commercial casting.
+              Verified UK models and actors. Contracts and reviews, built in.
+              The professional rail for commercial casting — casters subscribe,
+              artists join free.
             </p>
 
             <div

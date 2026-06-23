@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { portfolioEntryTypeEnum } from './upload'
 
 /**
  * Minimum age for any artist on the platform. Hard rule — never lower this
@@ -89,6 +90,40 @@ export const updateAvailabilitySchema = z.object({
   availabilityStatus: z.enum(['available', 'unavailable']),
 })
 
+// Editing an existing portfolio entry's metadata (the image is set at upload).
+// Empty strings are accepted and treated as "clear this field" by the service.
+export const updatePortfolioItemSchema = z.object({
+  entryType: portfolioEntryTypeEnum.optional(),
+  title: z.string().max(120).optional().or(z.literal('')),
+  description: z.string().max(1000).optional().or(z.literal('')),
+  links: z.array(z.string().url('Enter a valid URL')).max(5).optional(),
+  caption: z.string().max(200).optional().or(z.literal('')),
+})
+
+export const profileLinkTypeEnum = z.enum([
+  'website',
+  'instagram',
+  'youtube',
+  'vimeo',
+  'behance',
+  'tiktok',
+  'linkedin',
+  'imdb',
+  'spotlight',
+  'other',
+])
+
+export const profileLinkSchema = z.object({
+  platform: profileLinkTypeEnum,
+  url: z.string().url('Enter a valid URL'),
+  label: z.string().max(60).trim().optional(),
+})
+
+// Replace-all semantics, mirroring replaceSkillsSchema.
+export const replaceLinksSchema = z.object({
+  links: z.array(profileLinkSchema).max(12),
+})
+
 export type ArtistPersonalInfoInput = z.infer<typeof artistPersonalInfoSchema>
 export type ModelStatsInput = z.infer<typeof modelStatsSchema>
 export type ActorStatsInput = z.infer<typeof actorStatsSchema>
@@ -97,3 +132,6 @@ export type ArtistSkillInput = z.infer<typeof artistSkillSchema>
 export type UpdateArtistTypeInput = z.infer<typeof updateArtistTypeSchema>
 export type ReplaceSkillsInput = z.infer<typeof replaceSkillsSchema>
 export type UpdateAvailabilityInput = z.infer<typeof updateAvailabilitySchema>
+export type UpdatePortfolioItemInput = z.infer<typeof updatePortfolioItemSchema>
+export type ProfileLinkInput = z.infer<typeof profileLinkSchema>
+export type ReplaceLinksInput = z.infer<typeof replaceLinksSchema>

@@ -3,15 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  ChevronLeft,
-  MapPin,
-  Check,
-  X,
-  ShieldCheck,
-  ShieldAlert,
-  CalendarDays,
-} from 'lucide-react'
+import { ChevronLeft, MapPin, Check, X, ShieldCheck, ShieldAlert, CalendarDays } from 'lucide-react'
 import type { ArtistProfile, ModelStats, ActorStats, ArtistSkill } from '@castflow/types'
 import {
   PageHeader,
@@ -44,12 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  useApplications,
-  useApproveApplication,
-  useRejectApplication,
-} from '@/lib/hooks/use-admin'
-import { formatDate } from '@/lib/utils'
+import { useApplications, useApproveApplication, useRejectApplication } from '@/lib/hooks/use-admin'
+import { formatDate, formatRating } from '@/lib/utils'
 
 const EXPERIENCE_LABEL: Record<string, string> = {
   new_face: 'New face',
@@ -79,10 +67,7 @@ export function ApplicationReviewClient({ profileId }: { profileId: string }) {
   if (isPending) return <LoadingState variant="detail" />
   if (isError) {
     return (
-      <ErrorState
-        message="We couldn’t load this application."
-        onRetry={() => void refetch()}
-      />
+      <ErrorState message="We couldn’t load this application." onRetry={() => void refetch()} />
     )
   }
 
@@ -160,7 +145,7 @@ function ReviewBody({ application }: { application: ArtistProfile }) {
           <span className="flex items-center gap-1.5">
             <Stars value={application.ratingAvg ?? 0} size={14} />
             <span className="text-sm text-muted-foreground">
-              {(application.ratingAvg ?? 0).toFixed(1)} ({application.ratingCount})
+              {formatRating(application.ratingAvg)} ({application.ratingCount})
             </span>
           </span>
         ) : null}
@@ -255,7 +240,8 @@ function IdentityCard({ application }: { application: ArtistProfile }) {
   // AdminUserRow / ArtistProfile does not surface a presigned-read URL for the
   // ID document (that endpoint is owner-only), so we report status only and
   // never attempt to render the raw R2 key.
-  const hasId = application.idVerified || Boolean((application as { idDocumentUrl?: string }).idDocumentUrl)
+  const hasId =
+    application.idVerified || Boolean((application as { idDocumentUrl?: string }).idDocumentUrl)
 
   return (
     <Card className="space-y-3 p-5">
@@ -275,9 +261,8 @@ function IdentityCard({ application }: { application: ArtistProfile }) {
         )}
       </div>
       <p className="text-xs leading-relaxed text-muted-foreground">
-        The secure in-app document viewer requires a dedicated admin presigned-read
-        endpoint. Until that exists, only the upload status is shown here — the raw
-        storage key is never rendered.
+        The secure in-app document viewer requires a dedicated admin presigned-read endpoint. Until
+        that exists, only the upload status is shown here — the raw storage key is never rendered.
       </p>
     </Card>
   )
@@ -381,7 +366,8 @@ function RejectDialog({ id, name }: { id: string; name: string }) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="reject-notes">
-              Notes {notesRequired ? <span className="text-destructive">(required)</span> : '(optional)'}
+              Notes{' '}
+              {notesRequired ? <span className="text-destructive">(required)</span> : '(optional)'}
             </Label>
             <Textarea
               id="reject-notes"

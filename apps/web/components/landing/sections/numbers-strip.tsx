@@ -21,13 +21,13 @@ const STATS: Stat[] = [
   {
     value: 23,
     label: 'Bookings this month',
-    sublabel: 'Paid, contracted, completed',
+    sublabel: 'Contracted and completed',
   },
   {
-    value: 48,
-    suffix: 'h',
-    label: 'Auto payout window',
-    sublabel: 'No artist chases an invoice',
+    value: 0,
+    suffix: '%',
+    label: 'Charged to artists',
+    sublabel: 'Casters subscribe, artists join free',
   },
 ]
 
@@ -44,7 +44,7 @@ export function NumbersStripSection() {
             Live · The platform right now
           </p>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            As of {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+            UK casting marketplace
           </p>
         </div>
 

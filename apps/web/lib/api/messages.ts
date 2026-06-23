@@ -7,6 +7,8 @@ export interface ThreadSummary extends MessageThread {
   counterparty?: { displayName: string }
   unreadCount?: number
   lastMessagePreview?: string | null
+  /** True when the thread contains any flagged message (auto-flag or report). */
+  hasFlaggedContent?: boolean
 }
 
 export function listThreads(init?: Init) {

@@ -3,13 +3,15 @@
  * `@castflow.test` email convention so `cleanupTestData()` can wipe them
  * by suffix without touching seed/dev data.
  *
- * Stripe-touching factories also seed the Stripe mock state so
- * `getConnectStatus` / `releaseEscrow` gating returns the desired branch
- * without requiring callers to wire up the mock by hand.
+ * CastFlow's only money flow is the caster platform subscription, so the
+ * caster factory provisions an ACTIVE `CasterSubscription` by default — any
+ * test that posts a job or accepts a bid would otherwise 402 on the
+ * subscription gate. Pass `{ subscribed: false }` to opt out and exercise the
+ * gate.
  */
 import { randomUUID } from 'node:crypto'
+import type { SubscriptionStatus } from '@prisma/client'
 import { prisma } from '../../src/lib/prisma'
-import { seedConnectAccount, seedPaymentIntent } from './stripe-mock'
 
 export const TEST_EMAIL_DOMAIN = 'castflow.test'
 
@@ -46,9 +48,59 @@ export async function createTestAdmin(opts: UserOpts = {}) {
   return createUserRow('admin', opts)
 }
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+
+/**
+ * Provision (or refresh) an ACTIVE CasterSubscription for a caster profile and
+ * mirror the Stripe customer id onto the CasterProfile. Idempotent per caster
+ * (unique on casterId).
+ */
+export async function createActiveSubscription(casterId: string) {
+  const stripeCustomerId = `cus_test_${randomUUID()}`
+  const stripeSubscriptionId = `sub_test_${randomUUID()}`
+  const currentPeriodEnd = new Date(Date.now() + THIRTY_DAYS_MS)
+  await prisma.casterProfile.update({
+    where: { id: casterId },
+    data: { stripeCustomerId },
+  })
+  return prisma.casterSubscription.upsert({
+    where: { casterId },
+    create: {
+      casterId,
+      stripeCustomerId,
+      stripeSubscriptionId,
+      status: 'active',
+      priceId: 'price_test',
+      currentPeriodEnd,
+      cancelAtPeriodEnd: false,
+    },
+    update: {
+      stripeCustomerId,
+      stripeSubscriptionId,
+      status: 'active',
+      priceId: 'price_test',
+      currentPeriodEnd,
+      cancelAtPeriodEnd: false,
+    },
+  })
+}
+
+/**
+ * Force a caster's subscription into a given status, leaving the period end in
+ * the future. Useful for exercising the lazy gate's status branch.
+ */
+export async function setSubscriptionStatus(casterId: string, status: SubscriptionStatus) {
+  return prisma.casterSubscription.update({
+    where: { casterId },
+    data: { status },
+  })
+}
+
 interface CasterOpts extends UserOpts {
   companyName?: string
   companyType?: 'brand' | 'agency' | 'production_house' | 'independent'
+  /** Provision an active subscription so job-post / bid-accept gates pass. Default true. */
+  subscribed?: boolean
 }
 
 export async function createTestCaster(opts: CasterOpts = {}) {
@@ -65,6 +117,9 @@ export async function createTestCaster(opts: CasterOpts = {}) {
     where: { id: user.id },
     data: { profileId: caster.id, approvalStatus: 'approved' },
   })
+  if (opts.subscribed !== false) {
+    await createActiveSubscription(caster.id)
+  }
   return { user, caster }
 }
 
@@ -73,13 +128,10 @@ interface ArtistOpts extends UserOpts {
   lastName?: string
   artistType?: 'model' | 'actor'
   approvalStatus?: 'pending' | 'approved' | 'rejected'
-  stripeAccountId?: string | null
-  payoutsEnabled?: boolean
 }
 
 export async function createTestArtist(opts: ArtistOpts = {}) {
   const user = await createUserRow('artist', opts)
-  const stripeAccountId = opts.stripeAccountId === null ? null : opts.stripeAccountId ?? null
   const artist = await prisma.artistProfile.create({
     data: {
       userId: user.id,
@@ -87,8 +139,6 @@ export async function createTestArtist(opts: ArtistOpts = {}) {
       lastName: opts.lastName ?? 'Artist',
       artistType: opts.artistType ?? 'model',
       approvalStatus: opts.approvalStatus ?? 'approved',
-      ...(stripeAccountId ? { stripeAccountId } : {}),
-      payoutsEnabled: opts.payoutsEnabled ?? false,
     },
   })
   await prisma.user.update({
@@ -98,16 +148,11 @@ export async function createTestArtist(opts: ArtistOpts = {}) {
       approvalStatus: opts.approvalStatus ?? 'approved',
     },
   })
-  // Mirror the artist's Connect state into the Stripe mock so downstream
-  // `stripe.accounts.retrieve` reads return the same answer the DB cache holds.
-  if (stripeAccountId) {
-    seedConnectAccount({ id: stripeAccountId, payoutsEnabled: opts.payoutsEnabled ?? false })
-  }
   return { user, artist }
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// Job / Bid / Booking / Payment
+// Job / Bid / Booking / Contract
 // ──────────────────────────────────────────────────────────────────────────
 
 interface JobOpts {
@@ -181,7 +226,7 @@ interface BookingOpts {
   totalAmount?: number
   agreedRate?: number
   status?:
-    | 'pending_payment'
+    | 'pending_contract'
     | 'confirmed'
     | 'completed'
     | 'cancelled'
@@ -203,47 +248,6 @@ export async function createTestBooking(opts: BookingOpts) {
       shootDate,
       shootLocation: opts.shootLocation ?? '21 Test Street, EC1 2AB',
       status: opts.status ?? 'confirmed',
-    },
-  })
-}
-
-interface PaymentOpts {
-  bookingId: string
-  stripePaymentIntentId?: string
-  stripeChargeId?: string | null
-  grossAmount?: number
-  commissionRate?: number
-  escrowStatus?:
-    | 'awaiting_payment'
-    | 'held'
-    | 'released'
-    | 'refunded'
-    | 'partially_refunded'
-    | 'disputed'
-  autoReleaseAt?: Date
-}
-
-export async function createTestPayment(opts: PaymentOpts) {
-  const gross = opts.grossAmount ?? 500
-  const rate = opts.commissionRate ?? 15
-  const commission = Math.round(gross * rate) / 100
-  const net = Math.round((gross - commission) * 100) / 100
-  const intentId = opts.stripePaymentIntentId ?? `pi_test_${randomUUID()}`
-  // Mirror the intent into the Stripe mock so PaymentService.releaseEscrow /
-  // partialRelease / refundEscrow find it when they capture/cancel.
-  seedPaymentIntent({ id: intentId, amount: Math.round(gross * 100) })
-  return prisma.payment.create({
-    data: {
-      bookingId: opts.bookingId,
-      stripePaymentIntentId: intentId,
-      stripeChargeId: opts.stripeChargeId === null ? null : opts.stripeChargeId ?? `ch_test_${randomUUID()}`,
-      grossAmount: gross,
-      platformCommissionRate: rate,
-      platformCommissionAmount: commission,
-      netArtistAmount: net,
-      escrowStatus: opts.escrowStatus ?? 'held',
-      autoReleaseAt: opts.autoReleaseAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      paidAt: new Date(),
     },
   })
 }
@@ -272,7 +276,7 @@ export async function createTestContract(opts: ContractOpts) {
       paymentType: 'fixed',
       agreedRate: 500,
       totalAmount: 500,
-      paymentTerms: 'Funds held in escrow; released on completion.',
+      paymentTerms: 'Fee settled directly between caster and artist.',
       usageRights: 'editorial-only',
       exclusivity: false,
       ndaIncluded: false,
@@ -285,32 +289,26 @@ export async function createTestContract(opts: ContractOpts) {
 // ──────────────────────────────────────────────────────────────────────────
 
 interface ScenarioOpts {
-  artistPayoutsEnabled?: boolean
-  artistStripeAccountId?: string | null
-  escrowStatus?: PaymentOpts['escrowStatus']
   bookingStatus?: BookingOpts['status']
   totalAmount?: number
   shootDate?: Date
   contractStatus?: ContractOpts['status']
+  /** Provision the caster's active subscription. Default true. */
+  subscribed?: boolean
 }
 
 /**
  * Create a fully populated booking scenario in one call:
- * caster + artist + job + bid + booking + payment + contract.
+ * caster (+ active subscription) + artist + job + bid + booking + contract.
  *
- * Use as the default starting point for money-flow tests — override only
+ * Use as the default starting point for booking-flow tests — override only
  * the fields a given test cares about.
  */
 export async function createBookingScenario(opts: ScenarioOpts = {}) {
-  const { caster, user: casterUser } = await createTestCaster()
-  const stripeAccountId =
-    opts.artistStripeAccountId === null
-      ? null
-      : opts.artistStripeAccountId ?? `acct_test_${randomUUID()}`
-  const { artist, user: artistUser } = await createTestArtist({
-    stripeAccountId,
-    payoutsEnabled: opts.artistPayoutsEnabled ?? false,
+  const { caster, user: casterUser } = await createTestCaster({
+    ...(opts.subscribed === false ? { subscribed: false } : {}),
   })
+  const { artist, user: artistUser } = await createTestArtist()
   const job = await createTestJob({ casterId: caster.id, shootDate: opts.shootDate })
   const bid = await createTestBid({ jobId: job.id, artistId: artist.id, status: 'accepted' })
   const booking = await createTestBooking({
@@ -322,13 +320,8 @@ export async function createBookingScenario(opts: ScenarioOpts = {}) {
     shootDate: opts.shootDate,
     status: opts.bookingStatus ?? 'confirmed',
   })
-  const payment = await createTestPayment({
-    bookingId: booking.id,
-    grossAmount: opts.totalAmount ?? 500,
-    escrowStatus: opts.escrowStatus ?? 'held',
-  })
   const contract = opts.contractStatus
     ? await createTestContract({ bookingId: booking.id, status: opts.contractStatus })
     : null
-  return { casterUser, caster, artistUser, artist, job, bid, booking, payment, contract }
+  return { casterUser, caster, artistUser, artist, job, bid, booking, contract }
 }

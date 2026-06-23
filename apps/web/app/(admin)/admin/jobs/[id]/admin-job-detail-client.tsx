@@ -3,15 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  ChevronLeft,
-  CalendarDays,
-  Clock,
-  Users,
-  MapPin,
-  ShieldCheck,
-  Trash2,
-} from 'lucide-react'
+import { ChevronLeft, CalendarDays, Clock, Users, MapPin, ShieldCheck, Trash2 } from 'lucide-react'
 import { ApiError } from '@/lib/fetcher'
 import { PageHeader, LoadingState, ErrorState, StatusBadge, Money } from '@/components/dashboard'
 import { Badge } from '@/components/ui/badge'
@@ -73,8 +65,14 @@ export function AdminJobDetailClient({ jobId }: { jobId: string }) {
 
       <PageHeader
         title={job.title}
-        description={`Posted ${formatDate(job.createdAt)} · Caster ${job.casterId}`}
-        actions={removed ? <StatusBadge status={job.status} /> : <RemoveJobDialog jobId={job.id} title={job.title} />}
+        description={`Posted ${formatDate(job.createdAt)} · ${job.caster?.companyName ?? 'Caster ' + job.casterId}`}
+        actions={
+          removed ? (
+            <StatusBadge status={job.status} />
+          ) : (
+            <RemoveJobDialog jobId={job.id} title={job.title} />
+          )
+        }
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -164,7 +162,11 @@ export function AdminJobDetailClient({ jobId }: { jobId: string }) {
                 label="Apply by"
                 value={formatDate(job.applicationDeadline)}
               />
-              <IconRow icon={CalendarDays} label="Auto-expires" value={formatDate(job.autoExpiresAt)} />
+              <IconRow
+                icon={CalendarDays}
+                label="Auto-expires"
+                value={formatDate(job.autoExpiresAt)}
+              />
             </ul>
           </Card>
 

@@ -14,6 +14,7 @@ import {
   type JobListFilters,
 } from '@/lib/api/jobs'
 import { errorMessage } from './util'
+import { handleSubscriptionError } from './subscription-error'
 
 export function usePublicJobs(filters: JobListFilters = {}) {
   return useQuery({
@@ -46,7 +47,11 @@ export function useCreateJob() {
       qc.setQueryData(queryKeys.jobs.detail(job.id), job)
       toast.success('Job posted')
     },
-    onError: (err) => toast.error(errorMessage(err)),
+    onError: (err) => {
+      // Posting a job needs an active subscription; route to billing on 402
+      // instead of a dead-end toast.
+      if (!handleSubscriptionError(err)) toast.error(errorMessage(err))
+    },
   })
 }
 

@@ -13,13 +13,19 @@ import {
   Ban,
 } from 'lucide-react'
 import { ApiError } from '@/lib/fetcher'
-import { PageHeader, LoadingState, ErrorState, LockedField, StatusBadge } from '@/components/dashboard'
+import {
+  PageHeader,
+  LoadingState,
+  ErrorState,
+  LockedField,
+  StatusBadge,
+} from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useContract, useGenerateContract, useSignContract } from '@/lib/hooks/use-contracts'
-import { formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 const SIGNING_WINDOW_MS = 72 * 60 * 60 * 1000
 
@@ -196,7 +202,9 @@ export function ContractClient({ bookingId }: { bookingId: string }) {
                 You signed this contract on {formatDate(contract.artistSignedAt)}.
               </div>
             ) : isVoided ? (
-              <p className="text-sm text-muted-foreground">This contract can no longer be signed.</p>
+              <p className="text-sm text-muted-foreground">
+                This contract can no longer be signed.
+              </p>
             ) : (
               <>
                 <p className="text-xs text-muted-foreground">
@@ -264,7 +272,9 @@ function SigningCountdown({ createdAt }: { createdAt: string }) {
       {expired ? (
         <span>The 72-hour signing window has expired.</span>
       ) : (
-        <span>Both parties must sign within 72 hours of generation — {formatRemaining(remaining)}.</span>
+        <span>
+          Both parties must sign within 72 hours of generation — {formatRemaining(remaining)}.
+        </span>
       )}
     </div>
   )
@@ -318,8 +328,10 @@ function Detail({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatGbp(amount: number): string {
-  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount)
+// Contract money fields are Prisma Decimal — they arrive over JSON as strings,
+// so format via the string-safe shared helper (a raw Intl.format would print £NaN).
+function formatGbp(amount: number | string | null | undefined): string {
+  return formatCurrency(amount)
 }
 
 function formatRemaining(ms: number): string {

@@ -13,6 +13,8 @@ import {
   Plus,
   X,
   Info,
+  Pencil,
+  Link2,
 } from 'lucide-react'
 import {
   artistPersonalInfoSchema,
@@ -20,12 +22,15 @@ import {
   actorStatsSchema,
   artistExperienceSchema,
   replaceSkillsSchema,
+  replaceLinksSchema,
   type ArtistPersonalInfoInput,
   type ModelStatsInput,
   type ActorStatsInput,
   type ArtistExperienceInput,
   type ReplaceSkillsInput,
+  type ReplaceLinksInput,
 } from '@castflow/validators'
+import type { PortfolioEntryType, ProfileLinkType, PortfolioItem } from '@castflow/types'
 import type { MyArtistProfile } from '@/lib/api/artists'
 import { RemoteImage } from '@/components/dashboard/remote-image'
 import { AvailabilityToggle } from '@/components/dashboard/availability-toggle'
@@ -37,12 +42,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Select,
   SelectContent,
@@ -56,6 +56,7 @@ import {
   useUpdateActorStats,
   useUpdateExperience,
   useReplaceSkills,
+  useReplaceLinks,
   useUpdateArtistType,
   useSubmitForReview,
 } from '@/lib/hooks/use-artist'
@@ -63,9 +64,63 @@ import {
   useUploadFile,
   useDeletePortfolioItem,
   useSetPrimaryPortfolioItem,
+  useUpdatePortfolioItem,
 } from '@/lib/hooks/use-uploads'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 const REVIEW_NOTE = 'Some changes may require admin re-review.'
+
+const ENTRY_TYPES: PortfolioEntryType[] = [
+  'shoot',
+  'film',
+  'editorial',
+  'campaign',
+  'runway',
+  'commercial',
+  'other',
+]
+const ENTRY_TYPE_LABEL: Record<PortfolioEntryType, string> = {
+  shoot: 'Shoot',
+  film: 'Film / TV',
+  editorial: 'Editorial',
+  campaign: 'Campaign',
+  runway: 'Runway',
+  commercial: 'Commercial',
+  other: 'Other',
+}
+
+const LINK_PLATFORMS: ProfileLinkType[] = [
+  'website',
+  'instagram',
+  'youtube',
+  'vimeo',
+  'behance',
+  'tiktok',
+  'linkedin',
+  'imdb',
+  'spotlight',
+  'other',
+]
+const LINK_PLATFORM_LABEL: Record<ProfileLinkType, string> = {
+  website: 'Website',
+  instagram: 'Instagram',
+  youtube: 'YouTube',
+  vimeo: 'Vimeo',
+  behance: 'Behance',
+  tiktok: 'TikTok',
+  linkedin: 'LinkedIn',
+  imdb: 'IMDb',
+  spotlight: 'Spotlight',
+  other: 'Other',
+}
 
 export function EditClient({ profile }: { profile: MyArtistProfile }) {
   const rejected = profile.approvalStatus === 'rejected'
@@ -83,6 +138,7 @@ export function EditClient({ profile }: { profile: MyArtistProfile }) {
           </TabsTrigger>
           <TabsTrigger value="availability">Availability</TabsTrigger>
           <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+          <TabsTrigger value="links">Links</TabsTrigger>
           <TabsTrigger value="type">Artist type</TabsTrigger>
         </TabsList>
 
@@ -107,6 +163,9 @@ export function EditClient({ profile }: { profile: MyArtistProfile }) {
         </TabsContent>
         <TabsContent value="portfolio" className="mt-6">
           <PortfolioSection profile={profile} />
+        </TabsContent>
+        <TabsContent value="links" className="mt-6">
+          <LinksSection profile={profile} />
         </TabsContent>
         <TabsContent value="type" className="mt-6">
           <ArtistTypeSection profile={profile} />
@@ -226,7 +285,7 @@ function PersonalSection({ profile }: { profile: MyArtistProfile }) {
   const bio = watch('bio') ?? ''
 
   const onSubmit = handleSubmit((data) =>
-    update.mutate(data, { onSuccess: () => toast.success('Personal details saved') }),
+    update.mutate(data, { onSuccess: () => toast.success('Personal details saved') })
   )
 
   return (
@@ -301,7 +360,7 @@ function ExperienceSection({ profile }: { profile: MyArtistProfile }) {
   const level = watch('experienceLevel')
 
   const onSubmit = handleSubmit((data) =>
-    update.mutate(data, { onSuccess: () => toast.success('Experience & rates saved') }),
+    update.mutate(data, { onSuccess: () => toast.success('Experience & rates saved') })
   )
 
   return (
@@ -310,10 +369,7 @@ function ExperienceSection({ profile }: { profile: MyArtistProfile }) {
       description="Your level, socials, and optional day rates."
     >
       <form onSubmit={onSubmit} className="space-y-5">
-        <Field
-          label="Experience level"
-          error={errors.experienceLevel?.message}
-        >
+        <Field label="Experience level" error={errors.experienceLevel?.message}>
           <Select
             value={level}
             onValueChange={(v) =>
@@ -352,7 +408,11 @@ function ExperienceSection({ profile }: { profile: MyArtistProfile }) {
               {...register('hourlyRate', { valueAsNumber: true })}
             />
           </Field>
-          <Field label="Half-day rate (£)" htmlFor="halfDayRate" error={errors.halfDayRate?.message}>
+          <Field
+            label="Half-day rate (£)"
+            htmlFor="halfDayRate"
+            error={errors.halfDayRate?.message}
+          >
             <Input
               id="halfDayRate"
               type="number"
@@ -361,7 +421,11 @@ function ExperienceSection({ profile }: { profile: MyArtistProfile }) {
               {...register('halfDayRate', { valueAsNumber: true })}
             />
           </Field>
-          <Field label="Full-day rate (£)" htmlFor="fullDayRate" error={errors.fullDayRate?.message}>
+          <Field
+            label="Full-day rate (£)"
+            htmlFor="fullDayRate"
+            error={errors.fullDayRate?.message}
+          >
             <Input
               id="fullDayRate"
               type="number"
@@ -422,7 +486,7 @@ function ModelStatsSection({ profile }: { profile: MyArtistProfile }) {
   const skinTone = watch('skinTone')
 
   const onSubmit = handleSubmit((data) =>
-    update.mutate(data, { onSuccess: () => toast.success('Model stats saved') }),
+    update.mutate(data, { onSuccess: () => toast.success('Model stats saved') })
   )
 
   return (
@@ -433,7 +497,12 @@ function ModelStatsSection({ profile }: { profile: MyArtistProfile }) {
             <Input id="heightCm" type="number" {...register('heightCm', { valueAsNumber: true })} />
           </Field>
           <Field label="Weight (kg, optional)" htmlFor="weightKg" error={errors.weightKg?.message}>
-            <Input id="weightKg" type="number" step="0.1" {...register('weightKg', { valueAsNumber: true })} />
+            <Input
+              id="weightKg"
+              type="number"
+              step="0.1"
+              {...register('weightKg', { valueAsNumber: true })}
+            />
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -523,7 +592,7 @@ function ActorStatsSection({ profile }: { profile: MyArtistProfile }) {
   const equity = watch('equityMember')
 
   const onSubmit = handleSubmit((data) =>
-    update.mutate(data, { onSuccess: () => toast.success('Actor stats saved') }),
+    update.mutate(data, { onSuccess: () => toast.success('Actor stats saved') })
   )
 
   return (
@@ -531,9 +600,17 @@ function ActorStatsSection({ profile }: { profile: MyArtistProfile }) {
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Height (cm)" htmlFor="actorHeightCm" error={errors.heightCm?.message}>
-            <Input id="actorHeightCm" type="number" {...register('heightCm', { valueAsNumber: true })} />
+            <Input
+              id="actorHeightCm"
+              type="number"
+              {...register('heightCm', { valueAsNumber: true })}
+            />
           </Field>
-          <Field label="Voice type (optional)" htmlFor="voiceType" error={errors.voiceType?.message}>
+          <Field
+            label="Voice type (optional)"
+            htmlFor="voiceType"
+            error={errors.voiceType?.message}
+          >
             <Input id="voiceType" {...register('voiceType')} />
           </Field>
         </div>
@@ -546,11 +623,27 @@ function ActorStatsSection({ profile }: { profile: MyArtistProfile }) {
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Playable age — min" htmlFor="ageRangeMin" error={errors.ageRangeMin?.message}>
-            <Input id="ageRangeMin" type="number" {...register('ageRangeMin', { valueAsNumber: true })} />
+          <Field
+            label="Playable age — min"
+            htmlFor="ageRangeMin"
+            error={errors.ageRangeMin?.message}
+          >
+            <Input
+              id="ageRangeMin"
+              type="number"
+              {...register('ageRangeMin', { valueAsNumber: true })}
+            />
           </Field>
-          <Field label="Playable age — max" htmlFor="ageRangeMax" error={errors.ageRangeMax?.message}>
-            <Input id="ageRangeMax" type="number" {...register('ageRangeMax', { valueAsNumber: true })} />
+          <Field
+            label="Playable age — max"
+            htmlFor="ageRangeMax"
+            error={errors.ageRangeMax?.message}
+          >
+            <Input
+              id="ageRangeMax"
+              type="number"
+              {...register('ageRangeMax', { valueAsNumber: true })}
+            />
           </Field>
         </div>
         <Field
@@ -558,7 +651,12 @@ function ActorStatsSection({ profile }: { profile: MyArtistProfile }) {
           htmlFor="spotlightUrl"
           error={errors.spotlightUrl?.message}
         >
-          <Input id="spotlightUrl" type="url" placeholder="https://" {...register('spotlightUrl')} />
+          <Input
+            id="spotlightUrl"
+            type="url"
+            placeholder="https://"
+            {...register('spotlightUrl')}
+          />
         </Field>
         <div className="flex items-center gap-3">
           <Switch
@@ -602,12 +700,11 @@ const SKILL_TYPE_LABEL: Record<string, string> = {
 
 function SkillsSection({ profile }: { profile: MyArtistProfile }) {
   const replace = useReplaceSkills()
-  const [skills, setSkills] = useState<ReplaceSkillsInput['skills']>(
-    () =>
-      (profile.skills ?? []).map((s) => ({
-        skillType: s.skillType as ReplaceSkillsInput['skills'][number]['skillType'],
-        skillValue: s.skillValue,
-      })),
+  const [skills, setSkills] = useState<ReplaceSkillsInput['skills']>(() =>
+    (profile.skills ?? []).map((s) => ({
+      skillType: s.skillType as ReplaceSkillsInput['skills'][number]['skillType'],
+      skillValue: s.skillValue,
+    }))
   )
   const [draftType, setDraftType] =
     useState<ReplaceSkillsInput['skills'][number]['skillType']>('special_skill')
@@ -733,7 +830,8 @@ function PortfolioSection({ profile }: { profile: MyArtistProfile }) {
   const setPrimary = useSetPrimaryPortfolioItem()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [progress, setProgress] = useState<number | null>(null)
-  const [caption, setCaption] = useState('')
+  const [title, setTitle] = useState('')
+  const [entryType, setEntryType] = useState<PortfolioEntryType>('shoot')
 
   const handleFile = (file: File | undefined) => {
     if (!file) return
@@ -742,39 +840,62 @@ function PortfolioSection({ profile }: { profile: MyArtistProfile }) {
       {
         file,
         type: 'portfolio_photo',
-        caption: caption.trim() || undefined,
+        entryType,
+        title: title.trim() || undefined,
         isPrimary: items.length === 0,
         onProgress: (p) => setProgress(p),
       },
       {
         onSuccess: () => {
-          toast.success('Photo uploaded')
-          setCaption('')
+          toast.success('Entry added')
+          setTitle('')
         },
         onSettled: () => {
           setProgress(null)
           if (fileInputRef.current) fileInputRef.current.value = ''
         },
-      },
+      }
     )
   }
 
   return (
     <SectionShell
       title="Portfolio"
-      description="Upload your strongest shots. Set one as the primary image casters see first."
+      description="Add your work as typed entries — each with a title, type, and optional links. Set one as the primary image casters see first."
     >
       <div className="space-y-5">
         <div className="space-y-3 rounded-xl border border-dashed border-border bg-muted/30 p-4">
-          <Field label="Caption (optional)" htmlFor="portfolioCaption">
-            <Input
-              id="portfolioCaption"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="e.g. Editorial — London, 2026"
-              maxLength={120}
-            />
-          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Entry type">
+              <Select
+                value={entryType}
+                onValueChange={(v) => setEntryType(v as PortfolioEntryType)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ENTRY_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {ENTRY_TYPE_LABEL[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Title (optional)" htmlFor="portfolioTitle">
+              <Input
+                id="portfolioTitle"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Vogue Italia — AW26"
+                maxLength={120}
+              />
+            </Field>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Upload the image now — add a description and links with “Edit details” afterwards.
+          </p>
           <input
             ref={fileInputRef}
             type="file"
@@ -844,9 +965,18 @@ function PortfolioSection({ profile }: { profile: MyArtistProfile }) {
                       </span>
                     ) : null}
                   </div>
-                  {item.caption ? (
-                    <p className="truncate px-1 text-xs text-muted-foreground">{item.caption}</p>
-                  ) : null}
+                  <div className="px-1">
+                    <p className="truncate text-xs font-medium text-foreground">
+                      {item.title || item.caption || ENTRY_TYPE_LABEL[item.entryType]}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {ENTRY_TYPE_LABEL[item.entryType]}
+                      {item.links.length > 0
+                        ? ` · ${item.links.length} link${item.links.length === 1 ? '' : 's'}`
+                        : ''}
+                    </p>
+                  </div>
+                  <PortfolioEntryEditDialog item={item} />
                   <div className="flex items-center gap-1.5">
                     {!item.isPrimary ? (
                       <Button
@@ -894,6 +1024,214 @@ function PortfolioSection({ profile }: { profile: MyArtistProfile }) {
   )
 }
 
+function PortfolioEntryEditDialog({ item }: { item: PortfolioItem }) {
+  const update = useUpdatePortfolioItem()
+  const [open, setOpen] = useState(false)
+  const [entryType, setEntryType] = useState<PortfolioEntryType>(item.entryType)
+  const [title, setTitle] = useState(item.title ?? '')
+  const [description, setDescription] = useState(item.description ?? '')
+  const [linksText, setLinksText] = useState((item.links ?? []).join('\n'))
+
+  const save = () => {
+    const links = linksText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+    update.mutate(
+      { id: item.id, entryType, title, description, links },
+      { onSuccess: () => setOpen(false) }
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" size="sm" variant="outline" className="w-full">
+          <Pencil className="mr-1 h-3.5 w-3.5" /> Edit details
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit portfolio entry</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Field label="Entry type">
+            <Select value={entryType} onValueChange={(v) => setEntryType(v as PortfolioEntryType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ENTRY_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {ENTRY_TYPE_LABEL[t]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Title" htmlFor="editEntryTitle">
+            <Input
+              id="editEntryTitle"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={120}
+              placeholder="e.g. Vogue Italia — AW26"
+            />
+          </Field>
+          <Field label="Description" htmlFor="editEntryDesc">
+            <Textarea
+              id="editEntryDesc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="What is this work — your role, the client, the result?"
+            />
+          </Field>
+          <Field
+            label="Links (one per line)"
+            htmlFor="editEntryLinks"
+            hint="Up to 5 — published article, IMDb, Vimeo…"
+          >
+            <Textarea
+              id="editEntryLinks"
+              value={linksText}
+              onChange={(e) => setLinksText(e.target.value)}
+              rows={3}
+              placeholder="https://…"
+            />
+          </Field>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button type="button" onClick={save} disabled={update.isPending}>
+            {update.isPending ? 'Saving…' : 'Save details'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/* --------------------------------- links --------------------------------- */
+
+function LinksSection({ profile }: { profile: MyArtistProfile }) {
+  const replace = useReplaceLinks()
+  const [links, setLinks] = useState<ReplaceLinksInput['links']>(() =>
+    (profile.links ?? []).map((l) => ({
+      platform: l.platform,
+      url: l.url,
+      ...(l.label ? { label: l.label } : {}),
+    }))
+  )
+  const [draftPlatform, setDraftPlatform] = useState<ProfileLinkType>('website')
+  const [draftUrl, setDraftUrl] = useState('')
+
+  const addLink = () => {
+    const url = draftUrl.trim()
+    if (!url) return
+    if (links.length >= 12) {
+      toast.error('You can add up to 12 links.')
+      return
+    }
+    setLinks((prev) => [...prev, { platform: draftPlatform, url }])
+    setDraftUrl('')
+  }
+
+  const removeLink = (index: number) => {
+    setLinks((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const save = () => {
+    const result = replaceLinksSchema.safeParse({ links })
+    if (!result.success) {
+      toast.error(result.error.issues[0]?.message ?? 'Check your links are valid URLs')
+      return
+    }
+    replace.mutate(result.data)
+  }
+
+  return (
+    <SectionShell
+      title="Professional links"
+      description="Website, showreel, Instagram, Behance, IMDb, Spotlight, and other profiles."
+    >
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Select
+            value={draftPlatform}
+            onValueChange={(v) => setDraftPlatform(v as ProfileLinkType)}
+          >
+            <SelectTrigger className="sm:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LINK_PLATFORMS.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {LINK_PLATFORM_LABEL[p]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            value={draftUrl}
+            onChange={(e) => setDraftUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                addLink()
+              }
+            }}
+            placeholder="https://…"
+            type="url"
+          />
+          <Button type="button" variant="outline" onClick={addLink} className="shrink-0">
+            <Plus className="mr-1.5 h-4 w-4" /> Add
+          </Button>
+        </div>
+
+        {links.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No links added yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {links.map((link, i) => (
+              <li
+                key={`${link.platform}-${link.url}-${i}`}
+                className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 py-1.5 pl-3 pr-1.5 text-sm"
+              >
+                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="w-20 shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {LINK_PLATFORM_LABEL[link.platform]}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-foreground">{link.url}</span>
+                <button
+                  type="button"
+                  onClick={() => removeLink(i)}
+                  aria-label={`Remove ${link.url}`}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="flex items-center justify-between border-t border-border pt-4">
+          <ReReviewNote />
+          <Button type="button" onClick={save} disabled={replace.isPending}>
+            {replace.isPending ? 'Saving…' : 'Save links'}
+          </Button>
+        </div>
+      </div>
+    </SectionShell>
+  )
+}
+
 /* ------------------------------ artist type ------------------------------ */
 
 function ArtistTypeSection({ profile }: { profile: MyArtistProfile }) {
@@ -902,10 +1240,7 @@ function ArtistTypeSection({ profile }: { profile: MyArtistProfile }) {
   const other = profile.artistType === 'model' ? 'actor' : 'model'
 
   return (
-    <SectionShell
-      title="Artist type"
-      description="Switch between a model and an actor profile."
-    >
+    <SectionShell title="Artist type" description="Switch between a model and an actor profile.">
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Current type:</span>
@@ -917,7 +1252,10 @@ function ArtistTypeSection({ profile }: { profile: MyArtistProfile }) {
         {locked ? (
           <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
             <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>Locked after submission — your artist type can’t be changed once your profile has been submitted for review.</p>
+            <p>
+              Locked after submission — your artist type can’t be changed once your profile has been
+              submitted for review.
+            </p>
           </div>
         ) : (
           <div className="flex items-center justify-between border-t border-border pt-4">
@@ -929,7 +1267,7 @@ function ArtistTypeSection({ profile }: { profile: MyArtistProfile }) {
               onClick={() =>
                 update.mutate(
                   { artistType: other },
-                  { onSuccess: () => toast.success(`Switched to ${other} profile`) },
+                  { onSuccess: () => toast.success(`Switched to ${other} profile`) }
                 )
               }
             >

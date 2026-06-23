@@ -7,7 +7,6 @@ import {
   Mail,
   CalendarCheck,
   MessageSquare,
-  Wallet,
   Star,
   UserCircle,
   Bell,
@@ -20,6 +19,7 @@ import {
   CreditCard,
   Scale,
   Flag,
+  ShieldAlert,
   BarChart3,
   ScrollText,
 } from 'lucide-react'
@@ -42,7 +42,6 @@ export const artistNav: NavItem[] = [
   { href: '/artist/invites', label: 'Invitations', icon: Mail, matchPrefix: true },
   { href: '/artist/bookings', label: 'Bookings', icon: CalendarCheck, matchPrefix: true },
   { href: '/artist/messages', label: 'Messages', icon: MessageSquare, matchPrefix: true },
-  { href: '/artist/earnings', label: 'Earnings', icon: Wallet, matchPrefix: true },
   { href: '/artist/reviews', label: 'Reviews', icon: Star },
   { href: '/artist/profile', label: 'My Profile', icon: UserCircle, matchPrefix: true },
   { href: '/artist/notifications', label: 'Notifications', icon: Bell },
@@ -57,6 +56,7 @@ export const casterNav: NavItem[] = [
   { href: '/caster/talent/shortlisted', label: 'Shortlist', icon: BookmarkCheck },
   { href: '/caster/bookings', label: 'Bookings', icon: CalendarCheck, matchPrefix: true },
   { href: '/caster/messages', label: 'Messages', icon: MessageSquare, matchPrefix: true },
+  { href: '/caster/settings/billing', label: 'Billing', icon: CreditCard, matchPrefix: true },
   { href: '/caster/notifications', label: 'Notifications', icon: Bell },
   { href: '/caster/settings', label: 'Settings', icon: Settings, matchPrefix: true },
 ]
@@ -67,9 +67,9 @@ export const adminNav: NavItem[] = [
   { href: '/admin/users', label: 'Users', icon: Users, matchPrefix: true },
   { href: '/admin/jobs', label: 'Jobs', icon: Briefcase, matchPrefix: true },
   { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck, matchPrefix: true },
-  { href: '/admin/payments', label: 'Payments', icon: CreditCard, matchPrefix: true },
   { href: '/admin/disputes', label: 'Disputes', icon: Scale, matchPrefix: true },
   { href: '/admin/flagged', label: 'Flagged', icon: Flag, matchPrefix: true },
+  { href: '/admin/reports', label: 'Reports', icon: ShieldAlert, matchPrefix: true },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/admin/logs', label: 'Audit Log', icon: ScrollText },
 ]

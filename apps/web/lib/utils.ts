@@ -16,6 +16,13 @@ export function formatCurrency(amount: number | string | null | undefined): stri
   }).format(safe)
 }
 
+// ratingAvg is a Prisma Decimal → arrives as a JSON string, so `.toFixed()`
+// would throw "is not a function". Coerce defensively before formatting.
+export function formatRating(value: number | string | null | undefined): string {
+  const n = typeof value === 'string' ? Number(value) : (value ?? 0)
+  return (Number.isFinite(n) ? n : 0).toFixed(1)
+}
+
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return '—'
   const d = date instanceof Date ? date : new Date(date)

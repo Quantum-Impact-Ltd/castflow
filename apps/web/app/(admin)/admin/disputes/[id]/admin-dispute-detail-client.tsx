@@ -28,20 +28,43 @@ import {
 } from '@/components/ui/select'
 import { useDispute, useResolveDispute } from '@/lib/hooks/use-disputes'
 import { useAdminBooking } from '@/lib/hooks/use-admin'
+import type { AdminBookingDetail } from '@/lib/api/admin'
 import { formatDate } from '@/lib/utils'
 
 const REASON_LABEL: Record<DisputeReason, string> = {
   no_show_artist: 'Artist did not show up',
   no_show_caster: 'Caster did not show up',
-  payment_issue: 'Payment issue',
+  payment_issue: 'Fee dispute',
   quality_issue: 'Quality issue',
   other: 'Other',
 }
 
+// `reason` is free-text at the DB level — fall back to a humanised string when
+// it isn't one of the known enum keys.
+function reasonLabel(reason: string): string {
+  return (
+    REASON_LABEL[reason as DisputeReason] ??
+    reason
+      .split('_')
+      .map((w) => (w.length ? `${w[0]!.toUpperCase()}${w.slice(1)}` : w))
+      .join(' ')
+  )
+}
+
+// Resolve a dispute party (a user id) to a display name using the booking's
+// already-loaded artist/caster relations, so the panel shows names not ids.
+function partyName(userId: string, booking: AdminBookingDetail | undefined): string {
+  if (booking?.caster && booking.caster.userId === userId) return booking.caster.companyName
+  if (booking?.artist && booking.artist.userId === userId) {
+    return `${booking.artist.firstName} ${booking.artist.lastName}`
+  }
+  return userId.length > 10 ? `${userId.slice(0, 8)}…` : userId
+}
+
 const RESOLUTION_OPTIONS: { value: DisputeResolution; label: string }[] = [
-  { value: 'full_release_to_artist', label: 'Full release to artist' },
-  { value: 'full_refund_to_caster', label: 'Full refund to caster' },
-  { value: 'split', label: 'Split between both parties' },
+  { value: 'full_release_to_artist', label: 'Resolved for the artist' },
+  { value: 'full_refund_to_caster', label: 'Resolved for the caster' },
+  { value: 'split', label: 'Shared responsibility' },
   { value: 'escalated', label: 'Escalate for legal review' },
 ]
 
@@ -97,10 +120,10 @@ export function AdminDisputeDetailClient({ bookingId }: { bookingId: string }) {
           <Card className="space-y-4 p-6">
             <h2 className="text-sm font-semibold text-foreground">Dispute</h2>
             <dl className="space-y-3">
-              <Field label="Reason" value={REASON_LABEL[dispute.reason]} />
+              <Field label="Reason" value={reasonLabel(dispute.reason)} />
               <Field label="Description" value={dispute.description} />
-              <Field label="Raised by" value={dispute.raisedById} mono />
-              <Field label="Raised against" value={dispute.raisedAgainstId} mono />
+              <Field label="Raised by" value={partyName(dispute.raisedById, booking)} />
+              <Field label="Raised against" value={partyName(dispute.raisedAgainstId, booking)} />
             </dl>
           </Card>
 
@@ -123,8 +146,8 @@ export function AdminDisputeDetailClient({ bookingId }: { bookingId: string }) {
               <Field label="Resolution" value={resolutionLabel(dispute.resolution)} />
               {dispute.splitArtistPct !== null && dispute.splitArtistPct !== undefined ? (
                 <Field
-                  label="Split"
-                  value={`Artist ${dispute.splitArtistPct}% · Caster ${100 - dispute.splitArtistPct}%`}
+                  label="Advisory split"
+                  value={`Artist ${dispute.splitArtistPct}% · Caster ${100 - dispute.splitArtistPct}% — advisory only, settled off-platform`}
                 />
               ) : null}
               {dispute.adminNotes ? <Field label="Admin notes" value={dispute.adminNotes} /> : null}
@@ -150,14 +173,11 @@ export function AdminDisputeDetailClient({ bookingId }: { bookingId: string }) {
             ) : booking ? (
               <ul className="space-y-2 text-sm">
                 <Row label="Shoot date" value={formatDate(booking.shootDate)} />
-                <Row label="Payment type" value={booking.paymentType === 'hourly' ? 'Hourly' : 'Fixed'} />
                 <Row
-                  label="Total"
-                  value={<Money amount={booking.totalAmount} />}
+                  label="Payment type"
+                  value={booking.paymentType === 'hourly' ? 'Hourly' : 'Fixed'}
                 />
-                {booking.payment ? (
-                  <Row label="Escrow" value={<StatusBadge status={booking.payment.escrowStatus} />} />
-                ) : null}
+                <Row label="Total" value={<Money amount={booking.totalAmount} />} />
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">Booking details unavailable.</p>
@@ -186,7 +206,8 @@ function ResolvePanel({ bookingId }: { bookingId: string }) {
 
   const isSplit = resolution === 'split'
   const splitValue = Number(splitPct)
-  const splitValid = !isSplit || (Number.isFinite(splitValue) && splitValue >= 0 && splitValue <= 100)
+  const splitValid =
+    !isSplit || (Number.isFinite(splitValue) && splitValue >= 0 && splitValue <= 100)
   const notesValid = notes.trim().length >= 10
   const canSubmit = Boolean(resolution) && notesValid && splitValid && !resolve.isPending
 
@@ -204,16 +225,16 @@ function ResolvePanel({ bookingId }: { bookingId: string }) {
       <div>
         <h2 className="text-sm font-semibold text-foreground">Resolve dispute</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose an outcome. This is final and permanently logged.
+          Record the outcome of this dispute. CastFlow does not hold or move
+          any funds — this is a record-only decision; any fee owed is settled
+          directly between the parties off-platform. Final and permanently
+          logged.
         </p>
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="resolution">Resolution</Label>
-        <Select
-          value={resolution}
-          onValueChange={(v) => setResolution(v as DisputeResolution)}
-        >
+        <Select value={resolution} onValueChange={(v) => setResolution(v as DisputeResolution)}>
           <SelectTrigger id="resolution" className="w-full">
             <SelectValue placeholder="Select an outcome" />
           </SelectTrigger>
@@ -229,7 +250,7 @@ function ResolvePanel({ bookingId }: { bookingId: string }) {
 
       {isSplit ? (
         <div className="space-y-1.5">
-          <Label htmlFor="split-pct">Artist share (%)</Label>
+          <Label htmlFor="split-pct">Advisory split — artist share (%)</Label>
           <Input
             id="split-pct"
             type="number"
@@ -241,7 +262,7 @@ function ResolvePanel({ bookingId }: { bookingId: string }) {
           />
           <p className="text-xs text-muted-foreground">
             {splitValid
-              ? `Artist gets ${splitValue}%, caster gets ${100 - splitValue}%.`
+              ? `Advisory only — recommends the artist keeps ${splitValue}% and the caster ${100 - splitValue}% of the agreed fee. Settled off-platform; CastFlow moves no money.`
               : 'Enter a value between 0 and 100.'}
           </p>
         </div>
@@ -326,11 +347,11 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
 function resolutionLabel(resolution: string | null): string {
   switch (resolution) {
     case 'full_release_to_artist':
-      return 'Full release to artist'
+      return 'Resolved for the artist'
     case 'full_refund_to_caster':
-      return 'Full refund to caster'
+      return 'Resolved for the caster'
     case 'split':
-      return 'Split between both parties'
+      return 'Shared responsibility'
     case 'escalated':
       return 'Escalated for legal review'
     default:

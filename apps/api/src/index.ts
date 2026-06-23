@@ -16,7 +16,7 @@ import { jobRoutes } from './routes/jobs'
 import { bidRoutes } from './routes/bids'
 import { bookingRoutes } from './routes/bookings'
 import { contractRoutes } from './routes/contracts'
-import { paymentRoutes } from './routes/payments'
+import { subscriptionRoutes } from './routes/subscriptions'
 import { messageRoutes } from './routes/messages'
 import { reviewRoutes } from './routes/reviews'
 import { disputeRoutes } from './routes/disputes'
@@ -135,7 +135,7 @@ api.route('/jobs', jobRoutes)
 api.route('/bids', bidRoutes)
 api.route('/bookings', bookingRoutes)
 api.route('/contracts', contractRoutes)
-api.route('/payments', paymentRoutes)
+api.route('/subscriptions', subscriptionRoutes)
 api.route('/messages', messageRoutes)
 api.route('/reviews', reviewRoutes)
 api.route('/disputes', disputeRoutes)

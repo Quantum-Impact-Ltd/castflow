@@ -1,5 +1,16 @@
 import { z } from 'zod'
 
+// The kind of work a portfolio entry represents (media type stays the upload type).
+export const portfolioEntryTypeEnum = z.enum([
+  'shoot',
+  'film',
+  'editorial',
+  'campaign',
+  'runway',
+  'commercial',
+  'other',
+])
+
 export const presignedUrlSchema = z.object({
   type: z.enum([
     'portfolio_photo',
@@ -26,6 +37,11 @@ export const confirmUploadSchema = z.object({
   key: z.string().min(1),
   caption: z.string().max(200).optional(),
   isPrimary: z.boolean().optional(),
+  // Typed portfolio entry metadata (portfolio_photo / portfolio_video only).
+  entryType: portfolioEntryTypeEnum.optional(),
+  title: z.string().max(120).optional(),
+  description: z.string().max(1000).optional(),
+  links: z.array(z.string().url()).max(5).optional(),
 })
 
 export const UPLOAD_LIMITS = {

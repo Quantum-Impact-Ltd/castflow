@@ -35,7 +35,7 @@ export default async function SuspendedPage() {
         <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-full border border-rose-400/30 bg-rose-400/[0.10]">
           <ShieldAlert className="h-6 w-6 text-rose-300" />
         </div>
-        <p className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
+        <p className="font-mono text-[10px] tracking-[0.22em] text-white/70 uppercase">
           Access restricted
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
@@ -61,7 +61,7 @@ export default async function SuspendedPage() {
           </a>
           <Link
             href="/"
-            className="text-xs text-white/45 transition hover:text-white"
+            className="text-xs text-white/70 transition hover:text-white"
           >
             Back to homepage
           </Link>

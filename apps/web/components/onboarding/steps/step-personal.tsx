@@ -80,35 +80,41 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
       noValidate
       className="space-y-5"
     >
+      {/* Name comes from sign-up — shown read-only here so we don't ask twice.
+          It stays editable later in profile settings. Still registered so the
+          PATCH payload (validated against artistPersonalInfoSchema) is complete. */}
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="firstName">First name</Label>
-          <Input id="firstName" autoComplete="given-name" {...form.register('firstName')} />
-          {form.formState.errors.firstName && (
-            <p className="text-destructive text-xs">
-              {form.formState.errors.firstName.message}
-            </p>
-          )}
+          <Input
+            id="firstName"
+            autoComplete="given-name"
+            readOnly
+            className="bg-muted"
+            {...form.register('firstName')}
+          />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="lastName">Last name</Label>
-          <Input id="lastName" autoComplete="family-name" {...form.register('lastName')} />
-          {form.formState.errors.lastName && (
-            <p className="text-destructive text-xs">
-              {form.formState.errors.lastName.message}
-            </p>
-          )}
+          <Input
+            id="lastName"
+            autoComplete="family-name"
+            readOnly
+            className="bg-muted"
+            {...form.register('lastName')}
+          />
         </div>
       </div>
+      <p className="text-muted-foreground -mt-2 text-xs">
+        From your sign-up. You can change your name later in profile settings.
+      </p>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="dob">Date of birth</Label>
           <Input id="dob" type="date" max={dobMax} {...form.register('dob')} />
-          <p className="text-muted-foreground text-xs">
-            You must be 18 or older to join CastFlow.
-          </p>
+          <p className="text-muted-foreground text-xs">You must be 18 or older to join CastFlow.</p>
           {form.formState.errors.dob && (
             <p className="text-destructive text-xs">{form.formState.errors.dob.message}</p>
           )}
@@ -132,9 +138,7 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
             </SelectContent>
           </Select>
           {form.formState.errors.gender && (
-            <p className="text-destructive text-xs">
-              {form.formState.errors.gender.message}
-            </p>
+            <p className="text-destructive text-xs">{form.formState.errors.gender.message}</p>
           )}
         </div>
       </div>
@@ -143,9 +147,7 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
         <div className="space-y-1.5">
           <Label htmlFor="pronouns">
             Pronouns
-            <span className="text-muted-foreground ml-1.5 text-xs font-normal">
-              (optional)
-            </span>
+            <span className="text-muted-foreground ml-1.5 text-xs font-normal">(optional)</span>
           </Label>
           <Input id="pronouns" placeholder="she/her, they/them…" {...form.register('pronouns')} />
           <p className="text-muted-foreground text-xs">Optional. Shown on your profile.</p>
@@ -164,13 +166,9 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
         <div className="flex items-end justify-between gap-2">
           <Label htmlFor="bio">
             Bio
-            <span className="text-muted-foreground ml-1.5 text-xs font-normal">
-              (optional)
-            </span>
+            <span className="text-muted-foreground ml-1.5 text-xs font-normal">(optional)</span>
           </Label>
-          <span className="text-muted-foreground text-xs tabular-nums">
-            {bio.length} / 300
-          </span>
+          <span className="text-muted-foreground text-xs tabular-nums">{bio.length} / 300</span>
         </div>
         <Textarea
           id="bio"

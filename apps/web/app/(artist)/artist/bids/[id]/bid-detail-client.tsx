@@ -149,11 +149,11 @@ export function ArtistBidDetailClient({ bidId }: { bidId: string }) {
             )}
           </Card>
 
-          {bid.status === 'pending' ? (
-            <EditBidCard bid={bid} isHourly={isHourly} />
-          ) : null}
+          {bid.status === 'pending' ? <EditBidCard bid={bid} isHourly={isHourly} /> : null}
 
-          {bid.status === 'shortlisted' ? <CounterOfferCard bidId={bid.id} isHourly={isHourly} /> : null}
+          {bid.status === 'shortlisted' ? (
+            <CounterOfferCard bidId={bid.id} isHourly={isHourly} />
+          ) : null}
         </div>
 
         <div className="space-y-4">
@@ -169,11 +169,25 @@ export function ArtistBidDetailClient({ bidId }: { bidId: string }) {
                     <MessageSquare className="mr-1.5 h-4 w-4" /> Open messages
                   </Link>
                 </Button>
+                <WithdrawDialog bidId={bid.id} />
               </div>
             ) : bid.status === 'pending' ? (
               <p className="text-sm text-muted-foreground">
                 Awaiting the caster’s decision. You can edit or withdraw while it’s pending.
               </p>
+            ) : bid.status === 'withdrawn' ? (
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>You withdrew this bid.</p>
+                {bid.job?.status === 'active' ? (
+                  <Button asChild className="w-full">
+                    <Link href={`/artist/jobs/${bid.jobId}/bid`}>Submit a new bid</Link>
+                  </Button>
+                ) : (
+                  <p className="inline-flex items-center gap-1.5 text-xs">
+                    <Lock className="h-3.5 w-3.5" /> This job is no longer open for bids.
+                  </p>
+                )}
+              </div>
             ) : (
               <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Lock className="h-3.5 w-3.5" /> This bid is locked and can no longer be changed.
@@ -308,9 +322,7 @@ function CounterOfferCard({ bidId, isHourly }: { bidId: string; isHourly: boolea
       </div>
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="space-y-1.5">
-          <Label htmlFor="counterRate">
-            {isHourly ? 'New hourly rate (£)' : 'New fee (£)'}
-          </Label>
+          <Label htmlFor="counterRate">{isHourly ? 'New hourly rate (£)' : 'New fee (£)'}</Label>
           <Input
             id="counterRate"
             type="number"

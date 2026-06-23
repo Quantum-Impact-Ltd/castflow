@@ -1,6 +1,6 @@
 // Maps every domain status string CastFlow can emit to a label, a colour
 // variant, and a tooltip explaining what the status means. One component for
-// BidStatus, BookingStatus, EscrowStatus, ContractStatus, DisputeStatus,
+// BidStatus, BookingStatus, SubscriptionStatus, ContractStatus, DisputeStatus,
 // JobStatus, ApprovalStatus and InviteStatus.
 
 import { cn } from '@/lib/utils'
@@ -44,32 +44,33 @@ const STATUS: Record<string, Entry> = {
   cancelled: { label: 'Cancelled', variant: 'danger', title: 'Cancelled.' },
   closed: { label: 'Closed', variant: 'neutral', title: 'Closed to new bids.' },
   // Booking
-  pending_payment: {
-    label: 'Awaiting payment',
+  pending_contract: {
+    label: 'Awaiting contract',
     variant: 'warning',
-    title: 'The caster needs to pay into escrow to confirm.',
+    title: 'Both parties must sign the contract to confirm the booking.',
   },
-  confirmed: { label: 'Confirmed', variant: 'success', title: 'Booked and paid into escrow.' },
-  completed: { label: 'Completed', variant: 'success', title: 'Shoot completed and paid out.' },
+  confirmed: { label: 'Confirmed', variant: 'success', title: 'Booked — the contract is signed.' },
+  completed: { label: 'Completed', variant: 'success', title: 'Shoot completed.' },
   disputed: {
     label: 'Disputed',
     variant: 'danger',
-    title: 'A dispute is open — escrow is frozen.',
+    title: 'A dispute is open and under review.',
   },
-  // Escrow
-  awaiting_payment: {
-    label: 'Awaiting payment',
+  // Subscription
+  trialing: { label: 'Trialing', variant: 'info', title: 'Free trial in progress.' },
+  past_due: {
+    label: 'Past due',
+    variant: 'danger',
+    title: 'Payment failed — update your billing details to keep access.',
+  },
+  canceled: { label: 'Canceled', variant: 'neutral', title: 'Subscription canceled.' },
+  incomplete: {
+    label: 'Incomplete',
     variant: 'warning',
-    title: 'Funds have not been captured yet.',
+    title: 'Initial payment has not completed yet.',
   },
-  held: { label: 'In escrow', variant: 'info', title: 'Funds are held securely in escrow.' },
-  released: { label: 'Released', variant: 'success', title: 'Funds released to the artist.' },
-  refunded: { label: 'Refunded', variant: 'neutral', title: 'Funds refunded to the caster.' },
-  partially_refunded: {
-    label: 'Partially refunded',
-    variant: 'warning',
-    title: 'A cancellation fee was split between both parties.',
-  },
+  unpaid: { label: 'Unpaid', variant: 'danger', title: 'Subscription unpaid.' },
+  inactive: { label: 'No subscription', variant: 'neutral', title: 'No active subscription.' },
   // Contract
   pending_signatures: {
     label: 'Awaiting signatures',
@@ -97,14 +98,16 @@ const STATUS: Record<string, Entry> = {
 }
 
 interface StatusBadgeProps {
-  status: string
+  // Tolerate null/undefined: callers occasionally pass an unpopulated relation
+  // field, and a missing status must render a quiet dash, never crash.
+  status: string | null | undefined
   className?: string
   /** Override the label (e.g. to localise) without losing the variant/tooltip. */
   label?: string
 }
 
 export function StatusBadge({ status, className, label }: StatusBadgeProps) {
-  const entry = STATUS[status]
+  const entry = status ? STATUS[status] : undefined
   const variant: Variant = entry?.variant ?? 'neutral'
   const text = label ?? entry?.label ?? humanise(status)
 
@@ -122,7 +125,8 @@ export function StatusBadge({ status, className, label }: StatusBadgeProps) {
   )
 }
 
-function humanise(value: string): string {
+function humanise(value: string | null | undefined): string {
+  if (!value) return '—'
   return value
     .split('_')
     .map((w) => (w.length ? `${w[0]!.toUpperCase()}${w.slice(1)}` : w))

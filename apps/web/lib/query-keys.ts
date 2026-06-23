@@ -16,6 +16,8 @@ export const queryKeys = {
   caster: {
     jobs: () => ['caster', 'jobs'] as const,
     profile: () => ['caster', 'me'] as const,
+    public: (id: string) => ['caster', 'public', id] as const,
+    subscription: () => ['caster', 'subscription'] as const,
   },
   bids: {
     forJob: (jobId: string) => ['bids', 'job', jobId] as const,
@@ -25,8 +27,6 @@ export const queryKeys = {
     me: () => ['artist', 'me'] as const,
     idDocumentUrl: () => ['artist', 'me', 'id-document', 'url'] as const,
     bids: () => ['artist', 'bids'] as const,
-    earnings: () => ['artist', 'earnings'] as const,
-    payouts: () => ['artist', 'payouts'] as const,
     invites: () => ['artist', 'invites'] as const,
     invite: (id: string) => ['artist', 'invites', id] as const,
   },
@@ -71,11 +71,11 @@ export const queryKeys = {
     job: (id: string) => ['admin', 'jobs', id] as const,
     bookings: (filters?: Filters) => ['admin', 'bookings', filters ?? {}] as const,
     booking: (id: string) => ['admin', 'bookings', id] as const,
-    payments: (filters?: Filters) => ['admin', 'payments', filters ?? {}] as const,
     disputes: (filters?: Filters) => ['admin', 'disputes', filters ?? {}] as const,
     flaggedMessages: (filters?: Filters) =>
       ['admin', 'flagged', 'messages', filters ?? {}] as const,
     flaggedReviews: (filters?: Filters) => ['admin', 'flagged', 'reviews', filters ?? {}] as const,
+    reports: (filters?: Filters) => ['admin', 'reports', filters ?? {}] as const,
     analytics: () => ['admin', 'analytics'] as const,
     logs: (filters?: Filters) => ['admin', 'logs', filters ?? {}] as const,
   },

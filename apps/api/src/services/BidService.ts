@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
 import { AppError } from '../errors'
 import { NotificationService } from './NotificationService'
+import { SubscriptionService } from './SubscriptionService'
 
 async function getArtistProfile(userId: string) {
   const profile = await prisma.artistProfile.findUnique({
@@ -78,27 +79,43 @@ export class BidService {
       )
     }
 
+    // One bid per (job, artist) is enforced by @@unique([jobId, artistId]). A
+    // *withdrawn* bid is not an active commitment, so the artist may bid again
+    // while the job is still open — we reuse the same row (UPDATE) to respect
+    // the constraint. Any other existing status (pending/shortlisted/accepted/
+    // rejected/expired) still blocks: pending/shortlisted should be edited, a
+    // rejection is the caster's decision, and accepted/expired are terminal.
     const existing = await prisma.bid.findUnique({
       where: { jobId_artistId: { jobId, artistId: artist.id } },
-      select: { id: true },
+      select: { id: true, status: true },
     })
-    if (existing) {
+    if (existing && existing.status !== 'withdrawn') {
       throw new AppError('DUPLICATE_BID', 'You have already bid on this job', 409)
     }
 
-    const bid = await prisma.bid.create({
-      data: {
-        jobId,
-        artistId: artist.id,
-        proposedRate: input.proposedRate,
-        estimatedHours:
-          job.paymentType === 'hourly' && input.estimatedHours ? input.estimatedHours : null,
-        coverNote: input.coverNote,
-        highlightedPortfolioItems: input.highlightedPortfolioItems,
-        status: 'pending',
-      },
-      include: { job: { select: { title: true, caster: { select: { userId: true } } } } },
-    })
+    const bidData = {
+      proposedRate: input.proposedRate,
+      estimatedHours:
+        job.paymentType === 'hourly' && input.estimatedHours ? input.estimatedHours : null,
+      coverNote: input.coverNote,
+      highlightedPortfolioItems: input.highlightedPortfolioItems,
+      status: 'pending' as const,
+    }
+    const includeJob = {
+      job: { select: { title: true, caster: { select: { userId: true } } } },
+    }
+    const bid = existing
+      ? await prisma.bid.update({
+          where: { id: existing.id },
+          // Re-bid: reset the row to a fresh pending bid (clear any stale
+          // rejection reason, restamp submittedAt so it sorts as new).
+          data: { ...bidData, rejectionReason: null, submittedAt: new Date() },
+          include: includeJob,
+        })
+      : await prisma.bid.create({
+          data: { jobId, artistId: artist.id, ...bidData },
+          include: includeJob,
+        })
 
     void NotificationService.notifyEvent({
       userId: bid.job.caster.userId,
@@ -313,11 +330,13 @@ export class BidService {
 
   /**
    * Caster accepts a bid — creates the booking + locks the message thread open.
-   * Booking creation does NOT capture payment; payment intent comes later via
-   * the PaymentService (feature 08).
+   * Requires an active subscription. No platform payment is taken: the job fee
+   * is settled directly between caster and artist, off-platform. The next step
+   * is contract generation + signing.
    */
   static async acceptBid(userId: string, bidId: string, shootLocation: string) {
     const casterId = await getCasterProfileId(userId)
+    await SubscriptionService.assertActiveSubscription(casterId)
 
     const booking = await prisma.$transaction(async (tx) => {
       const bid = await tx.bid.findUnique({
@@ -355,7 +374,7 @@ export class BidService {
           totalAmount,
           shootDate: bid.job.shootDate,
           shootLocation,
-          status: 'pending_payment',
+          status: 'pending_contract',
         },
       })
 
@@ -408,7 +427,7 @@ export class BidService {
       userId: booking.artistUserId,
       type: 'bid_accepted',
       title: 'Your bid was accepted!',
-      body: `You've been booked for "${booking.jobTitle}". Next step: payment will be held in escrow then a contract is generated for signing.`,
+      body: `You've been booked for "${booking.jobTitle}". Next step: a contract is generated for both of you to sign. Payment is arranged directly with the caster, off-platform.`,
       relatedEntityType: 'booking',
       relatedEntityId: booking.booking.id,
       email: { ctaUrl: `${env.FRONTEND_URL}/artist/bookings/${booking.booking.id}` },

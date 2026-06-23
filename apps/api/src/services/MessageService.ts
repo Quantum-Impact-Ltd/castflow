@@ -90,13 +90,68 @@ export class MessageService {
     const where = casterProfileId
       ? { casterId: casterProfileId }
       : { artistId: artistProfileId as string }
-    return prisma.messageThread.findMany({
+    const threads = await prisma.messageThread.findMany({
       where,
       orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
       include: {
         job: { select: { id: true, title: true } },
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
+    })
+    if (threads.length === 0) return []
+
+    // casterId/artistId are plain FK columns (no Prisma relation), so resolve
+    // the counterparty's display name with a single batched lookup. The viewer
+    // sees the OTHER party: a caster sees the artist's first name, an artist
+    // sees the caster's company name (per the contact-privacy business rule).
+    const counterpartyNames = new Map<string, string>()
+    if (casterProfileId) {
+      const artistIds = [...new Set(threads.map((t) => t.artistId))]
+      const artists = await prisma.artistProfile.findMany({
+        where: { id: { in: artistIds } },
+        select: { id: true, firstName: true },
+      })
+      for (const a of artists) counterpartyNames.set(a.id, a.firstName)
+    } else {
+      const casterIds = [...new Set(threads.map((t) => t.casterId))]
+      const casters = await prisma.casterProfile.findMany({
+        where: { id: { in: casterIds } },
+        select: { id: true, companyName: true },
+      })
+      for (const cp of casters) counterpartyNames.set(cp.id, cp.companyName)
+    }
+
+    // Unread = messages the viewer didn't send and hasn't read. senderId stores
+    // User.id (see markRead), so compare against user.id, not the profile id.
+    const unreadGroups = await prisma.message.groupBy({
+      by: ['threadId'],
+      where: {
+        threadId: { in: threads.map((t) => t.id) },
+        senderId: { not: user.id },
+        readAt: null,
+      },
+      _count: { _all: true },
+    })
+    const unreadByThread = new Map(unreadGroups.map((g) => [g.threadId, g._count._all]))
+
+    // Threads containing any flagged message (auto-flagged contact details or a
+    // submitted report) so the inbox can surface an "under review" indicator.
+    const flaggedGroups = await prisma.message.groupBy({
+      by: ['threadId'],
+      where: { threadId: { in: threads.map((t) => t.id) }, isFlagged: true },
+      _count: { _all: true },
+    })
+    const flaggedThreads = new Set(flaggedGroups.map((g) => g.threadId))
+
+    return threads.map((thread) => {
+      const counterpartyId = casterProfileId ? thread.artistId : thread.casterId
+      return {
+        ...thread,
+        counterparty: { displayName: counterpartyNames.get(counterpartyId) ?? 'Conversation' },
+        lastMessagePreview: thread.messages[0]?.content ?? null,
+        unreadCount: unreadByThread.get(thread.id) ?? 0,
+        hasFlaggedContent: flaggedThreads.has(thread.id),
+      }
     })
   }
 
@@ -213,13 +268,33 @@ export class MessageService {
 
   /**
    * Report a thread for harassment / off-platform contact / other ToS issues
-   * (PRD §13.3). Only a participant can report. Alerts all admins (deduped) so
-   * the thread surfaces in their review queue within the 24h SLA. A richer
-   * persisted ContentReport model is the follow-up; an admin notification is
-   * the MVP path and keeps moderation actionable today.
+   * (PRD §13.3). Only a participant can report. We flag the COUNTERPARTY's
+   * messages (isFlagged + flagReason) so they surface in the admin flagged
+   * queue and the artist's existing in-thread flagged banner — and alert all
+   * admins. Reported content is NOT hidden: removal stays an explicit, logged
+   * admin action (mirrors the review-moderation model). A richer persisted
+   * ContentReport model (reporter identity + audit) is the follow-up.
    */
   static async reportThread(user: UserCtx, threadId: string, reason: string, detail?: string) {
     await loadThreadForUser(threadId, user)
+    const flagReason = detail ? `${reason}: ${detail}` : reason
+    // senderId stores User.id, so "not the reporter" = the counterparty's messages.
+    await prisma.message.updateMany({
+      where: { threadId, senderId: { not: user.id }, isFlagged: false },
+      data: { isFlagged: true, flagReason },
+    })
+    // Persist the report itself — captures WHO reported + WHY + outcome, so the
+    // admin moderation view shows real reporter identity (not inferred) and the
+    // report stays queryable after the flag is cleared.
+    await prisma.contentReport.create({
+      data: {
+        reporterId: user.id,
+        targetType: 'message_thread',
+        targetId: threadId,
+        reason,
+        detail: detail ?? null,
+      },
+    })
     await NotificationService.notifyAdmins({
       type: 'thread_reported',
       title: 'A message thread was reported',

@@ -5,9 +5,16 @@ import type {
   ArtistExperienceInput,
   UpdateArtistTypeInput,
   ReplaceSkillsInput,
+  ReplaceLinksInput,
   UpdateAvailabilityInput,
 } from '@castflow/validators'
-import type { ModelStats, ActorStats, PortfolioItem, ArtistSkill } from '@castflow/types'
+import type {
+  ModelStats,
+  ActorStats,
+  PortfolioItem,
+  ArtistSkill,
+  ProfileLink,
+} from '@castflow/types'
 import { fetcher } from '@/lib/fetcher'
 
 export interface MyArtistProfile {
@@ -38,6 +45,7 @@ export interface MyArtistProfile {
   actorStats: ActorStats | null
   portfolioItems: PortfolioItem[]
   skills: ArtistSkill[]
+  links: ProfileLink[]
 }
 
 interface Init {
@@ -71,6 +79,14 @@ export function updateArtistType(input: UpdateArtistTypeInput, init?: Init) {
 
 export function replaceSkills(input: ReplaceSkillsInput, init?: Init) {
   return fetcher<Array<Record<string, unknown>>>('/artists/me/skills', {
+    method: 'PUT',
+    body: input,
+    ...init,
+  })
+}
+
+export function replaceLinks(input: ReplaceLinksInput, init?: Init) {
+  return fetcher<ProfileLink[]>('/artists/me/links', {
     method: 'PUT',
     body: input,
     ...init,

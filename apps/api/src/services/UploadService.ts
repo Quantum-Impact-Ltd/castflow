@@ -1,6 +1,11 @@
+import type { Prisma } from '@prisma/client'
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import type { PresignedUrlInput, ConfirmUploadInput } from '@castflow/validators'
+import type {
+  PresignedUrlInput,
+  ConfirmUploadInput,
+  UpdatePortfolioItemInput,
+} from '@castflow/validators'
 import { UPLOAD_LIMITS } from '@castflow/validators'
 import { prisma } from '../lib/prisma'
 import { r2, Buckets } from '../lib/r2'
@@ -104,7 +109,11 @@ export class UploadService {
           data: {
             artistProfileId: profile.id,
             type: input.type === 'portfolio_photo' ? 'photo' : 'video',
+            entryType: input.entryType ?? 'other',
             url: publicUrl,
+            title: input.title ?? null,
+            description: input.description ?? null,
+            links: input.links ?? [],
             caption: input.caption ?? null,
             displayOrder: profile.portfolioItems.length,
             isPrimary: setAsPrimary,
@@ -238,6 +247,36 @@ export class UploadService {
         ? 'image'
         : 'unknown'
     return { url, expiresIn, contentTypeHint }
+  }
+
+  /**
+   * Edit an existing portfolio entry's metadata (entryType/title/description/
+   * links/caption). The image itself is fixed at upload time. Empty strings
+   * clear the field. Only the owning artist may edit.
+   */
+  static async updatePortfolioItem(
+    userId: string,
+    itemId: string,
+    input: UpdatePortfolioItemInput
+  ) {
+    const item = await prisma.portfolioItem.findUnique({
+      where: { id: itemId },
+      select: { id: true, artistProfile: { select: { userId: true } } },
+    })
+    if (!item) throw new AppError('NOT_FOUND', 'Portfolio item not found', 404)
+    if (item.artistProfile.userId !== userId) {
+      throw new AppError('FORBIDDEN', 'You do not own this portfolio item', 403)
+    }
+
+    const data: Prisma.PortfolioItemUpdateInput = {}
+    if (input.entryType !== undefined) data.entryType = input.entryType
+    if (input.title !== undefined) data.title = input.title === '' ? null : input.title
+    if (input.description !== undefined)
+      data.description = input.description === '' ? null : input.description
+    if (input.links !== undefined) data.links = input.links
+    if (input.caption !== undefined) data.caption = input.caption === '' ? null : input.caption
+
+    return prisma.portfolioItem.update({ where: { id: itemId }, data })
   }
 
   static async setPrimaryPortfolioItem(userId: string, itemId: string) {

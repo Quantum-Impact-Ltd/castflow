@@ -72,16 +72,15 @@ const SECTIONS: LegalSection[] = [
             <strong>Artists:</strong> date of birth (for 18+ verification),
             government-issued ID document (stored encrypted, accessed only by
             admin during approval), gender, pronouns, city, bio, model or
-            actor stats, portfolio images, skills, bank details via Stripe
-            Connect.
+            actor stats, portfolio images, skills.
           </li>
           <li>
             <strong>Casters:</strong> company name, company type, contact
-            name, phone, website, Stripe billing details.
+            name, phone, website, Stripe subscription billing details.
           </li>
           <li>
-            <strong>Bookings:</strong> contract details, message threads, file
-            attachments, payment records.
+            <strong>Bookings:</strong> contract details (including the agreed
+            rate), message threads, and file attachments.
           </li>
         </ul>
         <p>
@@ -110,7 +109,7 @@ const SECTIONS: LegalSection[] = [
           </li>
           <li>
             <strong>Legal obligation.</strong> Some processing is required by
-            UK law — record-keeping for tax, anti-money-laundering checks via
+            UK law — record-keeping for tax, subscription billing checks via
             Stripe, complying with court orders.
           </li>
           <li>
@@ -159,7 +158,7 @@ const SECTIONS: LegalSection[] = [
           only use the data for the purpose we instruct:
         </p>
         <ul>
-          <li><strong>Stripe</strong> — payments and escrow</li>
+          <li><strong>Stripe</strong> — caster subscription billing</li>
           <li><strong>Cloudflare R2</strong> — file storage</li>
           <li><strong>Resend</strong> — transactional email</li>
           <li><strong>Railway / Vercel</strong> — server hosting</li>

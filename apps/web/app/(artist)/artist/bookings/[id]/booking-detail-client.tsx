@@ -20,7 +20,6 @@ import {
   ErrorState,
   LockedField,
   StatusBadge,
-  CommissionBreakdown,
   Money,
 } from '@/components/dashboard'
 import { Card } from '@/components/ui/card'
@@ -68,7 +67,6 @@ export function BookingDetailClient({ bookingId }: { bookingId: string }) {
   }
 
   const contract = booking.contract ?? null
-  const payment = booking.payment ?? null
   const locationUnlocked = contract?.status === 'fully_signed'
 
   const shootTime = new Date(booking.shootDate).getTime()
@@ -78,12 +76,10 @@ export function BookingDetailClient({ bookingId }: { bookingId: string }) {
 
   // Contract action: shown until the contract is fully signed/voided.
   const showContractAction =
-    !contract ||
-    contract.status === 'pending_signatures' ||
-    contract.status === 'partially_signed'
+    !contract || contract.status === 'pending_signatures' || contract.status === 'partially_signed'
 
   // Cancellation allowed while the booking is still live.
-  const canCancel = booking.status === 'pending_payment' || booking.status === 'confirmed'
+  const canCancel = booking.status === 'pending_contract' || booking.status === 'confirmed'
 
   // Dispute window: within 72h after the shoot date.
   const canDispute =
@@ -92,13 +88,10 @@ export function BookingDetailClient({ bookingId }: { bookingId: string }) {
   // Review window: completed and 14–28 days after the shoot date.
   const reviewOpensAt = shootTime + 14 * DAY_MS
   const reviewClosesAt = shootTime + 28 * DAY_MS
-  const canReview =
-    booking.status === 'completed' && now >= reviewOpensAt && now <= reviewClosesAt
+  const canReview = booking.status === 'completed' && now >= reviewOpensAt && now <= reviewClosesAt
 
   const isHourly = booking.paymentType === 'hourly'
-  const rateLabel = isHourly
-    ? `${booking.agreedHours ?? '—'} hrs at hourly rate`
-    : 'Flat rate'
+  const rateLabel = isHourly ? `${booking.agreedHours ?? '—'} hrs at hourly rate` : 'Flat rate'
 
   function submitCancellation() {
     const trimmed = reason.trim()
@@ -121,10 +114,19 @@ export function BookingDetailClient({ bookingId }: { bookingId: string }) {
         actions={<StatusBadge status={booking.status} />}
       />
 
+      {booking.caster?.id ? (
+        <Link
+          href={`/casters/${booking.caster.id}`}
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          <Building2 className="h-4 w-4" /> View {booking.caster.companyName} profile
+        </Link>
+      ) : null}
+
       {booking.status === 'disputed' ? (
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          Escrow is frozen while a dispute is open. Funds won’t move until an admin resolves it.
+          A dispute is open on this booking. An admin will review it and follow up with both parties.
         </div>
       ) : null}
 
@@ -173,20 +175,18 @@ export function BookingDetailClient({ bookingId }: { bookingId: string }) {
             </dl>
           </Card>
 
-          {payment ? (
-            <Card className="space-y-4 p-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-foreground">Payment</h2>
-                <StatusBadge status={payment.escrowStatus} />
-              </div>
-              <CommissionBreakdown
-                gross={payment.grossAmount}
-                commissionRate={payment.platformCommissionRate}
-                commissionAmount={payment.platformCommissionAmount}
-                net={payment.netArtistAmount}
-              />
-            </Card>
-          ) : null}
+          <Card className="space-y-3 p-6">
+            <h2 className="text-sm font-semibold text-foreground">Payment</h2>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Agreed total</span>
+              <span className="text-lg font-semibold text-foreground">
+                <Money amount={booking.totalAmount} />
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Paid directly by the caster, off-platform. CastFlow takes no commission.
+            </p>
+          </Card>
         </div>
 
         <div className="space-y-4">
@@ -198,19 +198,14 @@ export function BookingDetailClient({ bookingId }: { bookingId: string }) {
             <p className="text-sm text-muted-foreground">{rateLabel}</p>
             <Separator />
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Total</span>
+              <span className="text-muted-foreground">Agreed total</span>
               <span className="font-medium text-foreground">
                 <Money amount={booking.totalAmount} />
               </span>
             </div>
-            {payment ? (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Your net payout</span>
-                <span className="font-medium text-foreground">
-                  <Money amount={payment.netArtistAmount} />
-                </span>
-              </div>
-            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Paid directly by the caster, off-platform.
+            </p>
           </Card>
 
           <Card className="space-y-3 p-6">
@@ -281,17 +276,17 @@ export function BookingDetailClient({ bookingId }: { bookingId: string }) {
           <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm">
             <PolicyRow
               label="More than 7 days’ notice"
-              value="Full refund to the caster. No penalty for you."
+              value="No penalty for you. Nothing is owed to the caster."
               active={msUntilShoot > 7 * DAY_MS}
             />
             <PolicyRow
               label="3–7 days’ notice"
-              value="Full refund to the caster, plus a formal warning on your account."
+              value="A formal warning is added to your account. Nothing is owed."
               active={msUntilShoot <= 7 * DAY_MS && msUntilShoot > 3 * DAY_MS}
             />
             <PolicyRow
               label="Less than 48 hours’ notice"
-              value="You receive 50% of the agreed rate, the rest is refunded, and a strike is added to your account."
+              value="A cancellation fee of 50% of the agreed rate is owed to the caster, payable directly off-platform, and a strike is added to your account."
               active={msUntilShoot <= 48 * HOUR_MS}
             />
           </div>
@@ -306,11 +301,17 @@ export function BookingDetailClient({ bookingId }: { bookingId: string }) {
               rows={4}
               maxLength={500}
             />
-            <p className="text-xs text-muted-foreground">{reason.trim().length}/10 characters minimum</p>
+            <p className="text-xs text-muted-foreground">
+              {reason.trim().length}/10 characters minimum
+            </p>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={cancel.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setCancelOpen(false)}
+              disabled={cancel.isPending}
+            >
               Keep booking
             </Button>
             <Button

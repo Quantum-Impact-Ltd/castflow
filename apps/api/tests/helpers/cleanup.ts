@@ -8,9 +8,10 @@
  * deleteMany — flat id filters avoid the issue.
  *
  * Order (most-dependent → least):
- *   Messages → MessageThreads → Reviews/Disputes/Payments/Contracts →
+ *   Messages → MessageThreads → Reviews/Disputes/Contracts →
  *   Bookings → CounterOffers → Bids → JobInvites → Jobs → Notifications/
- *   AdminLogs → ArtistChildTables → CasterProfile → ArtistProfile → User.
+ *   AdminLogs → ArtistChildTables → CasterSubscriptions → CasterProfile →
+ *   ArtistProfile → User.
  */
 import { prisma } from '../../src/lib/prisma'
 
@@ -81,7 +82,6 @@ export async function cleanupTestData(): Promise<void> {
   if (bookingIds.length > 0) {
     await prisma.review.deleteMany({ where: { bookingId: { in: bookingIds } } })
     await prisma.dispute.deleteMany({ where: { bookingId: { in: bookingIds } } })
-    await prisma.payment.deleteMany({ where: { bookingId: { in: bookingIds } } })
     await prisma.contract.deleteMany({ where: { bookingId: { in: bookingIds } } })
     await prisma.booking.deleteMany({ where: { id: { in: bookingIds } } })
   }
@@ -142,6 +142,8 @@ export async function cleanupTestData(): Promise<void> {
 
   // ── Stage 3: profiles ────────────────────────────────────────────────
   if (casterIds.length > 0) {
+    // CasterSubscription FKs onto CasterProfile — delete before the profile.
+    await prisma.casterSubscription.deleteMany({ where: { casterId: { in: casterIds } } })
     await prisma.casterProfile.deleteMany({ where: { id: { in: casterIds } } })
   }
   if (artistIds.length > 0) {
