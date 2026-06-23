@@ -92,7 +92,9 @@ export function BidsListClient({ jobId }: { jobId: string }) {
     if (sort === 'submitted') {
       return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
     }
-    if (sort === 'rate') return b.proposedRate - a.proposedRate
+    // proposedRate is a Prisma Decimal → arrives as a JSON string; coerce
+    // before arithmetic or the sort silently no-ops (NaN compares).
+    if (sort === 'rate') return Number(b.proposedRate) - Number(a.proposedRate)
     return (STATUS_RANK[a.status] ?? 9) - (STATUS_RANK[b.status] ?? 9)
   })
 
@@ -262,15 +264,8 @@ function BidCard({
 
 /** Status-driven caster actions, shared between the list and detail views. */
 export function BidActions({ jobId, bid }: { jobId: string; bid: BidForCaster }) {
-  const router = useRouter()
   const shortlist = useShortlistBid(jobId)
-  const accept = useAcceptBid(jobId)
   const undo = useUndoRejectBid(jobId)
-
-  const onAccept = () =>
-    accept.mutate(bid.id, {
-      onSuccess: (data) => router.push(`/caster/bookings/${data.bookingId}/pay`),
-    })
 
   if (bid.status === 'pending') {
     return (
@@ -284,9 +279,7 @@ export function BidActions({ jobId, bid }: { jobId: string; bid: BidForCaster })
         >
           {shortlist.isPending ? 'Shortlisting…' : 'Shortlist'}
         </Button>
-        <Button size="sm" disabled={accept.isPending} onClick={onAccept}>
-          {accept.isPending ? 'Accepting…' : 'Accept'}
-        </Button>
+        <AcceptDialog jobId={jobId} bidId={bid.id} />
       </>
     )
   }
@@ -300,9 +293,7 @@ export function BidActions({ jobId, bid }: { jobId: string; bid: BidForCaster })
             <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Message
           </Link>
         </Button>
-        <Button size="sm" disabled={accept.isPending} onClick={onAccept}>
-          {accept.isPending ? 'Accepting…' : 'Accept'}
-        </Button>
+        <AcceptDialog jobId={jobId} bidId={bid.id} />
       </>
     )
   }
@@ -380,6 +371,70 @@ function RejectDialog({ jobId, bidId }: { jobId: string; bidId: string }) {
             }
           >
             {reject.isPending ? 'Rejecting…' : 'Reject bid'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function AcceptDialog({ jobId, bidId }: { jobId: string; bidId: string }) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [shootLocation, setShootLocation] = useState('')
+  const accept = useAcceptBid(jobId)
+
+  // The API locks the shoot location onto the booking on accept (min 5 chars).
+  const valid = shootLocation.trim().length >= 5
+
+  const onConfirm = () => {
+    if (!valid) return
+    accept.mutate(
+      { bidId, shootLocation: shootLocation.trim() },
+      {
+        onSuccess: (booking) => {
+          setOpen(false)
+          // Booking created → go to the contract step (the old escrow /pay
+          // route was removed in the subscription pivot).
+          router.push(`/caster/bookings/${booking.id}/contract`)
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">Accept</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Accept this bid &amp; book the artist?</DialogTitle>
+          <DialogDescription>
+            This creates the booking and generates a contract for both of you to
+            sign. The fee is arranged directly with the artist, off-platform.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <Label htmlFor="shoot-location">Shoot location</Label>
+          <Textarea
+            id="shoot-location"
+            rows={2}
+            maxLength={500}
+            value={shootLocation}
+            onChange={(e) => setShootLocation(e.target.value)}
+            placeholder="Full address or studio. Only revealed to the artist once the contract is fully signed."
+          />
+          <p className="text-xs text-muted-foreground">
+            Hidden from the artist until the contract is fully signed.
+          </p>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button disabled={!valid || accept.isPending} onClick={onConfirm}>
+            {accept.isPending ? 'Booking…' : 'Accept & book'}
           </Button>
         </DialogFooter>
       </DialogContent>

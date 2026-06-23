@@ -45,8 +45,9 @@ adminJobRoutes.get('/:id', async (c) => {
 })
 
 /**
- * Admin force-remove (PRD §6.5): cancels the job, expires open bids, and
- * refunds any held escrows. Records an AdminLog entry.
+ * Admin force-remove (PRD §6.5): cancels the job and expires open bids.
+ * Records an AdminLog entry. (No money movement — the platform holds no
+ * escrow; job fees are settled directly between caster and artist.)
  */
 adminJobRoutes.post('/:id/remove', async (c) => {
   const admin = c.get('user')

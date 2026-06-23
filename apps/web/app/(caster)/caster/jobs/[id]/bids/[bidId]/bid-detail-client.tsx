@@ -93,7 +93,7 @@ export function CasterBidDetailClient({ jobId, bidId }: { jobId: string; bidId: 
               {isHourly && bid.estimatedHours !== null ? (
                 <Detail
                   label="Estimated total"
-                  value={<Money amount={bid.proposedRate * bid.estimatedHours} />}
+                  value={<Money amount={Number(bid.proposedRate) * Number(bid.estimatedHours)} />}
                 />
               ) : null}
               <Detail label="Submitted" value={formatDate(bid.submittedAt)} />

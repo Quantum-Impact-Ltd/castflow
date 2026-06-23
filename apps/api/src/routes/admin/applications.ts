@@ -44,6 +44,12 @@ adminApplicationRoutes.get('/', async (c) => {
   })
 })
 
+// Full application detail (portfolio + skills + stats) for the review screen.
+adminApplicationRoutes.get('/:id', async (c) => {
+  const application = await ArtistService.getApplication(c.req.param('id'))
+  return c.json({ success: true, data: application })
+})
+
 adminApplicationRoutes.post('/:id/approve', async (c) => {
   const admin = c.get('user')
   const parsed = approveSchema.safeParse(await c.req.json().catch(() => ({})))

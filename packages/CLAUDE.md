@@ -33,7 +33,6 @@ packages/
     │   ├── bid.ts            # Bid submit
     │   ├── booking.ts        # Booking actions
     │   ├── contract.ts       # Contract signing
-    │   ├── payment.ts        # Payment initiation
     │   ├── review.ts         # Review submit
     │   ├── dispute.ts        # Dispute raise
     │   └── upload.ts         # Upload request
@@ -74,14 +73,16 @@ export type BidStatus =
   | 'accepted'
   | 'withdrawn'
   | 'expired'
-export type BookingStatus = 'pending_payment' | 'confirmed' | 'completed' | 'cancelled' | 'disputed'
-export type EscrowStatus =
-  | 'awaiting_payment'
-  | 'held'
-  | 'released'
-  | 'refunded'
-  | 'partially_refunded'
-  | 'disputed'
+export type BookingStatus = 'pending_contract' | 'confirmed' | 'completed' | 'cancelled' | 'disputed'
+// Caster platform-subscription state (mirrors Stripe). The platform's only
+// charge is the caster subscription — there is NO escrow on job fees.
+export type SubscriptionStatus =
+  | 'active'
+  | 'trialing'
+  | 'past_due'
+  | 'canceled'
+  | 'incomplete'
+  | 'unpaid'
 export type ContractStatus = 'pending_signatures' | 'partially_signed' | 'fully_signed' | 'voided'
 export type DisputeStatus = 'open' | 'under_review' | 'resolved' | 'escalated'
 export type DisputeResolution =
@@ -105,10 +106,7 @@ export type NotificationType =
   | 'contract_ready'
   | 'contract_signed_by_other'
   | 'contract_fully_signed'
-  | 'payment_held'
-  | 'payment_released'
-  | 'payment_failed'
-  | 'payout_sent'
+  | 'subscription_past_due'
   | 'dispute_opened'
   | 'dispute_resolved'
   | 'message_received'
@@ -216,26 +214,22 @@ export interface Booking {
   updatedAt: string
 }
 
-export interface Payment {
+// NOTE: There is no Payment / escrow model. The monetization pivot removed
+// escrow, commission, Stripe Connect and artist payouts. The platform's only
+// charge is a recurring CASTER SUBSCRIPTION (Stripe Billing); job fees are
+// paid caster→artist directly, off-platform. The relevant entity is now:
+
+export interface CasterSubscription {
   id: string
-  bookingId: string
-  stripePaymentIntentId: string
-  stripeChargeId: string | null
-  stripeTransferId: string | null
-
-  // Amounts
-  grossAmount: number // Total charged to caster = booking.totalAmount
-  platformCommissionRate: number // e.g. 15.00 = 15%
-  platformCommissionAmount: number
-  netArtistAmount: number // What artist receives
-
-  escrowStatus: EscrowStatus
-  cancellationFeeAmount: number | null
-  paidAt: string | null
-  releasedAt: string | null
-  autoReleaseAt: string // shoot_date + 48 hours
-  refundedAt: string | null
+  casterId: string
+  stripeCustomerId: string
+  stripeSubscriptionId: string | null
+  status: SubscriptionStatus
+  priceId: string | null
+  currentPeriodEnd: string | null // entitlement = (active|trialing) AND not past this
+  cancelAtPeriodEnd: boolean
   createdAt: string
+  updatedAt: string
 }
 ```
 

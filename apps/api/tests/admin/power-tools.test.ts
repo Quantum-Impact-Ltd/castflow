@@ -94,7 +94,7 @@ describe('POST /api/v1/admin/jobs/:id/remove (remove-job)', () => {
 
       const res = await app.request(`/api/v1/admin/jobs/${job.id}/remove`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', cookie },
+        headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json', cookie },
         body: JSON.stringify({ reason: 'ToS violation: explicit content brief' }),
       })
       expect(res.status).toBe(200)
@@ -127,7 +127,7 @@ describe('POST /api/v1/admin/jobs/:id/remove (remove-job)', () => {
 
       const res = await app.request(`/api/v1/admin/jobs/${job.id}/remove`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', cookie },
+        headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json', cookie },
         body: JSON.stringify({ reason: 'no' }),
       })
       expect(res.status).toBe(400)

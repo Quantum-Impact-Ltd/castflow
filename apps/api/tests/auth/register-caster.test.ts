@@ -18,7 +18,7 @@ describe('POST /api/v1/auth/register-caster', () => {
       try {
         const res = await app.request('/api/v1/auth/register-caster', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
             password: 'Strong1!',
@@ -55,7 +55,7 @@ describe('POST /api/v1/auth/register-caster', () => {
       try {
         const res = await app.request('/api/v1/auth/register-caster', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
             password: 'Strong1!',

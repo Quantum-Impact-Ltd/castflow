@@ -53,6 +53,22 @@ export function useApplications(filters: { status?: string; limit?: number } = {
   })
 }
 
+export function useApplication(id: string) {
+  return useQuery({
+    queryKey: queryKeys.admin.application(id),
+    queryFn: ({ signal }) => admin.getApplication(id, { signal }),
+  })
+}
+
+export function useApplicationIdDocumentUrl(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...queryKeys.admin.application(id), 'id-document'] as const,
+    queryFn: ({ signal }) => admin.getApplicationIdDocumentUrl(id, { signal }),
+    enabled,
+    staleTime: 60_000, // presigned URL is short-lived; don't refetch on every focus
+  })
+}
+
 export function useApproveApplication() {
   const qc = useQueryClient()
   return useMutation({

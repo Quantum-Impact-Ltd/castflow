@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useContract, useGenerateContract, useSignContract } from '@/lib/hooks/use-contracts'
-import { formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 const SIGNING_WINDOW_MS = 72 * 60 * 60 * 1000
 
@@ -326,8 +326,11 @@ function Detail({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatGbp(amount: number): string {
-  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount)
+function formatGbp(amount: number | string | null | undefined): string {
+  // agreedRate/totalAmount are Prisma Decimals → arrive as JSON strings.
+  // Delegate to the string-safe shared formatter (was Intl.NumberFormat on a
+  // string → "£NaN" on the contract both parties sign).
+  return formatCurrency(amount)
 }
 
 function formatRemaining(ms: number): string {

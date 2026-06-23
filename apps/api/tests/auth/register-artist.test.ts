@@ -27,7 +27,7 @@ describe('POST /api/v1/auth/register-artist', () => {
       try {
         const res = await app.request('/api/v1/auth/register-artist', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
             password: 'Strong1!',
@@ -83,7 +83,7 @@ describe('POST /api/v1/auth/register-artist', () => {
 
         const first = await app.request('/api/v1/auth/register-artist', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         expect(first.status).toBe(200)
@@ -91,7 +91,7 @@ describe('POST /api/v1/auth/register-artist', () => {
 
         const second = await app.request('/api/v1/auth/register-artist', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         // Indistinguishable from a real signup
@@ -125,7 +125,7 @@ describe('POST /api/v1/auth/register-artist', () => {
     tooYoung.setFullYear(tooYoung.getFullYear() - 17)
     const res = await app.request('/api/v1/auth/register-artist', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: randomEmail(),
         password: 'Strong1!',
@@ -158,7 +158,7 @@ describe('POST /api/v1/auth/register-artist', () => {
   it('A3: weak password returns VALIDATION_ERROR with field details', async () => {
     const res = await app.request('/api/v1/auth/register-artist', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: randomEmail(),
         password: 'weak',
@@ -185,7 +185,7 @@ describe('POST /api/v1/auth/register-artist', () => {
       try {
         const res = await app.request('/api/v1/auth/register-artist', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { Origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
             password: 'Strong1!',

@@ -1,4 +1,11 @@
-import type { Bid, JobPaymentType, JobStatus, ArtistType, PortfolioItem } from '@castflow/types'
+import type {
+  Bid,
+  Booking,
+  JobPaymentType,
+  JobStatus,
+  ArtistType,
+  PortfolioItem,
+} from '@castflow/types'
 import type { SubmitBidInput, UpdateBidInput, CounterOfferInput } from '@castflow/validators'
 import { fetcher } from '@/lib/fetcher'
 import type { Init } from './types'
@@ -67,8 +74,13 @@ export function undoRejectBid(bidId: string) {
   return fetcher<Bid>(`/bids/${bidId}/undo-reject`, { method: 'POST' })
 }
 
-export function acceptBid(bidId: string) {
-  return fetcher<{ bookingId: string }>(`/bids/${bidId}/accept`, { method: 'POST' })
+export function acceptBid(bidId: string, shootLocation: string) {
+  // The API requires a shoot location on accept (it's locked onto the booking),
+  // and returns the created Booking. Read `.id` from it for navigation.
+  return fetcher<Booking>(`/bids/${bidId}/accept`, {
+    method: 'POST',
+    body: { shootLocation },
+  })
 }
 
 export function counterBid(bidId: string, input: CounterOfferInput) {

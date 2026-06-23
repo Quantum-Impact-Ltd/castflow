@@ -113,7 +113,8 @@ export function useUndoRejectBid(jobId: string) {
 export function useAcceptBid(jobId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (bidId: string) => acceptBid(bidId),
+    mutationFn: (vars: { bidId: string; shootLocation: string }) =>
+      acceptBid(vars.bidId, vars.shootLocation),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.bids.forJob(jobId) })
       void qc.invalidateQueries({ queryKey: queryKeys.bookings.caster() })

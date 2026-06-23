@@ -31,7 +31,10 @@ describe('UploadService.confirmUpload — key ownership', () => {
         where: { artistProfileId: artist.id },
       })
       expect(items.length).toBe(1)
-      expect(items[0]?.url).toBe(`https://r2.test/${key}`)
+      // confirmUpload derives the canonical public URL from the key (it does
+      // NOT trust the client-supplied url), so assert the key is preserved in
+      // the stored URL rather than the client's throwaway origin.
+      expect(items[0]?.url).toContain(key)
     },
     TEST_TIMEOUT
   )

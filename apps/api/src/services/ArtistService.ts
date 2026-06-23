@@ -358,6 +358,27 @@ export class ArtistService {
     return { items, nextCursor: hasNext ? (items.at(-1)?.id ?? null) : null }
   }
 
+  /**
+   * Full application detail for the admin review screen. The list view
+   * intentionally projects to `_count` for performance; this fetches the
+   * heavy relations (portfolio + skills) for a single applicant so the
+   * reviewer can see photos and skills before approving.
+   */
+  static async getApplication(profileId: string) {
+    const profile = await prisma.artistProfile.findUnique({
+      where: { id: profileId },
+      include: {
+        modelStats: true,
+        actorStats: true,
+        skills: true,
+        portfolioItems: { orderBy: { displayOrder: 'asc' } },
+        links: true,
+      },
+    })
+    if (!profile) throw new AppError('NOT_FOUND', 'Artist application not found', 404)
+    return profile
+  }
+
   static async approveApplication(args: { profileId: string; adminId: string; notes?: string }) {
     const profile = await prisma.artistProfile.findUnique({
       where: { id: args.profileId },

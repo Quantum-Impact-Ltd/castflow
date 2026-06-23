@@ -36,7 +36,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplications, useApproveApplication, useRejectApplication } from '@/lib/hooks/use-admin'
+import {
+  useApplication,
+  useApplicationIdDocumentUrl,
+  useApproveApplication,
+  useRejectApplication,
+} from '@/lib/hooks/use-admin'
 import { formatDate, formatRating } from '@/lib/utils'
 
 const EXPERIENCE_LABEL: Record<string, string> = {
@@ -61,8 +66,7 @@ const REJECT_REASONS: { value: string; label: string }[] = [
 ]
 
 export function ApplicationReviewClient({ profileId }: { profileId: string }) {
-  // There is no single-application GET — load the queue and find by id.
-  const { data, isPending, isError, refetch } = useApplications({})
+  const { data: application, isPending, isError, refetch } = useApplication(profileId)
 
   if (isPending) return <LoadingState variant="detail" />
   if (isError) {
@@ -70,8 +74,6 @@ export function ApplicationReviewClient({ profileId }: { profileId: string }) {
       <ErrorState message="We couldn’t load this application." onRetry={() => void refetch()} />
     )
   }
-
-  const application = (data ?? []).find((a) => a.id === profileId)
 
   if (!application) {
     return (
@@ -237,11 +239,12 @@ function ReviewBody({ application }: { application: ArtistProfile }) {
 }
 
 function IdentityCard({ application }: { application: ArtistProfile }) {
-  // AdminUserRow / ArtistProfile does not surface a presigned-read URL for the
-  // ID document (that endpoint is owner-only), so we report status only and
-  // never attempt to render the raw R2 key.
   const hasId =
     application.idVerified || Boolean((application as { idDocumentUrl?: string }).idDocumentUrl)
+
+  // Only fetch the short-lived presigned read once the admin asks to see it.
+  const [reveal, setReveal] = useState(false)
+  const idDoc = useApplicationIdDocumentUrl(application.id, reveal && hasId)
 
   return (
     <Card className="space-y-3 p-5">
@@ -260,9 +263,39 @@ function IdentityCard({ application }: { application: ArtistProfile }) {
           </>
         )}
       </div>
+
+      {hasId ? (
+        !reveal ? (
+          <Button variant="outline" size="sm" onClick={() => setReveal(true)}>
+            View ID document
+          </Button>
+        ) : idDoc.isPending ? (
+          <p className="text-xs text-muted-foreground">Loading secure preview…</p>
+        ) : idDoc.isError || !idDoc.data ? (
+          <p className="text-xs text-destructive">Could not load the ID document.</p>
+        ) : idDoc.data.contentTypeHint === 'image' ? (
+          // Plain <img>: the source is a short-lived presigned URL we don't
+          // want the Next image optimizer to cache.
+          <img
+            src={idDoc.data.url}
+            alt={`ID document for ${application.firstName} ${application.lastName}`}
+            className="max-h-72 w-full rounded-lg border border-border bg-muted object-contain"
+          />
+        ) : (
+          <a
+            href={idDoc.data.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Open ID document ({idDoc.data.contentTypeHint === 'pdf' ? 'PDF' : 'file'}) ↗
+          </a>
+        )
+      ) : null}
+
       <p className="text-xs leading-relaxed text-muted-foreground">
-        The secure in-app document viewer requires a dedicated admin presigned-read endpoint. Until
-        that exists, only the upload status is shown here — the raw storage key is never rendered.
+        The preview is a short-lived secure link — the raw storage key is never rendered, and the
+        document is never copied into our storage.
       </p>
     </Card>
   )

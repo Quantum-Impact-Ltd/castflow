@@ -11,6 +11,7 @@ import type {
 } from '@castflow/types'
 import { fetcher } from '@/lib/fetcher'
 import type { Init } from './types'
+import type { IdDocumentUrlResponse } from './artists'
 
 // ── Users ──────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,17 @@ export function listApplications(
   init?: Init
 ) {
   return fetcher<ArtistProfile[]>('/admin/applications', { params: filters, ...init })
+}
+
+export function getApplication(id: string, init?: Init) {
+  return fetcher<ArtistProfile>(`/admin/applications/${id}`, init)
+}
+
+export function getApplicationIdDocumentUrl(id: string, init?: Init) {
+  return fetcher<IdDocumentUrlResponse>(`/admin/applications/${id}/id-document/url`, {
+    method: 'GET',
+    ...init,
+  })
 }
 
 export function approveApplication(id: string, notes?: string) {
