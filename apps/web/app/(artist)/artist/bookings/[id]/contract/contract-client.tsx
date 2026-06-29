@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   ChevronLeft,
   FileText,
-  Download,
   ShieldCheck,
   Clock,
   CheckCircle2,
@@ -24,6 +23,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ContractPdfButton } from '@/components/dashboard/contract-pdf-button'
 import { useContract, useGenerateContract, useSignContract } from '@/lib/hooks/use-contracts'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
@@ -168,11 +168,7 @@ export function ContractClient({ bookingId }: { bookingId: string }) {
                   <p className="text-xs text-muted-foreground">Both parties have signed.</p>
                 </div>
               </div>
-              <Button asChild variant="outline" size="sm">
-                <a href={contract.pdfUrl} target="_blank" rel="noopener noreferrer">
-                  <Download className="mr-1.5 h-4 w-4" /> Download PDF
-                </a>
-              </Button>
+              <ContractPdfButton bookingId={bookingId} />
             </Card>
           ) : null}
         </div>

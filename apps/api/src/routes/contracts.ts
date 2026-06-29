@@ -18,6 +18,15 @@ contractRoutes.get('/bookings/:bookingId', async (c) => {
   return c.json({ success: true, data: contract })
 })
 
+// Short-lived presigned URL to view/download the signed contract PDF. The
+// contracts bucket is private, so the stored s3:// pdfUrl is not openable
+// directly — the client fetches this URL on demand.
+contractRoutes.get('/bookings/:bookingId/pdf-url', async (c) => {
+  const user = c.get('user')
+  const result = await ContractService.getPdfDownloadUrl(user, c.req.param('bookingId') ?? '')
+  return c.json({ success: true, data: result })
+})
+
 contractRoutes.post('/bookings/:bookingId/generate', async (c) => {
   const user = c.get('user')
   const contract = await ContractService.generateForBooking(user, c.req.param('bookingId') ?? '')

@@ -25,3 +25,14 @@ mock.module(r2LibPath, () => ({
   r2: r2Mock,
   Buckets: BucketsMock,
 }))
+
+// getSignedUrl signs offline from the client config, but r2Mock is a bare
+// `{ send }` stub with no AWS middleware/config, so the real presigner throws.
+// Return a deterministic fake signed URL that encodes the bucket + key so
+// tests can assert the right object was targeted.
+mock.module('@aws-sdk/s3-request-presigner', () => ({
+  getSignedUrl: async (_client: unknown, command: unknown) => {
+    const input = (command as { input?: { Bucket?: string; Key?: string } }).input ?? {}
+    return `https://signed.mock/${input.Bucket}/${input.Key}?sig=test`
+  },
+}))

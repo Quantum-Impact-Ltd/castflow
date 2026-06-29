@@ -1,4 +1,5 @@
-import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { prisma } from '../lib/prisma'
 import { env } from '../lib/env'
 import { r2, Buckets } from '../lib/r2'
@@ -161,6 +162,32 @@ export class ContractService {
       throw new AppError('NOT_FOUND', 'Contract not yet generated', 404)
     }
     return booking.contract
+  }
+
+  /**
+   * Short-lived presigned GET for the contract PDF. The contracts bucket is
+   * private, so `contract.pdfUrl` is stored as `s3://<bucket>/<key>` and is
+   * NOT browser-openable — reads must go through this presigned URL. Access is
+   * gated to the booking's caster/artist (or admin) via loadBookingForContract.
+   */
+  static async getPdfDownloadUrl(
+    user: UserCtx,
+    bookingId: string
+  ): Promise<{ url: string; expiresIn: number }> {
+    const booking = await loadBookingForContract(bookingId, user)
+    const pdfUrl = booking.contract?.pdfUrl
+    if (!pdfUrl) {
+      throw new AppError('NOT_FOUND', 'Contract PDF not available yet', 404)
+    }
+    // Stored as `s3://<bucket>/<key>` — extract the object key.
+    const key = pdfUrl.replace(/^s3:\/\/[^/]+\//, '')
+    const expiresIn = 60 * 10
+    const url = await getSignedUrl(
+      r2,
+      new GetObjectCommand({ Bucket: Buckets.contracts, Key: key }),
+      { expiresIn }
+    )
+    return { url, expiresIn }
   }
 
   /**
