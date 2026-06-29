@@ -23,6 +23,10 @@ const envSchema = z.object({
   R2_PRIVATE_BUCKET: z.string().min(1),
   R2_CONTRACTS_BUCKET: z.string().min(1),
   R2_PUBLIC_URL: z.string().url(),
+  // Cloudflare R2 jurisdiction for the S3 API endpoint. Buckets created with
+  // EU data residency are only reachable on the `.eu` endpoint; FedRAMP uses
+  // `.fedramp`. Leave unset for the default (non-jurisdictional) endpoint.
+  R2_JURISDICTION: z.enum(['eu', 'fedramp']).optional(),
 
   RESEND_API_KEY: z.string().min(1),
   EMAIL_FROM: z.string().email().default('noreply@castflow.co.uk'),

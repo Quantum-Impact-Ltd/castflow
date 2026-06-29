@@ -25,6 +25,10 @@ can't graft someone else's object onto their profile).
 1. Cloudflare dashboard → **R2** → **Create bucket** ×3 (names above).
 2. **Account ID** → it's in the R2 overview / your dashboard URL → `R2_ACCOUNT_ID`.
    The S3 endpoint is derived as `https://<account_id>.r2.cloudflarestorage.com`.
+   **Jurisdiction:** if you created the buckets with **EU** (or **FedRAMP**) data
+   residency, they are *only* reachable on `https://<account_id>.eu.r2.cloudflarestorage.com`
+   — the default host returns `AccessDenied`. Set `R2_JURISDICTION=eu` (or `fedramp`)
+   and the client injects the segment. Leave it unset for default-jurisdiction buckets.
 3. **R2 → Manage R2 API Tokens → Create API token**:
    - Permission: **Object Read & Write**.
    - Scope to the three buckets (or all).
@@ -79,10 +83,12 @@ R2_PUBLIC_BUCKET=castflow-public
 R2_PRIVATE_BUCKET=castflow-private
 R2_CONTRACTS_BUCKET=castflow-contracts
 R2_PUBLIC_URL=https://cdn.castflow.co.uk   # public bucket's domain (no trailing slash)
+R2_JURISDICTION=eu                         # optional — only for EU/FedRAMP buckets
 ```
 
-All seven are **required** and validated at startup (`apps/api/src/lib/env.ts`,
-Zod) — the API process exits if any is missing or malformed. There are no
+The first seven are **required** and validated at startup (`apps/api/src/lib/env.ts`,
+Zod) — the API process exits if any is missing or malformed. `R2_JURISDICTION` is
+optional (`eu` | `fedramp`); omit it for default-jurisdiction buckets. There are no
 web‑side R2 secrets.
 
 ## 6. Upload limits (enforced server‑side)
