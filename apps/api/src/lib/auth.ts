@@ -12,6 +12,23 @@ export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: [env.FRONTEND_URL],
 
+  // In deployed environments the frontend (e.g. Vercel) and this API (e.g.
+  // Railway) live on different sites, so the session cookie must be
+  // SameSite=None; Secure to be stored and sent on cross-site requests —
+  // `Partitioned` keeps it working under browsers' third-party-cookie
+  // restrictions (CHIPS). Secure cookies require HTTPS, so this only applies
+  // to the HTTPS deploys; local dev stays on the default Lax over http.
+  advanced:
+    env.NODE_ENV === 'production' || env.NODE_ENV === 'staging'
+      ? {
+          defaultCookieAttributes: {
+            sameSite: 'none',
+            secure: true,
+            partitioned: true,
+          },
+        }
+      : undefined,
+
   emailAndPassword: {
     enabled: true,
     // Production always enforces verification. In dev/staging the flag lets
