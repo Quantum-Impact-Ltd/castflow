@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Send } from 'lucide-react'
 import { z } from 'zod'
 import { AuthField, AuthInput } from '@/components/auth/auth-form-fields'
 import { useResendVerification } from '@/lib/hooks/use-auth'
+import { useCooldown } from '@/lib/hooks/use-cooldown'
 
 const emailSchema = z.string().trim().email()
 const RESEND_COOLDOWN_SECONDS = 30
@@ -14,23 +15,20 @@ const RESEND_COOLDOWN_SECONDS = 30
 export function VerifyEmailClient() {
   const params = useSearchParams()
   const initialEmail = params.get('email') ?? ''
+  const role = params.get('role')
+  // Return to the specific role form (preserving the choice) when we know it,
+  // otherwise fall back to the role chooser. (Audit #9.)
+  const wrongEmailHref =
+    role === 'artist' || role === 'caster' ? `/register/${role}` : '/register'
   const [email, setEmail] = useState(initialEmail)
   const mutation = useResendVerification()
 
   // Client-side cooldown so the user can't button-mash the resend (which would
   // otherwise burn through the API's per-email/IP rate-limit bucket and start
-  // 429'ing them). Mirrors the M22 pattern on /onboarding/pending. (Audit L3.)
-  const [cooldownUntil, setCooldownUntil] = useState(0)
-  const [now, setNow] = useState(() => Date.now())
-
-  useEffect(() => {
-    if (cooldownUntil <= now) return
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [cooldownUntil, now])
-
-  const remaining = Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
-  const onCooldown = remaining > 0
+  // 429'ing them). (Audit L3.)
+  const { remaining, onCooldown, start: startCooldown } = useCooldown(
+    RESEND_COOLDOWN_SECONDS,
+  )
 
   const handleResend = () => {
     if (onCooldown || mutation.isPending) return
@@ -41,7 +39,7 @@ export function VerifyEmailClient() {
       toast.error('Enter a valid email to resend the verification link.')
       return
     }
-    setCooldownUntil(Date.now() + RESEND_COOLDOWN_SECONDS * 1000)
+    startCooldown()
     mutation.mutate(parsed.data, {
       onSuccess: () =>
         toast.success('Verification email re-sent. Check your inbox.'),
@@ -55,7 +53,7 @@ export function VerifyEmailClient() {
           Sent to{' '}
           <span className="font-medium text-white/85">{initialEmail}</span>
           {' — '}
-          <a href="/register" className="text-[var(--cta-400)] underline-offset-4 hover:underline">
+          <a href={wrongEmailHref} className="text-[var(--cta-400)] underline-offset-4 hover:underline">
             Wrong email?
           </a>
         </p>

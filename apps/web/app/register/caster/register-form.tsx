@@ -1,13 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { toast } from 'sonner'
-import { ArrowRight, ChevronDown } from 'lucide-react'
+import type { z } from 'zod'
+import { ChevronDown } from 'lucide-react'
 import {
   registerCasterSchema,
   type RegisterCasterInput,
@@ -19,19 +15,19 @@ import {
 import { PasswordInput } from '@/components/auth/password-input'
 import { PasswordStrengthMeter } from '@/components/auth/password-strength-meter'
 import { useRegisterCaster } from '@/lib/hooks/use-auth'
+import { TurnstileWidget } from '@/components/auth/turnstile-widget'
 import {
-  TurnstileWidget,
-  isTurnstileEnabled,
-} from '@/components/auth/turnstile-widget'
+  useRegisterFlow,
+  withConfirmPassword,
+} from '@/components/auth/register-form-kit'
+import {
+  RegisterServerError,
+  RegisterSubmitButton,
+  RegisterTermsFooter,
+} from '@/components/auth/register-form-ui'
 import { cn } from '@/lib/utils'
-import type { ApiError } from '@/lib/fetcher'
 
-const formSchema = registerCasterSchema
-  .extend({ confirmPassword: z.string().min(1) })
-  .refine((v) => v.password === v.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  })
+const formSchema = withConfirmPassword(registerCasterSchema)
 
 type FormValues = z.infer<typeof formSchema>
 
@@ -46,11 +42,7 @@ const COMPANY_TYPES: ReadonlyArray<{
 ]
 
 export function RegisterCasterForm() {
-  const router = useRouter()
   const mutation = useRegisterCaster()
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-  const captchaEnabled = isTurnstileEnabled()
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -64,48 +56,24 @@ export function RegisterCasterForm() {
     },
   })
 
-  const onSubmit = form.handleSubmit((values) => {
-    setServerError(null)
-    if (captchaEnabled && !captchaToken) {
-      setServerError('Please complete the captcha to continue.')
-      return
-    }
-    const { confirmPassword: _c, ...rest } = values
-    void _c
-    const payload: RegisterCasterInput & { captchaToken?: string } = {
-      ...(rest as RegisterCasterInput),
-      ...(captchaToken ? { captchaToken } : {}),
-    }
-    mutation.mutate(payload, {
-      onSuccess: (result) => {
-        if (result.emailVerified) {
-          toast.success('Account created — log in to continue')
-          router.push(`/login?email=${encodeURIComponent(payload.email)}`)
-          return
-        }
-        toast.success('Account created — check your email to verify')
-        router.push(`/verify-email?email=${encodeURIComponent(payload.email)}`)
-      },
-      onError: (err) => {
-        const apiErr = err as ApiError
-        if (apiErr.fields) {
-          for (const [field, msgs] of Object.entries(apiErr.fields)) {
-            form.setError(field as keyof FormValues, {
-              type: 'server',
-              message: msgs[0],
-            })
-          }
-        } else {
-          setServerError(apiErr.message)
+  const { serverError, captchaEnabled, captchaToken, setCaptchaToken, submit } =
+    useRegisterFlow({
+      form,
+      mutation,
+      role: 'caster',
+      toPayload: ({ confirmPassword: _c, ...rest }, captchaToken) => {
+        void _c
+        return {
+          ...(rest as RegisterCasterInput),
+          ...(captchaToken ? { captchaToken } : {}),
         }
       },
     })
-  })
 
   return (
     <form
       onSubmit={(e) => {
-        void onSubmit(e)
+        void submit(e)
       }}
       className="space-y-5"
       noValidate
@@ -228,14 +196,7 @@ export function RegisterCasterForm() {
         </AuthField>
       </div>
 
-      {serverError ? (
-        <p
-          role="alert"
-          className="rounded-lg border border-rose-400/30 bg-rose-400/[0.08] px-3 py-2 text-sm text-rose-200"
-        >
-          {serverError}
-        </p>
-      ) : null}
+      <RegisterServerError message={serverError} />
 
       {captchaEnabled && (
         <TurnstileWidget
@@ -244,35 +205,13 @@ export function RegisterCasterForm() {
         />
       )}
 
-      <button
-        type="submit"
+      <RegisterSubmitButton
+        label="Create caster account"
+        pending={mutation.isPending}
         disabled={mutation.isPending || (captchaEnabled && !captchaToken)}
-        aria-busy={mutation.isPending}
-        className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ink-900)]"
-      >
-        {mutation.isPending ? 'Creating account…' : 'Create caster account'}
-        {!mutation.isPending ? (
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        ) : null}
-      </button>
+      />
 
-      <p className="text-center text-xs text-white/50">
-        By registering you agree to our{' '}
-        <Link
-          href="/terms"
-          className="text-white/75 underline-offset-4 hover:text-white hover:underline"
-        >
-          Terms
-        </Link>{' '}
-        and{' '}
-        <Link
-          href="/privacy"
-          className="text-white/75 underline-offset-4 hover:text-white hover:underline"
-        >
-          Privacy Policy
-        </Link>
-        .
-      </p>
+      <RegisterTermsFooter />
     </form>
   )
 }

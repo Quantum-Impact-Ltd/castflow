@@ -69,7 +69,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           eyebrow="Models & actors"
           title="I'm an artist"
           body="Apply for shoots, manage bookings, keep 100% of every booking."
-          imageUrl="https://images.unsplash.com/photo-1488161628813-04466f872be2?auto=format&fit=crop&w=1200&q=80"
+          imageUrl="/register/artist.jpg"
           imageAlt="Portrait of a model on set"
         />
         <RoleTile
@@ -78,7 +78,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           eyebrow="Brands, agencies & producers"
           title="I'm a caster"
           body="Post shoots, find verified talent, book in days. Simple caster subscription."
-          imageUrl="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80"
+          imageUrl="/register/caster.jpg"
           imageAlt="Cinema camera and crew on a production set"
         />
       </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -11,6 +11,8 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { useMyArtistProfile } from '@/lib/hooks/use-artist'
+import { useCooldown } from '@/lib/hooks/use-cooldown'
+import { AtmosphereBackdrop } from '@/components/shared/atmosphere-backdrop'
 
 const REFETCH_COOLDOWN_SECONDS = 30
 
@@ -19,30 +21,14 @@ export default function OnboardingPendingPage() {
   const { data: profile, isLoading, refetch, isFetching } = useMyArtistProfile()
 
   // Per-page cooldown gate on the "Check status" button so the user can't
-  // spam refetch and hammer the API. Tracks an epoch timestamp instead of a
-  // boolean so we can render the remaining seconds. (Audit M22.)
-  const [cooldownUntil, setCooldownUntil] = useState(0)
-  const [now, setNow] = useState(() => Date.now())
-
-  // One interval per cooldown — previously `now` was in the deps array, so
-  // every 1s tick tore down and re-created the timer. Self-clears when the
-  // cooldown expires so the timer doesn't keep ticking forever once it's done.
-  useEffect(() => {
-    if (cooldownUntil <= Date.now()) return
-    const id = setInterval(() => {
-      const t = Date.now()
-      setNow(t)
-      if (t >= cooldownUntil) clearInterval(id)
-    }, 1000)
-    return () => clearInterval(id)
-  }, [cooldownUntil])
-
-  const remaining = Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
-  const onCooldown = remaining > 0
+  // spam refetch and hammer the API. (Audit M22.)
+  const { remaining, onCooldown, start: startCooldown } = useCooldown(
+    REFETCH_COOLDOWN_SECONDS,
+  )
 
   const handleRefetch = () => {
     if (onCooldown || isFetching) return
-    setCooldownUntil(Date.now() + REFETCH_COOLDOWN_SECONDS * 1000)
+    startCooldown()
     void refetch()
   }
 
@@ -60,14 +46,7 @@ export default function OnboardingPendingPage() {
 
   return (
     <div className="relative isolate grid min-h-screen w-full place-items-center overflow-hidden bg-[var(--ink-900)] px-4 text-white">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-[var(--brand-700)] opacity-[0.22] blur-[140px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[var(--cta-400)] opacity-[0.16] blur-[140px]"
-      />
+      <AtmosphereBackdrop />
 
       <div className="relative z-10 mx-auto max-w-md text-center">
         {isLoading ? (

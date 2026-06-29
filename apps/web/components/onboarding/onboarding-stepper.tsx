@@ -84,8 +84,8 @@ export function OnboardingStepper({
                   className={cn(
                     'max-w-[6.5rem] truncate font-mono text-[10px] tracking-[0.18em] uppercase',
                     status === 'current' && 'text-white/85',
-                    status === 'done' && 'text-white/55',
-                    status === 'upcoming' && 'text-white/35'
+                    status === 'done' && 'text-white/60',
+                    status === 'upcoming' && 'text-white/50'
                   )}
                 >
                   {step.label}

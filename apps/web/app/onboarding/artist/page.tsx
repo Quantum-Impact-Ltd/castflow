@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { OnboardingShell } from '@/components/onboarding/onboarding-shell'
+import { StepTips } from '@/components/onboarding/step-tips'
 import { StepCraft } from '@/components/onboarding/steps/step-craft'
 import { StepPersonal } from '@/components/onboarding/steps/step-personal'
 import { StepStats } from '@/components/onboarding/steps/step-stats'
@@ -171,23 +172,6 @@ const STEP_COPY: Record<StepKey, StepCopy> = {
   },
 }
 
-function StepTips({ stepKey }: { stepKey: StepKey }) {
-  const copy = STEP_COPY[stepKey].tips
-  return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold tracking-tight">{copy.heading}</h3>
-      <ul className="text-muted-foreground space-y-2 text-sm leading-relaxed">
-        {copy.bullets.map((b) => (
-          <li key={b} className="flex gap-2">
-            <span className="text-foreground/40 mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-current" />
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
 function clampStep(n: number, max: number) {
   if (Number.isNaN(n)) return 0
   return Math.max(0, Math.min(n, max))
@@ -206,7 +190,9 @@ function deriveFirstIncompleteStep(
     if (!step) break
     switch (step.key) {
       case 'craft':
-        // Always considered done — you have a type from registration
+        // Registration doesn't ask for craft — the API defaults artistType to
+        // 'model', so the craft step is the artist's first real choice. It's
+        // always passable (a default is always set), so it never blocks resume.
         continue
       case 'personal':
         if (
@@ -269,15 +255,21 @@ export default function ArtistOnboardingPage() {
     clampStep(Number(searchParams.get('step') ?? '0'), steps.length - 1)
   )
 
-  // On first profile load: if no URL step was provided, jump to the first
-  // incomplete step so returning artists resume where they left off.
+  // On first profile load: resolve where the artist should actually be.
+  // - No `?step` in the URL → jump to the first incomplete step so returning
+  //   artists resume where they left off.
+  // - A deep-linked `?step=N` must not jump past locked steps, so clamp it down
+  //   to the first incomplete step. The stepper already locks those buttons;
+  //   this closes the URL bypass too. (Audit #8.)
   const profileLoadedRef = useRef(false)
   useEffect(() => {
     if (!profile || profileLoadedRef.current) return
     profileLoadedRef.current = true
+    const firstIncomplete = deriveFirstIncompleteStep(profile, steps)
     if (searchParams.get('step') === null) {
-      const derived = deriveFirstIncompleteStep(profile, steps)
-      setCurrentIndex(derived)
+      setCurrentIndex(firstIncomplete)
+    } else {
+      setCurrentIndex((i) => Math.min(i, firstIncomplete))
     }
   }, [profile, steps, searchParams])
 
@@ -339,7 +331,7 @@ export default function ArtistOnboardingPage() {
       maxUnlockedIndex={maxUnlockedIndex}
       title={copy.title}
       subtitle={copy.subtitle}
-      tips={<StepTips stepKey={currentStep.key} />}
+      tips={<StepTips {...STEP_COPY[currentStep.key].tips} />}
     >
       {/* Rejection banner. Surfaces admin notes so the artist knows what
           to fix before resubmitting — avoids resubmit-and-get-rejected

@@ -1,106 +1,25 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { OnboardingShell } from '@/components/onboarding/onboarding-shell'
-import { StepCasterCompany } from '@/components/onboarding/steps/step-caster-company'
-import { StepCasterWelcome } from '@/components/onboarding/steps/step-caster-welcome'
+import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import { useMyCaster } from '@/lib/hooks/use-caster'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AtmosphereBackdrop } from '@/components/shared/atmosphere-backdrop'
+import { StepCasterWelcome } from '@/components/onboarding/steps/step-caster-welcome'
 
-const STEPS = [
-  { key: 'company', label: 'Company' },
-  { key: 'welcome', label: 'Welcome' },
-] as const
-
-interface StepCopy {
-  title: string
-  subtitle: string
-  tips: { heading: string; bullets: ReadonlyArray<string> }
-}
-
-const STEP_COPY: Record<(typeof STEPS)[number]['key'], StepCopy> = {
-  company: {
-    title: 'A few extras about your company',
-    subtitle: 'Optional. You can do this later from settings.',
-    tips: {
-      heading: 'Why bother?',
-      bullets: [
-        'Phone shows up on the booking detail once a contract is signed — artists message you in-platform until then.',
-        'A website link adds credibility, especially for invite-only jobs to busier artists.',
-        'Both are skippable — you can edit them any time from your account settings.',
-      ],
-    },
-  },
-  welcome: {
-    title: 'You’re all set',
-    subtitle: 'Pick where to start. You can come back to either any time.',
-    tips: {
-      heading: 'How CastFlow works',
-      bullets: [
-        'Post a job — artists bid, you shortlist, accept the best fit.',
-        'Browse talent — search the verified directory, invite specific artists.',
-        'Pay the artist directly, off-platform — CastFlow never touches job fees.',
-        'A simple caster subscription unlocks posting and booking. Artists join free.',
-      ],
-    },
-  },
-}
-
-function StepTips({ stepKey }: { stepKey: (typeof STEPS)[number]['key'] }) {
-  const copy = STEP_COPY[stepKey].tips
-  return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold tracking-tight">{copy.heading}</h3>
-      <ul className="text-muted-foreground space-y-2 text-sm leading-relaxed">
-        {copy.bullets.map((b, i) => (
-          <li key={i} className="flex gap-2">
-            <span className="text-foreground/40 mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-current" />
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-function clamp(n: number, max: number) {
-  if (Number.isNaN(n)) return 0
-  return Math.max(0, Math.min(n, max))
-}
-
+/**
+ * Caster onboarding is a single welcome screen — there's nothing the caster
+ * must fill in to start (posting a job and booking each have their own flow,
+ * and optional company details live in settings). StepCasterWelcome marks
+ * onboarding complete on mount. (Audit #7.)
+ */
 export default function CasterOnboardingPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const { data: profile, isLoading, isError } = useMyCaster()
-
-  const [currentIndex, setCurrentIndex] = useState(() =>
-    clamp(Number(searchParams.get('step') ?? '0'), STEPS.length - 1)
-  )
-
-  // Once the profile loads, if onboarding is already complete fast-forward
-  // to the welcome step (step 1) so returning casters don't re-see the form.
-  const profileLoadedRef = useRef(false)
-  useEffect(() => {
-    if (!profile || profileLoadedRef.current) return
-    profileLoadedRef.current = true
-    if (profile.onboardingCompletedAt && searchParams.get('step') === null) {
-      setCurrentIndex(1)
-    }
-  }, [profile, searchParams])
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (currentIndex === 0) params.delete('step')
-    else params.set('step', String(currentIndex))
-    const qs = params.toString()
-    router.replace(qs ? `?${qs}` : '?', { scroll: false })
-  }, [currentIndex, router])
 
   if (isLoading) {
     return (
       <div className="dark min-h-screen bg-[var(--ink-900)] text-white">
-        <div className="mx-auto max-w-5xl space-y-6 p-8">
+        <div className="mx-auto max-w-2xl space-y-6 p-8">
           <Skeleton className="h-10 w-full bg-white/[0.04]" />
           <Skeleton className="h-64 w-full bg-white/[0.04]" />
         </div>
@@ -118,29 +37,47 @@ export default function CasterOnboardingPage() {
     )
   }
 
-  const currentStep = STEPS[currentIndex]
-  if (!currentStep) return null
-  const copy = STEP_COPY[currentStep.key]
-  const goNext = () => setCurrentIndex((i) => Math.min(STEPS.length - 1, i + 1))
-
-  // Welcome step is only reachable after saving or skipping Company details.
-  // Derive from the current index so the stepper reflects what's accessible.
-  const maxUnlockedIndex = Math.max(currentIndex, profile?.onboardingCompletedAt ? 1 : 0)
-
   return (
-    <OnboardingShell
-      steps={STEPS}
-      currentIndex={currentIndex}
-      onStepClick={setCurrentIndex}
-      maxUnlockedIndex={maxUnlockedIndex}
-      title={copy.title}
-      subtitle={copy.subtitle}
-      tips={<StepTips stepKey={currentStep.key} />}
-    >
-      {currentStep.key === 'company' && (
-        <StepCasterCompany profile={profile} onSkip={goNext} onNext={goNext} />
-      )}
-      {currentStep.key === 'welcome' && <StepCasterWelcome />}
-    </OnboardingShell>
+    <div className="dark relative isolate min-h-screen w-full overflow-hidden bg-[var(--ink-900)] text-white">
+      <AtmosphereBackdrop />
+
+      <header className="relative z-10 border-b border-white/8">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4 lg:px-6">
+          <Link
+            href="/"
+            className="group inline-flex items-center gap-2 text-sm font-medium tracking-tight text-white transition-opacity hover:opacity-90"
+          >
+            <span
+              className="inline-block h-2 w-2 rounded-full bg-[var(--cta-400)] transition-transform duration-500 group-hover:scale-150"
+              aria-hidden
+            />
+            CastFlow
+          </Link>
+          <Link
+            href="/caster/dashboard"
+            className="inline-flex items-center gap-1 text-xs text-white/55 transition-colors hover:text-white"
+          >
+            <ChevronLeft className="h-3 w-3" aria-hidden />
+            Skip to dashboard
+          </Link>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-2xl px-4 py-12 lg:px-6 lg:py-16">
+        <div className="mb-8">
+          <p className="font-mono text-[11px] font-semibold tracking-[0.18em] text-white/70 uppercase">
+            Welcome to CastFlow
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            You&apos;re all set, {profile.companyName}.
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-white/65 sm:text-base">
+            Pick where to start — you can do either any time.
+          </p>
+        </div>
+
+        <StepCasterWelcome />
+      </main>
+    </div>
   )
 }

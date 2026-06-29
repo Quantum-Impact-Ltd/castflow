@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AtmosphereBackdrop } from '@/components/shared/atmosphere-backdrop'
 
 interface AuthShellProps {
   eyebrow?: string
@@ -37,14 +38,7 @@ export function AuthShell({
   return (
     <div className="relative isolate min-h-screen w-full overflow-hidden bg-[var(--ink-900)] text-white">
       {/* Atmospheric color washes — tonal depth only, no grid/particles. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-40 -top-40 h-[36rem] w-[36rem] rounded-full bg-[var(--brand-700)] opacity-[0.22] blur-[140px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[32rem] w-[32rem] rounded-full bg-[var(--cta-400)] opacity-[0.16] blur-[140px]"
-      />
+      <AtmosphereBackdrop />
 
       {/* Top-left brand mark */}
       <div className="absolute left-6 top-6 z-20 flex items-center gap-4 lg:left-10 lg:top-8">

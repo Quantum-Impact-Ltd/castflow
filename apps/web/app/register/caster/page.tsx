@@ -16,7 +16,7 @@ export default async function RegisterCasterPage() {
       eyebrow="For brands & agencies"
       topAccessory={<RegisterProgress current={1} />}
       heading="Open your caster account."
-      subhead="Account first. We'll do a quick welcome tour right after you verify your email."
+      subhead="Account first. Verify your email and you're ready to post jobs and browse talent."
       width="lg"
       backHref="/register"
       backLabel="Pick a different role"

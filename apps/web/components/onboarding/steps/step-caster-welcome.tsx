@@ -2,7 +2,14 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { AlertCircle, ArrowRight, Briefcase, Loader2, Users } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowRight,
+  Briefcase,
+  Building2,
+  Loader2,
+  Users,
+} from 'lucide-react'
 import { useCompleteOnboarding } from '@/lib/hooks/use-caster'
 
 const ACTIONS = [
@@ -25,13 +32,14 @@ export function StepCasterWelcome() {
   const complete = useCompleteOnboarding()
   const firedRef = useRef(false)
 
-  // Mark onboarding as complete on first render. The mutation is idempotent.
-  // Using a ref guard instead of an empty dep array avoids the missing-dep lint rule.
+  // Mark onboarding as complete once on mount. The mutation is idempotent; the
+  // ref guards against React StrictMode's double-invoke in development.
   useEffect(() => {
     if (firedRef.current) return
     firedRef.current = true
     complete.mutate()
-  })
+    // Intentionally fire once on mount — `complete` is a stable mutation object.
+  }, [])
 
   // Wait for the mutation to commit before revealing the action cards.
   // Without this, a caster clicking 'Post a job' before the PATCH lands
@@ -108,6 +116,24 @@ export function StepCasterWelcome() {
           )
         })}
       </div>
+
+      {/* Optional company details (logo, phone, website) live in settings —
+          surfaced here as a soft prompt rather than a forced onboarding step. */}
+      <Link
+        href="/caster/settings"
+        className="group flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.03] p-4 transition hover:border-white/25 hover:bg-white/[0.05]"
+      >
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/12 bg-white/[0.04] text-white/75">
+          <Building2 className="h-4 w-4" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-white">Add your logo, phone & website</p>
+          <p className="text-xs leading-relaxed text-white/60">
+            Optional — artists are more likely to bid on jobs from brands they recognise.
+          </p>
+        </div>
+        <ArrowRight className="h-4 w-4 shrink-0 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-white/70" />
+      </Link>
 
       <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-5">
         <h3 className="text-sm font-semibold tracking-tight text-white">How payment works</h3>

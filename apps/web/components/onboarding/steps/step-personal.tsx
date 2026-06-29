@@ -32,18 +32,8 @@ const GENDER_OPTIONS = [
   { value: 'prefer_not_to_say', label: 'Prefer not to say' },
 ] as const
 
-// Computed inside the component so the value is recalculated on every render
-// rather than frozen at module load. A long-lived tab open across midnight
-// previously kept yesterday's cap on the date picker. (Audit L11.)
-function calculateDobMax(): string {
-  const d = new Date()
-  d.setFullYear(d.getFullYear() - 18)
-  return d.toISOString().slice(0, 10)
-}
-
 export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
   const mutation = useUpdatePersonal()
-  const dobMax = calculateDobMax()
   const form = useForm<ArtistPersonalInfoInput>({
     resolver: zodResolver(artistPersonalInfoSchema),
     defaultValues: {
@@ -113,11 +103,17 @@ export function StepPersonal({ profile, onBack, onNext }: StepPersonalProps) {
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="dob">Date of birth</Label>
-          <Input id="dob" type="date" max={dobMax} {...form.register('dob')} />
-          <p className="text-muted-foreground text-xs">You must be 18 or older to join CastFlow.</p>
-          {form.formState.errors.dob && (
-            <p className="text-destructive text-xs">{form.formState.errors.dob.message}</p>
-          )}
+          <Input
+            id="dob"
+            type="date"
+            autoComplete="bday"
+            readOnly
+            className="bg-muted"
+            {...form.register('dob')}
+          />
+          <p className="text-muted-foreground text-xs">
+            From your sign-up (18+ verified). Update it in profile settings if needed.
+          </p>
         </div>
 
         <div className="space-y-1.5">
