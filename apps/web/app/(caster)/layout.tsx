@@ -32,9 +32,16 @@ export default async function CasterLayout({ children }: { children: ReactNode }
     return <Forbidden403 homeHref={postLoginPath({ role, approvalStatus: approvalStatus ?? null })} />
   }
 
+  // Absolute API origin for this server-side fetch — the Vercel proxy only
+  // rewrites browser requests, and NEXT_PUBLIC_API_URL is empty in the proxied
+  // setup (a relative URL would throw here and fail the gate closed). Falls
+  // back to NEXT_PUBLIC_API_URL locally where API_ORIGIN is unset.
+  const apiOrigin =
+    process.env['API_ORIGIN'] ?? process.env['NEXT_PUBLIC_API_URL'] ?? ''
+
   let onboarded = false
   try {
-    const res = await fetch(`${process.env['NEXT_PUBLIC_API_URL']}/api/v1/casters/me`, {
+    const res = await fetch(`${apiOrigin}/api/v1/casters/me`, {
       headers: { cookie: headersList.get('cookie') ?? '' },
       cache: 'no-store',
     })
