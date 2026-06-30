@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": "bunx prisma db push --schema apps/api/prisma/schema.prisma --skip-generate --accept-data-loss",
+    "preDeployCommand": "bun run --filter=@castflow/api db:push:deploy",
     "startCommand": "bun run apps/api/src/index.ts",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30,

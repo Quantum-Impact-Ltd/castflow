@@ -12,8 +12,10 @@ COPY . .
 # Install workspace dependencies against the committed lockfile
 RUN bun install --frozen-lockfile
 
-# Generate the Prisma client for the API
-RUN bunx prisma generate --schema apps/api/prisma/schema.prisma
+# Generate the Prisma client for the API. Run through the workspace script
+# (not `bunx prisma`, which fetches the LATEST Prisma — v7 drops `url=env()`
+# in the schema) so the lockfile-pinned Prisma 5 binary is used.
+RUN bun run --filter=@castflow/api db:generate
 
 ENV NODE_ENV=production
 # Railway injects PORT at runtime; the app reads it via env.PORT.
