@@ -113,7 +113,14 @@ export async function login(input: LoginInput): Promise<{ user: SessionUser }> {
   }
   // Better Auth's base types don't include our `role` additionalField, so
   // we have to widen through `unknown` to land on our richer SessionUser.
-  const user = result.data?.user as unknown as SessionUser | undefined
+  let user = result.data?.user as unknown as SessionUser | undefined
+  // Some Better Auth versions don't echo the user back on sign-in (data is just
+  // `{ token, redirect }`). The sign-in still set the session cookie, so fetch
+  // the session to get the user (incl. our `role`) for the post-login redirect.
+  if (!user) {
+    const session = await authClient.getSession()
+    user = session.data?.user as unknown as SessionUser | undefined
+  }
   if (!user) {
     throw new Error('Login succeeded but no user was returned')
   }
