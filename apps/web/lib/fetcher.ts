@@ -42,7 +42,17 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
   signal?: AbortSignal
 }
 
-const API_BASE = `${process.env['NEXT_PUBLIC_API_URL'] ?? ''}/api/v1`
+// In the browser, call the API on this same origin ('' → '/api/v1') so the
+// request rides the Vercel proxy (next.config rewrites) and the session cookie
+// stays first-party. On the server there's no proxy, so hit the API's absolute
+// origin directly. Locally both resolve to NEXT_PUBLIC_API_URL (e.g.
+// http://localhost:3001) since API_ORIGIN is unset.
+const SERVER_API_ORIGIN =
+  process.env['API_ORIGIN'] ?? process.env['NEXT_PUBLIC_API_URL'] ?? ''
+const BROWSER_API_ORIGIN = process.env['NEXT_PUBLIC_API_URL'] ?? ''
+const API_BASE = `${
+  typeof window === 'undefined' ? SERVER_API_ORIGIN : BROWSER_API_ORIGIN
+}/api/v1`
 
 function buildUrl(path: string, params?: RequestOptions['params']): string {
   const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`

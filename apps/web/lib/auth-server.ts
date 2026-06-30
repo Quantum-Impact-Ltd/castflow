@@ -22,9 +22,16 @@ type SessionResult = {
   session: { id: string; expiresAt: string }
 } | null
 
+// Server-side: hit the API's absolute origin (the Vercel proxy only applies to
+// browser requests). With the proxy, the session cookie is first-party to this
+// frontend, so the incoming request's `cookie` header carries it — we forward
+// that to the API. Falls back to NEXT_PUBLIC_API_URL locally (API_ORIGIN unset).
+const SERVER_API_ORIGIN =
+  process.env['API_ORIGIN'] ?? process.env['NEXT_PUBLIC_API_URL'] ?? ''
+
 async function getSession(opts: { headers: Headers }): Promise<SessionResult> {
   const cookie = opts.headers.get('cookie') ?? ''
-  const res = await fetch(`${process.env['NEXT_PUBLIC_API_URL']}/api/auth/get-session`, {
+  const res = await fetch(`${SERVER_API_ORIGIN}/api/auth/get-session`, {
     headers: { cookie },
     cache: 'no-store',
   })

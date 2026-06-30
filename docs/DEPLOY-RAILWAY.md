@@ -60,16 +60,31 @@ API service → **Variables**. `PORT` is injected by Railway automatically — d
 The API validates all required vars at startup (`src/lib/env.ts`) and exits if
 any is missing — check the deploy logs if the container won't boot.
 
-## 3. Point the Vercel frontend at the API
+## 3. Point the Vercel frontend at the API (same-origin proxy)
+
+Frontend (`*.vercel.app`) and API (`*.up.railway.app`) are different domains, so
+a direct cross-site session cookie can't be read by the frontend's server-side
+auth guards. Instead the frontend **proxies** API traffic on its own origin
+(via `next.config.ts` rewrites), keeping the session cookie first-party.
 
 In the Vercel project → **Settings → Environment Variables**, set (and redeploy):
 
 | Variable | Value |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | `https://<API_HOST>` |
+| `API_ORIGIN` | `https://<API_HOST>` (server-only; the proxy/SSR target) |
+| `NEXT_PUBLIC_API_URL` | **empty** (browser calls same-origin `/api/*`, which is proxied) |
 | `NEXT_PUBLIC_WS_URL` | `wss://<API_HOST>` |
 
-(The fetcher calls `${NEXT_PUBLIC_API_URL}/api/v1`; messaging connects over `wss://`.)
+How it works: the browser calls `/api/auth/*` and `/api/v1/*` on the Vercel
+domain → `next.config` rewrites them to `API_ORIGIN` → the API's `Set-Cookie`
+comes back on the Vercel origin as a **first-party** cookie. Server components
+(auth guards) read that cookie and forward it to `API_ORIGIN` directly.
+
+> **Messaging caveat:** `NEXT_PUBLIC_WS_URL` still points straight at Railway, so
+> the live WebSocket is cross-site — live push may not work in every browser.
+> Messages still **load and send over REST** (proxied), so they work; they just
+> won't update in real time without a refresh. (Goes away once frontend + API
+> share a parent domain.)
 
 ## 4. Stripe webhook
 

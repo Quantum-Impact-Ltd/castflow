@@ -5,7 +5,10 @@
 import { createAuthClient } from 'better-auth/react'
 
 export const authClient = createAuthClient({
-  baseURL: process.env['NEXT_PUBLIC_API_URL']!,
+  // Empty/unset → use the current origin so auth calls (/api/auth/*) ride the
+  // Vercel proxy and the session cookie is first-party. Locally this is set to
+  // the API origin (http://localhost:3001).
+  baseURL: process.env['NEXT_PUBLIC_API_URL'] || undefined,
 })
 
 export const { signIn, signUp, signOut, useSession } = authClient
