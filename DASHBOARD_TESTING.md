@@ -44,10 +44,10 @@ On success the seed prints the full credential list and the key scenarios.
 
 ### 1.3 Required env (`apps/api/.env`)
 
-| Var | Value for testing |
-| --- | --- |
-| `DATABASE_URL` | your Postgres URL |
-| `BETTER_AUTH_SECRET` | any ≥32-char string |
+| Var                     | Value for testing                                                               |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | your Postgres URL                                                               |
+| `BETTER_AUTH_SECRET`    | any ≥32-char string                                                             |
 | `DEV_AUTO_VERIFY_EMAIL` | `true` (already set) — lets seeded accounts log in without a verification email |
 
 Stripe / R2 / Resend keys are **not** required to exercise the dashboards. Where
@@ -63,25 +63,25 @@ bun run dev
 
 Open `http://localhost:3000/login`.
 
----
+--
 
 ## 2. Accounts
 
-| # | Email | Password | Role | State |
-| - | ----- | -------- | ---- | ----- |
-| Admin | `admin@castflow.test` | `Password123!` | admin | active |
-| Caster 1 | `caster1@castflow.test` | `Password123!` | caster | Acme Studios London (brand) |
-| Caster 2 | `caster2@castflow.test` | `Password123!` | caster | Goldsmith Casting Agency (agency) |
-| Artist 1 | `artist1@castflow.test` | `Password123!` | artist | Sophie Carter — model, **approved**, payouts on |
-| Artist 2 | `artist2@castflow.test` | `Password123!` | artist | James O'Hara — actor, **approved**, payouts on |
-| Artist 3 | `artist3@castflow.test` | `Password123!` | artist | Priya Patel — model, **approved**, payouts off |
-| Artist 4 | `artist4@castflow.test` | `Password123!` | artist | Marcus Thompson — actor/VO, **approved**, payouts on |
-| Artist 5 | `artist5@castflow.test` | `Password123!` | artist | Emma Wilson — model, **approved**, payouts off |
-| Pending 1 | `pending1@castflow.test` | `Password123!` | artist | Charlie Reed — **pending** approval |
-| Pending 2 | `pending2@castflow.test` | `Password123!` | artist | Olivia Bennett — **pending** approval |
-| Rejected | `rejected1@castflow.test` | `Password123!` | artist | Liam Foster — **rejected** (resubmit notes) |
-| Suspended | `suspended1@castflow.test` | `Password123!` | artist | Daniel Price — approved profile, **suspended** |
-| Banned | `banned1@castflow.test` | `Password123!` | artist | Grace Hunt — **banned** (cannot log in) |
+| #         | Email                      | Password       | Role   | State                                                |
+| --------- | -------------------------- | -------------- | ------ | ---------------------------------------------------- |
+| Admin     | `admin@castflow.test`      | `Password123!` | admin  | active                                               |
+| Caster 1  | `caster1@castflow.test`    | `Password123!` | caster | Acme Studios London (brand)                          |
+| Caster 2  | `caster2@castflow.test`    | `Password123!` | caster | Goldsmith Casting Agency (agency)                    |
+| Artist 1  | `artist1@castflow.test`    | `Password123!` | artist | Sophie Carter — model, **approved**, payouts on      |
+| Artist 2  | `artist2@castflow.test`    | `Password123!` | artist | James O'Hara — actor, **approved**, payouts on       |
+| Artist 3  | `artist3@castflow.test`    | `Password123!` | artist | Priya Patel — model, **approved**, payouts off       |
+| Artist 4  | `artist4@castflow.test`    | `Password123!` | artist | Marcus Thompson — actor/VO, **approved**, payouts on |
+| Artist 5  | `artist5@castflow.test`    | `Password123!` | artist | Emma Wilson — model, **approved**, payouts off       |
+| Pending 1 | `pending1@castflow.test`   | `Password123!` | artist | Charlie Reed — **pending** approval                  |
+| Pending 2 | `pending2@castflow.test`   | `Password123!` | artist | Olivia Bennett — **pending** approval                |
+| Rejected  | `rejected1@castflow.test`  | `Password123!` | artist | Liam Foster — **rejected** (resubmit notes)          |
+| Suspended | `suspended1@castflow.test` | `Password123!` | artist | Daniel Price — approved profile, **suspended**       |
+| Banned    | `banned1@castflow.test`    | `Password123!` | artist | Grace Hunt — **banned** (cannot log in)              |
 
 ---
 
@@ -89,30 +89,30 @@ Open `http://localhost:3000/login`.
 
 ### Jobs — Acme (caster1)
 
-| Job | Status | Pay | Notes / bids |
-| --- | ------ | --- | ------------ |
-| Spring/Summer 2026 Campaign | active | fixed £2,400 | Sophie **shortlisted**, Priya pending, Emma **rejected**. Unlocked message thread with Sophie. |
-| Audiobook narration | active | hourly £85 | Marcus pending, James pending. Invite to James **declined**. Locked thread with Marcus. |
-| Autumn lookbook (editorial) | filled | fixed £950 | Booking → Sophie **confirmed**, contract fully-signed, escrow **held** (shoot in +10d → completion locked). |
-| Catalogue (last month) | expired | fixed £600 | No bids. |
-| Winter campaign | draft | fixed £1,800 | Not visible to artists. |
-| Summer 2025 lookbook | closed | fixed £800 | Booking → Sophie **completed**, escrow **released**, both 5★ reviews. |
-| Beauty campaign (ready-to-sign) | filled | fixed £1,100 | Booking → Sophie **confirmed**, contract **pending_signatures**, escrow held. |
-| Completed shoot (needs-review) | filled | fixed £750 | Booking → Priya **completed**, escrow released, **no reviews yet**, dispute window open. |
+| Job                             | Status  | Pay          | Notes / bids                                                                                                |
+| ------------------------------- | ------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
+| Spring/Summer 2026 Campaign     | active  | fixed £2,400 | Sophie **shortlisted**, Priya pending, Emma **rejected**. Unlocked message thread with Sophie.              |
+| Audiobook narration             | active  | hourly £85   | Marcus pending, James pending. Invite to James **declined**. Locked thread with Marcus.                     |
+| Autumn lookbook (editorial)     | filled  | fixed £950   | Booking → Sophie **confirmed**, contract fully-signed, escrow **held** (shoot in +10d → completion locked). |
+| Catalogue (last month)          | expired | fixed £600   | No bids.                                                                                                    |
+| Winter campaign                 | draft   | fixed £1,800 | Not visible to artists.                                                                                     |
+| Summer 2025 lookbook            | closed  | fixed £800   | Booking → Sophie **completed**, escrow **released**, both 5★ reviews.                                       |
+| Beauty campaign (ready-to-sign) | filled  | fixed £1,100 | Booking → Sophie **confirmed**, contract **pending_signatures**, escrow held.                               |
+| Completed shoot (needs-review)  | filled  | fixed £750   | Booking → Priya **completed**, escrow released, **no reviews yet**, dispute window open.                    |
 
 ### Jobs — Goldsmith (caster2)
 
-| Job | Status | Pay | Notes / bids |
-| --- | ------ | --- | ------------ |
-| National TV commercial | active | hourly £100 | NDA. James pending, Marcus **withdrawn**. |
-| Brand ambassador | active, **invite_only** | fixed £12,000 | NDA + exclusivity. Sophie invited (**accepted**) + bid pending; Priya invited (pending). |
-| Lookbook (open rate) | active | fixed **open** | Sophie £1,200, Priya £950, Emma £700 — all pending. |
-| Catalogue half-day | filled | fixed £450 | Booking → Emma **pending_payment** (caster must pay escrow). |
-| Cancelled shoot | cancelled | fixed £700 | Booking → Priya **cancelled**, payment **partially_refunded**, £350 cancellation fee. |
-| Disputed shoot | closed | fixed £1,200 | Booking → James **disputed**, dispute **under_review** (both submissions in). |
-| Confirmable shoot | filled | fixed £900 | Booking → James **confirmed**, shoot **yesterday**, escrow held → completion now confirmable. |
-| Auto-release overdue | filled | fixed £600 | Booking → Emma **confirmed**, shoot −3d, escrow held, `autoReleaseAt` **in the past**. |
-| Flagged content | closed | fixed £500 | Booking → Marcus **completed**. **Flagged 2★ review** + **flagged message** for admin queue. |
+| Job                    | Status                  | Pay            | Notes / bids                                                                                  |
+| ---------------------- | ----------------------- | -------------- | --------------------------------------------------------------------------------------------- |
+| National TV commercial | active                  | hourly £100    | NDA. James pending, Marcus **withdrawn**.                                                     |
+| Brand ambassador       | active, **invite_only** | fixed £12,000  | NDA + exclusivity. Sophie invited (**accepted**) + bid pending; Priya invited (pending).      |
+| Lookbook (open rate)   | active                  | fixed **open** | Sophie £1,200, Priya £950, Emma £700 — all pending.                                           |
+| Catalogue half-day     | filled                  | fixed £450     | Booking → Emma **pending_payment** (caster must pay escrow).                                  |
+| Cancelled shoot        | cancelled               | fixed £700     | Booking → Priya **cancelled**, payment **partially_refunded**, £350 cancellation fee.         |
+| Disputed shoot         | closed                  | fixed £1,200   | Booking → James **disputed**, dispute **under_review** (both submissions in).                 |
+| Confirmable shoot      | filled                  | fixed £900     | Booking → James **confirmed**, shoot **yesterday**, escrow held → completion now confirmable. |
+| Auto-release overdue   | filled                  | fixed £600     | Booking → Emma **confirmed**, shoot −3d, escrow held, `autoReleaseAt` **in the past**.        |
+| Flagged content        | closed                  | fixed £500     | Booking → Marcus **completed**. **Flagged 2★ review** + **flagged message** for admin queue.  |
 
 ---
 
@@ -120,36 +120,36 @@ Open `http://localhost:3000/login`.
 
 Log in as **Sophie (`artist1`)** unless a row says otherwise — she has the richest data.
 
-| Route | Account | Do / Expect |
-| ----- | ------- | ----------- |
-| `/artist/dashboard` | Sophie | Stat tiles populate (active bids, bookings, unread). "Shortlisted" + upcoming editorial booking surface. Availability toggle present. |
-| `/artist/jobs` | Sophie | Public job feed: Spring campaign, commercial, open-rate, audiobook visible. **Draft and expired jobs are NOT listed.** Invite-only ambassador not in the public feed. |
-| `/artist/jobs/[id]` | Sophie | Open Spring campaign → full detail. **Shoot location detail is hidden/locked** (no contract). Rate shows "£2,400 flat fee". |
-| `/artist/jobs/[id]/bid` | **Marcus** (`artist4`) | Open the **audiobook** job (hourly) → bid form shows hourly rate + estimated hours; total estimate computes. Submit a new bid. On a job Marcus already bid → blocked (**one bid per job**). |
-| `/artist/jobs/[id]/bid` | Emma (`artist5`) | Open **open-rate** job → "propose your fee" (no caster rate). |
-| `/artist/bids` | Sophie | Bid list: Spring **shortlisted**, ambassador pending, open-rate pending, editorial accepted, history accepted. Emma shows a **rejected** bid with reason. |
-| `/artist/bids/[id]` | Sophie | Open the shortlisted Spring bid → status badge + cover note + linked job. |
-| `/artist/saved` | Sophie | Save a job from the feed → appears here. **Note:** saved-jobs are localStorage only (no backend table yet) — clears on storage reset. |
-| `/artist/invites` | Sophie | Ambassador invite shown as **accepted**. | 
-| `/artist/invites` | **Priya** (`artist3`) | Ambassador invite **pending** → Accept / Decline actions work. |
-| `/artist/bookings` | Sophie | Lists editorial (confirmed), history (completed), ready-to-sign (confirmed). |
-| `/artist/bookings/[id]` | Sophie | Editorial booking → confirmed; once contract fully-signed, **shoot location is visible**. Total £950. |
-| `/artist/bookings/[id]/contract` | Sophie | **ready-to-sign** booking → contract is **pending_signatures**; artist can **sign**. After signing it becomes partially_signed and **location stays locked until caster also signs**. |
-| `/artist/bookings/[id]/review` | **Priya** (`artist3`) | **needs-review** booking (completed) → write a review of the caster. Re-visiting after submit shows the existing review (one review per booking per reviewer). |
-| `/artist/bookings/[id]/dispute` | **Priya** (`artist3`) | **needs-review** booking (shoot 2d ago) → raise dispute allowed (**within 72h**). On the history booking (45d ago) → **dispute blocked** (window closed). |
-| `/artist/disputes/[id]` | **James** (`artist2`) | Disputed booking → dispute detail, both submissions, status **under_review**. |
-| `/artist/earnings` | Sophie | Released escrow from history booking shows as paid out (£680 net of 15%). Held escrow (editorial) shows pending. |
-| `/artist/earnings` | **Emma** (`artist5`) | Open after loading the **auto-release-due** booking → escrow should lazily **auto-release** (was overdue). |
-| `/artist/earnings/payout` | Sophie | Payout setup (Stripe Connect). **Without Stripe keys the Connect onboarding link will not generate** — verify the UI state, not a live redirect. |
-| `/artist/profile` | Sophie | Profile view: bio, model stats, skills, portfolio (5 items via picsum), rating 4.8 (12). |
-| `/artist/profile/preview` | Sophie | Public-facing preview (what casters see). |
-| `/artist/profile/edit` | Sophie | Edit bio/skills/portfolio. Portfolio upload uses R2 — **without R2 keys the presigned PUT fails**; field validation/UI still testable. |
-| `/artist/messages` | Sophie | Inbox: unlocked Spring thread with Acme; last message + unread indicator. |
-| `/artist/messages/[threadId]` | Sophie | Open Spring thread → 3 messages, the last unread. **Send a message** → appears instantly (WebSocket push; REST fallback if WS down). Open a second browser as `caster1` on the same thread to see live delivery. |
-| `/artist/reviews` | Sophie | Reviews received: 5★ from Acme. |
-| `/artist/notifications` | Sophie | Shortlist, booking-confirmed (read), invite notifications. Mark-as-read works; Topbar bell count updates. |
-| `/artist/settings` | Sophie | Account settings render with current values. |
-| `/artist/settings/delete` | **Emma** (`artist5`) | Delete account → **blocked (409)** because Emma has an active/pending-payment booking + (for others) held escrow. Verify the guard message. |
+| Route                            | Account                | Do / Expect                                                                                                                                                                                                      |
+| -------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/artist/dashboard`              | Sophie                 | Stat tiles populate (active bids, bookings, unread). "Shortlisted" + upcoming editorial booking surface. Availability toggle present.                                                                            |
+| `/artist/jobs`                   | Sophie                 | Public job feed: Spring campaign, commercial, open-rate, audiobook visible. **Draft and expired jobs are NOT listed.** Invite-only ambassador not in the public feed.                                            |
+| `/artist/jobs/[id]`              | Sophie                 | Open Spring campaign → full detail. **Shoot location detail is hidden/locked** (no contract). Rate shows "£2,400 flat fee".                                                                                      |
+| `/artist/jobs/[id]/bid`          | **Marcus** (`artist4`) | Open the **audiobook** job (hourly) → bid form shows hourly rate + estimated hours; total estimate computes. Submit a new bid. On a job Marcus already bid → blocked (**one bid per job**).                      |
+| `/artist/jobs/[id]/bid`          | Emma (`artist5`)       | Open **open-rate** job → "propose your fee" (no caster rate).                                                                                                                                                    |
+| `/artist/bids`                   | Sophie                 | Bid list: Spring **shortlisted**, ambassador pending, open-rate pending, editorial accepted, history accepted. Emma shows a **rejected** bid with reason.                                                        |
+| `/artist/bids/[id]`              | Sophie                 | Open the shortlisted Spring bid → status badge + cover note + linked job.                                                                                                                                        |
+| `/artist/saved`                  | Sophie                 | Save a job from the feed → appears here. **Note:** saved-jobs are localStorage only (no backend table yet) — clears on storage reset.                                                                            |
+| `/artist/invites`                | Sophie                 | Ambassador invite shown as **accepted**.                                                                                                                                                                         |
+| `/artist/invites`                | **Priya** (`artist3`)  | Ambassador invite **pending** → Accept / Decline actions work.                                                                                                                                                   |
+| `/artist/bookings`               | Sophie                 | Lists editorial (confirmed), history (completed), ready-to-sign (confirmed).                                                                                                                                     |
+| `/artist/bookings/[id]`          | Sophie                 | Editorial booking → confirmed; once contract fully-signed, **shoot location is visible**. Total £950.                                                                                                            |
+| `/artist/bookings/[id]/contract` | Sophie                 | **ready-to-sign** booking → contract is **pending_signatures**; artist can **sign**. After signing it becomes partially_signed and **location stays locked until caster also signs**.                            |
+| `/artist/bookings/[id]/review`   | **Priya** (`artist3`)  | **needs-review** booking (completed) → write a review of the caster. Re-visiting after submit shows the existing review (one review per booking per reviewer).                                                   |
+| `/artist/bookings/[id]/dispute`  | **Priya** (`artist3`)  | **needs-review** booking (shoot 2d ago) → raise dispute allowed (**within 72h**). On the history booking (45d ago) → **dispute blocked** (window closed).                                                        |
+| `/artist/disputes/[id]`          | **James** (`artist2`)  | Disputed booking → dispute detail, both submissions, status **under_review**.                                                                                                                                    |
+| `/artist/earnings`               | Sophie                 | Released escrow from history booking shows as paid out (£680 net of 15%). Held escrow (editorial) shows pending.                                                                                                 |
+| `/artist/earnings`               | **Emma** (`artist5`)   | Open after loading the **auto-release-due** booking → escrow should lazily **auto-release** (was overdue).                                                                                                       |
+| `/artist/earnings/payout`        | Sophie                 | Payout setup (Stripe Connect). **Without Stripe keys the Connect onboarding link will not generate** — verify the UI state, not a live redirect.                                                                 |
+| `/artist/profile`                | Sophie                 | Profile view: bio, model stats, skills, portfolio (5 items via picsum), rating 4.8 (12).                                                                                                                         |
+| `/artist/profile/preview`        | Sophie                 | Public-facing preview (what casters see).                                                                                                                                                                        |
+| `/artist/profile/edit`           | Sophie                 | Edit bio/skills/portfolio. Portfolio upload uses R2 — **without R2 keys the presigned PUT fails**; field validation/UI still testable.                                                                           |
+| `/artist/messages`               | Sophie                 | Inbox: unlocked Spring thread with Acme; last message + unread indicator.                                                                                                                                        |
+| `/artist/messages/[threadId]`    | Sophie                 | Open Spring thread → 3 messages, the last unread. **Send a message** → appears instantly (WebSocket push; REST fallback if WS down). Open a second browser as `caster1` on the same thread to see live delivery. |
+| `/artist/reviews`                | Sophie                 | Reviews received: 5★ from Acme.                                                                                                                                                                                  |
+| `/artist/notifications`          | Sophie                 | Shortlist, booking-confirmed (read), invite notifications. Mark-as-read works; Topbar bell count updates.                                                                                                        |
+| `/artist/settings`               | Sophie                 | Account settings render with current values.                                                                                                                                                                     |
+| `/artist/settings/delete`        | **Emma** (`artist5`)   | Delete account → **blocked (409)** because Emma has an active/pending-payment booking + (for others) held escrow. Verify the guard message.                                                                      |
 
 ### Artist gating checks
 
@@ -164,32 +164,32 @@ Log in as **Sophie (`artist1`)** unless a row says otherwise — she has the ric
 
 Log in as **Acme (`caster1`)** unless noted. Use **Goldsmith (`caster2`)** for the booking-lifecycle scenarios.
 
-| Route | Account | Do / Expect |
-| ----- | ------- | ----------- |
-| `/caster/dashboard` | Acme | Stat tiles: live jobs, total bids, active bookings. Action cards surface jobs with new bids. |
-| `/caster/jobs` | Acme | Status tabs: active (Spring, audiobook), filled (editorial, ready-to-sign, needs-review), draft (Winter), expired (last-month), closed (history). Counts per tab correct. |
-| `/caster/jobs/new` | Acme | 6-step post-job wizard. Walk all steps incl. **fixed vs hourly** + caster-set vs open rate. Cover image upload (R2). Submit → new active job appears in `/caster/jobs`. |
-| `/caster/jobs/[id]` | Acme | Spring job detail + bid count. |
-| `/caster/jobs/[id]/edit` | Acme | Edit the Spring job; save persists. |
-| `/caster/jobs/[id]/bids` | Acme | Spring bids list. **Fixed job → sorted by proposed rate.** Open the audiobook (hourly) job → bids show **hourly rate AND total estimate**, sorted by total. |
-| `/caster/jobs/[id]/bids/[bidId]` | Acme | Open Priya's pending Spring bid → **Shortlist** (unlocks messaging) and **Reject** (with reason; 24h undo). Open Sophie's shortlisted bid → **Accept → pay** path. |
-| `/caster/talent` | Acme | Talent search: only **approved** artists (Sophie, James, Priya, Marcus, Emma). Suspended/banned/pending/rejected **never appear**. Filters + client sorts work. |
-| `/caster/talent/[id]` | Acme | Artist public profile. **Only first name / limited contact** until a booking exists. |
-| `/caster/talent/shortlisted` | Acme | Shortlist an artist → appears here. **localStorage only** (no backend table yet). |
-| `/caster/bookings` | Goldsmith | Lists: pending-payment (Emma), cancelled (Priya), disputed (James), confirmable (James), auto-release (Emma), flagged (Marcus). |
-| `/caster/bookings/[id]` | Goldsmith | **Confirmable** booking (shoot yesterday) → **Confirm completion is UNLOCKED** → confirm, then **Release escrow**. **Editorial** booking via Acme (shoot +10d) → confirm-completion **date-locked / disabled**. |
-| `/caster/bookings/[id]/pay` | Goldsmith | **pending-payment** booking (Emma) → Stripe escrow Elements (manual-capture hold). **Without Stripe keys the PaymentIntent will not create** — verify the form renders + error path. Use Stripe test keys + card `4242…` for the full flow. |
-| `/caster/bookings/[id]/contract` | Acme | **ready-to-sign** booking → caster can **sign**. After both sign → fully_signed, location revealed to both. |
-| `/caster/bookings/[id]/review` | Acme | **needs-review** booking (Priya, completed) → write a review of the artist. |
-| `/caster/bookings/[id]/dispute` | Goldsmith | A completed/recent booking within 72h → raise dispute; outside window → blocked. |
-| `/caster/disputes/[id]` | Goldsmith | Disputed booking → caster's view of the dispute + their submission. |
-| `/caster/bookings/[id]` (cancel) | Goldsmith | On a confirmed upcoming booking → cancel tiers: **<48h before shoot charges 50%** of agreed rate to the cancelling party. Verify the fee preview. |
-| `/caster/messages` + `/[threadId]` | Acme | Unlocked Spring thread with Sophie → send/receive, live WS (mirror of the artist test). |
-| `/caster/notifications` | Acme | New-bid notification (Priya on Spring). |
-| `/caster/settings` | Acme | Company details + logo upload (R2), security, render correct. |
-| `/caster/settings/billing` | Acme | Billing/payment history. Invoices are **client-side/degraded** (no downloadable PDF yet). |
-| `/caster/settings/notifications` | Acme | Notification prefs — **localStorage only**. |
-| `/caster/settings/delete` | Goldsmith | Delete → **blocked (409)** due to active bookings / held escrow. |
+| Route                              | Account   | Do / Expect                                                                                                                                                                                                                                 |
+| ---------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/caster/dashboard`                | Acme      | Stat tiles: live jobs, total bids, active bookings. Action cards surface jobs with new bids.                                                                                                                                                |
+| `/caster/jobs`                     | Acme      | Status tabs: active (Spring, audiobook), filled (editorial, ready-to-sign, needs-review), draft (Winter), expired (last-month), closed (history). Counts per tab correct.                                                                   |
+| `/caster/jobs/new`                 | Acme      | 6-step post-job wizard. Walk all steps incl. **fixed vs hourly** + caster-set vs open rate. Cover image upload (R2). Submit → new active job appears in `/caster/jobs`.                                                                     |
+| `/caster/jobs/[id]`                | Acme      | Spring job detail + bid count.                                                                                                                                                                                                              |
+| `/caster/jobs/[id]/edit`           | Acme      | Edit the Spring job; save persists.                                                                                                                                                                                                         |
+| `/caster/jobs/[id]/bids`           | Acme      | Spring bids list. **Fixed job → sorted by proposed rate.** Open the audiobook (hourly) job → bids show **hourly rate AND total estimate**, sorted by total.                                                                                 |
+| `/caster/jobs/[id]/bids/[bidId]`   | Acme      | Open Priya's pending Spring bid → **Shortlist** (unlocks messaging) and **Reject** (with reason; 24h undo). Open Sophie's shortlisted bid → **Accept → pay** path.                                                                          |
+| `/caster/talent`                   | Acme      | Talent search: only **approved** artists (Sophie, James, Priya, Marcus, Emma). Suspended/banned/pending/rejected **never appear**. Filters + client sorts work.                                                                             |
+| `/caster/talent/[id]`              | Acme      | Artist public profile. **Only first name / limited contact** until a booking exists.                                                                                                                                                        |
+| `/caster/talent/shortlisted`       | Acme      | Shortlist an artist → appears here. **localStorage only** (no backend table yet).                                                                                                                                                           |
+| `/caster/bookings`                 | Goldsmith | Lists: pending-payment (Emma), cancelled (Priya), disputed (James), confirmable (James), auto-release (Emma), flagged (Marcus).                                                                                                             |
+| `/caster/bookings/[id]`            | Goldsmith | **Confirmable** booking (shoot yesterday) → **Confirm completion is UNLOCKED** → confirm, then **Release escrow**. **Editorial** booking via Acme (shoot +10d) → confirm-completion **date-locked / disabled**.                             |
+| `/caster/bookings/[id]/pay`        | Goldsmith | **pending-payment** booking (Emma) → Stripe escrow Elements (manual-capture hold). **Without Stripe keys the PaymentIntent will not create** — verify the form renders + error path. Use Stripe test keys + card `4242…` for the full flow. |
+| `/caster/bookings/[id]/contract`   | Acme      | **ready-to-sign** booking → caster can **sign**. After both sign → fully_signed, location revealed to both.                                                                                                                                 |
+| `/caster/bookings/[id]/review`     | Acme      | **needs-review** booking (Priya, completed) → write a review of the artist.                                                                                                                                                                 |
+| `/caster/bookings/[id]/dispute`    | Goldsmith | A completed/recent booking within 72h → raise dispute; outside window → blocked.                                                                                                                                                            |
+| `/caster/disputes/[id]`            | Goldsmith | Disputed booking → caster's view of the dispute + their submission.                                                                                                                                                                         |
+| `/caster/bookings/[id]` (cancel)   | Goldsmith | On a confirmed upcoming booking → cancel tiers: **<48h before shoot charges 50%** of agreed rate to the cancelling party. Verify the fee preview.                                                                                           |
+| `/caster/messages` + `/[threadId]` | Acme      | Unlocked Spring thread with Sophie → send/receive, live WS (mirror of the artist test).                                                                                                                                                     |
+| `/caster/notifications`            | Acme      | New-bid notification (Priya on Spring).                                                                                                                                                                                                     |
+| `/caster/settings`                 | Acme      | Company details + logo upload (R2), security, render correct.                                                                                                                                                                               |
+| `/caster/settings/billing`         | Acme      | Billing/payment history. Invoices are **client-side/degraded** (no downloadable PDF yet).                                                                                                                                                   |
+| `/caster/settings/notifications`   | Acme      | Notification prefs — **localStorage only**.                                                                                                                                                                                                 |
+| `/caster/settings/delete`          | Goldsmith | Delete → **blocked (409)** due to active bookings / held escrow.                                                                                                                                                                            |
 
 ---
 
@@ -197,25 +197,25 @@ Log in as **Acme (`caster1`)** unless noted. Use **Goldsmith (`caster2`)** for t
 
 Log in as **Admin (`admin@castflow.test`)**.
 
-| Route | Do / Expect |
-| ----- | ----------- |
-| `/admin` | Overview tiles + action-queue cards: pending applications (2), open dispute (1), flagged content. |
-| `/admin/applications` | Queue with tabs. **Pending:** Charlie, Olivia. **Rejected:** Liam (with notes). Approved artists not in pending. |
+| Route                      | Do / Expect                                                                                                                                                                                                                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/admin`                   | Overview tiles + action-queue cards: pending applications (2), open dispute (1), flagged content.                                                                                                                                                                                                      |
+| `/admin/applications`      | Queue with tabs. **Pending:** Charlie, Olivia. **Rejected:** Liam (with notes). Approved artists not in pending.                                                                                                                                                                                       |
 | `/admin/applications/[id]` | Open Charlie → public-style profile preview. **View ID document** → presigned secure read (**requires R2 keys**; without them the URL call errors — verify the gated state). **Approve** → artist becomes approved + can log in to dashboard. **Reject** with notes → folds free-text into the reason. |
-| `/admin/users` | All users incl. casters + artists. Filter/find **Daniel (suspended)** and **Grace (banned)**. |
-| `/admin/users/[id]` | Open Daniel → **Reactivate** (suspended → active). Open an active artist → **Suspend / Ban**. Strike count shows for Daniel (2) / Grace (3). **Note:** booking/bid/payment history aggregation is degraded (G12) — slim profile only. |
-| `/admin/jobs` | All jobs across both casters, all statuses (incl. draft/expired). |
-| `/admin/jobs/[id]` | Job detail → **Remove** action (with reason → admin log entry). |
-| `/admin/bookings` | All bookings, all statuses. |
-| `/admin/bookings/[id]` | Booking detail incl. contract + payment + escrow status. |
-| `/admin/payments` | All payments: held (editorial, confirmable, auto-release), released (history, needs-review, flagged), partially_refunded (cancelled), disputed (disputed-job). |
-| `/admin/payments/[id]` | Open a **held** payment → **Force-release** and **Refund** (mandatory reason → admin log). Idempotent: releasing an already-released payment returns silently. |
-| `/admin/disputes` | Queue: the disputed-job dispute (**under_review**). |
-| `/admin/disputes/[id]` | Open it → both submissions visible. **Resolve**: full release to artist / full refund to caster / **split %** / escalate. Resolving updates the payment escrow accordingly + writes an admin log. |
-| `/admin/flagged` | **Reviews tab:** Marcus's flagged 2★ review (off-platform contact). **Messages tab:** the flagged message in the Goldsmith↔Marcus thread. |
-| `/admin/flagged/[id]` | Flagged item detail. **Note (G9):** clear-flag / remove-review / reporter-identity controls are disabled with notes — moderation is via manual user suspension for now. |
-| `/admin/analytics` | Summary tiles render from real totals. **Weekly time-series charts degrade gracefully** if the API doesn't populate the series (G8). |
-| `/admin/logs` | Audit log: seeded approval entries (Sophie, James) + any new entries you generated (removals, releases, resolutions, suspensions). |
+| `/admin/users`             | All users incl. casters + artists. Filter/find **Daniel (suspended)** and **Grace (banned)**.                                                                                                                                                                                                          |
+| `/admin/users/[id]`        | Open Daniel → **Reactivate** (suspended → active). Open an active artist → **Suspend / Ban**. Strike count shows for Daniel (2) / Grace (3). **Note:** booking/bid/payment history aggregation is degraded (G12) — slim profile only.                                                                  |
+| `/admin/jobs`              | All jobs across both casters, all statuses (incl. draft/expired).                                                                                                                                                                                                                                      |
+| `/admin/jobs/[id]`         | Job detail → **Remove** action (with reason → admin log entry).                                                                                                                                                                                                                                        |
+| `/admin/bookings`          | All bookings, all statuses.                                                                                                                                                                                                                                                                            |
+| `/admin/bookings/[id]`     | Booking detail incl. contract + payment + escrow status.                                                                                                                                                                                                                                               |
+| `/admin/payments`          | All payments: held (editorial, confirmable, auto-release), released (history, needs-review, flagged), partially_refunded (cancelled), disputed (disputed-job).                                                                                                                                         |
+| `/admin/payments/[id]`     | Open a **held** payment → **Force-release** and **Refund** (mandatory reason → admin log). Idempotent: releasing an already-released payment returns silently.                                                                                                                                         |
+| `/admin/disputes`          | Queue: the disputed-job dispute (**under_review**).                                                                                                                                                                                                                                                    |
+| `/admin/disputes/[id]`     | Open it → both submissions visible. **Resolve**: full release to artist / full refund to caster / **split %** / escalate. Resolving updates the payment escrow accordingly + writes an admin log.                                                                                                      |
+| `/admin/flagged`           | **Reviews tab:** Marcus's flagged 2★ review (off-platform contact). **Messages tab:** the flagged message in the Goldsmith↔Marcus thread.                                                                                                                                                              |
+| `/admin/flagged/[id]`      | Flagged item detail. **Note (G9):** clear-flag / remove-review / reporter-identity controls are disabled with notes — moderation is via manual user suspension for now.                                                                                                                                |
+| `/admin/analytics`         | Summary tiles render from real totals. **Weekly time-series charts degrade gracefully** if the API doesn't populate the series (G8).                                                                                                                                                                   |
+| `/admin/logs`              | Audit log: seeded approval entries (Sophie, James) + any new entries you generated (removals, releases, resolutions, suspensions).                                                                                                                                                                     |
 
 ---
 
