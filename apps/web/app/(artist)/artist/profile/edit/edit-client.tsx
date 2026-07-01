@@ -43,6 +43,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { numberOrUndefined } from '@/lib/forms'
 import {
   Select,
   SelectContent,
@@ -405,7 +406,7 @@ function ExperienceSection({ profile }: { profile: MyArtistProfile }) {
               type="number"
               step="0.01"
               inputMode="decimal"
-              {...register('hourlyRate', { valueAsNumber: true })}
+              {...register('hourlyRate', { setValueAs: numberOrUndefined })}
             />
           </Field>
           <Field
@@ -418,7 +419,7 @@ function ExperienceSection({ profile }: { profile: MyArtistProfile }) {
               type="number"
               step="0.01"
               inputMode="decimal"
-              {...register('halfDayRate', { valueAsNumber: true })}
+              {...register('halfDayRate', { setValueAs: numberOrUndefined })}
             />
           </Field>
           <Field
@@ -431,7 +432,7 @@ function ExperienceSection({ profile }: { profile: MyArtistProfile }) {
               type="number"
               step="0.01"
               inputMode="decimal"
-              {...register('fullDayRate', { valueAsNumber: true })}
+              {...register('fullDayRate', { setValueAs: numberOrUndefined })}
             />
           </Field>
         </div>
@@ -494,14 +495,14 @@ function ModelStatsSection({ profile }: { profile: MyArtistProfile }) {
       <form onSubmit={onSubmit} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Height (cm)" htmlFor="heightCm" error={errors.heightCm?.message}>
-            <Input id="heightCm" type="number" {...register('heightCm', { valueAsNumber: true })} />
+            <Input id="heightCm" type="number" {...register('heightCm', { setValueAs: numberOrUndefined })} />
           </Field>
           <Field label="Weight (kg, optional)" htmlFor="weightKg" error={errors.weightKg?.message}>
             <Input
               id="weightKg"
               type="number"
               step="0.1"
-              {...register('weightKg', { valueAsNumber: true })}
+              {...register('weightKg', { setValueAs: numberOrUndefined })}
             />
           </Field>
         </div>
@@ -515,13 +516,13 @@ function ModelStatsSection({ profile }: { profile: MyArtistProfile }) {
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Bust (cm, optional)" htmlFor="bustCm" error={errors.bustCm?.message}>
-            <Input id="bustCm" type="number" {...register('bustCm', { valueAsNumber: true })} />
+            <Input id="bustCm" type="number" {...register('bustCm', { setValueAs: numberOrUndefined })} />
           </Field>
           <Field label="Waist (cm, optional)" htmlFor="waistCm" error={errors.waistCm?.message}>
-            <Input id="waistCm" type="number" {...register('waistCm', { valueAsNumber: true })} />
+            <Input id="waistCm" type="number" {...register('waistCm', { setValueAs: numberOrUndefined })} />
           </Field>
           <Field label="Hip (cm, optional)" htmlFor="hipCm" error={errors.hipCm?.message}>
-            <Input id="hipCm" type="number" {...register('hipCm', { valueAsNumber: true })} />
+            <Input id="hipCm" type="number" {...register('hipCm', { setValueAs: numberOrUndefined })} />
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -603,7 +604,7 @@ function ActorStatsSection({ profile }: { profile: MyArtistProfile }) {
             <Input
               id="actorHeightCm"
               type="number"
-              {...register('heightCm', { valueAsNumber: true })}
+              {...register('heightCm', { setValueAs: numberOrUndefined })}
             />
           </Field>
           <Field
@@ -631,7 +632,7 @@ function ActorStatsSection({ profile }: { profile: MyArtistProfile }) {
             <Input
               id="ageRangeMin"
               type="number"
-              {...register('ageRangeMin', { valueAsNumber: true })}
+              {...register('ageRangeMin', { setValueAs: numberOrUndefined })}
             />
           </Field>
           <Field
@@ -642,7 +643,7 @@ function ActorStatsSection({ profile }: { profile: MyArtistProfile }) {
             <Input
               id="ageRangeMax"
               type="number"
-              {...register('ageRangeMax', { valueAsNumber: true })}
+              {...register('ageRangeMax', { setValueAs: numberOrUndefined })}
             />
           </Field>
         </div>

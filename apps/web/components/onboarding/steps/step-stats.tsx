@@ -30,6 +30,7 @@ import { useBeforeUnloadWarning } from '@/lib/hooks/use-before-unload-warning'
 import { cn } from '@/lib/utils'
 import { StepNav } from '../step-nav'
 import type { MyArtistProfile } from '@/lib/api/artists'
+import { numberOrUndefined } from '@/lib/forms'
 
 interface StepStatsProps {
   profile: MyArtistProfile
@@ -122,7 +123,7 @@ function ModelStatsForm({ profile, onBack, onNext }: StepStatsProps) {
         <NumberField
           id="heightCm"
           label="Height (cm)"
-          register={form.register('heightCm', { valueAsNumber: true })}
+          register={form.register('heightCm', { setValueAs: numberOrUndefined })}
           error={form.formState.errors.heightCm?.message}
         />
         <TextField
@@ -275,7 +276,7 @@ function ActorStatsForm({ profile, onBack, onNext }: StepStatsProps) {
         <NumberField
           id="heightCm"
           label="Height (cm)"
-          register={form.register('heightCm', { valueAsNumber: true })}
+          register={form.register('heightCm', { setValueAs: numberOrUndefined })}
           error={form.formState.errors.heightCm?.message}
         />
         <SelectField
@@ -304,13 +305,13 @@ function ActorStatsForm({ profile, onBack, onNext }: StepStatsProps) {
           <NumberField
             id="ageRangeMin"
             label="Minimum age"
-            register={form.register('ageRangeMin', { valueAsNumber: true })}
+            register={form.register('ageRangeMin', { setValueAs: numberOrUndefined })}
             error={form.formState.errors.ageRangeMin?.message}
           />
           <NumberField
             id="ageRangeMax"
             label="Maximum age"
-            register={form.register('ageRangeMax', { valueAsNumber: true })}
+            register={form.register('ageRangeMax', { setValueAs: numberOrUndefined })}
             error={form.formState.errors.ageRangeMax?.message}
           />
         </div>

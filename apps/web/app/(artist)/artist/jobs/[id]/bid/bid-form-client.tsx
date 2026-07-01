@@ -20,6 +20,7 @@ import { useJob } from '@/lib/hooks/use-jobs'
 import { useMyArtistProfile } from '@/lib/hooks/use-artist'
 import { useSubmitBid } from '@/lib/hooks/use-bids'
 import { cn, formatDate } from '@/lib/utils'
+import { numberOrUndefined } from '@/lib/forms'
 
 const MAX_HIGHLIGHTS = 5
 
@@ -103,7 +104,7 @@ export function BidFormClient({ jobId }: { jobId: string }) {
         toast.error('Please confirm your availability before submitting.')
         return
       }
-      // valueAsNumber yields NaN on an emptied field. Hourly jobs require real hours.
+      // Only send hours for hourly jobs, and guard against a non-finite value.
       const estimatedHours =
         isHourly && Number.isFinite(data.estimatedHours) ? data.estimatedHours : undefined
       if (isHourly && estimatedHours === undefined) {
@@ -165,7 +166,7 @@ export function BidFormClient({ jobId }: { jobId: string }) {
               inputMode="decimal"
               readOnly={isRateSetByCaster}
               className={cn(isRateSetByCaster && 'bg-muted')}
-              {...register('proposedRate', { valueAsNumber: true })}
+              {...register('proposedRate', { setValueAs: numberOrUndefined })}
             />
             {isRateSetByCaster ? (
               <p className="text-xs text-muted-foreground">
@@ -188,7 +189,7 @@ export function BidFormClient({ jobId }: { jobId: string }) {
                 inputMode="decimal"
                 readOnly={hoursLocked}
                 className={cn(hoursLocked && 'bg-muted')}
-                {...register('estimatedHours', { valueAsNumber: true })}
+                {...register('estimatedHours', { setValueAs: numberOrUndefined })}
               />
               <p className="text-xs text-muted-foreground">
                 {hoursLocked

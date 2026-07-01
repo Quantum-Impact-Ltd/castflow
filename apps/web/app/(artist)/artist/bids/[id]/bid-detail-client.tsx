@@ -40,6 +40,7 @@ import {
 import { useMyBids, useUpdateBid, useWithdrawBid, useCounterOffer } from '@/lib/hooks/use-bids'
 import { useMyArtistProfile } from '@/lib/hooks/use-artist'
 import { formatDate } from '@/lib/utils'
+import { numberOrUndefined } from '@/lib/forms'
 
 export function ArtistBidDetailClient({ bidId }: { bidId: string }) {
   const bids = useMyBids({})
@@ -254,7 +255,7 @@ function EditBidCard({
             type="number"
             step="0.01"
             inputMode="decimal"
-            {...register('proposedRate', { valueAsNumber: true })}
+            {...register('proposedRate', { setValueAs: numberOrUndefined })}
           />
           {errors.proposedRate ? (
             <p className="text-xs text-destructive">{errors.proposedRate.message}</p>
@@ -269,7 +270,7 @@ function EditBidCard({
               type="number"
               step="0.5"
               inputMode="decimal"
-              {...register('estimatedHours', { valueAsNumber: true })}
+              {...register('estimatedHours', { setValueAs: numberOrUndefined })}
             />
             {errors.estimatedHours ? (
               <p className="text-xs text-destructive">{errors.estimatedHours.message}</p>
@@ -328,7 +329,7 @@ function CounterOfferCard({ bidId, isHourly }: { bidId: string; isHourly: boolea
             type="number"
             step="0.01"
             inputMode="decimal"
-            {...register('proposedRate', { valueAsNumber: true })}
+            {...register('proposedRate', { setValueAs: numberOrUndefined })}
           />
           {errors.proposedRate ? (
             <p className="text-xs text-destructive">{errors.proposedRate.message}</p>
@@ -343,7 +344,7 @@ function CounterOfferCard({ bidId, isHourly }: { bidId: string; isHourly: boolea
               type="number"
               step="0.5"
               inputMode="decimal"
-              {...register('estimatedHours', { valueAsNumber: true })}
+              {...register('estimatedHours', { setValueAs: numberOrUndefined })}
             />
             {errors.estimatedHours ? (
               <p className="text-xs text-destructive">{errors.estimatedHours.message}</p>
