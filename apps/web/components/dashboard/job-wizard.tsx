@@ -24,6 +24,7 @@ import {
 import { useCreateJob } from '@/lib/hooks/use-jobs'
 import { useUploadJobCover } from '@/lib/hooks/use-uploads'
 import { formatCurrency, cn } from '@/lib/utils'
+import { numberOrUndefined } from '@/lib/forms'
 
 const STEPS = ['Basics', 'Requirements', 'Shoot', 'Legal', 'Visibility', 'Review'] as const
 
@@ -63,6 +64,7 @@ export function JobWizard() {
     register,
     handleSubmit,
     setValue,
+    clearErrors,
     watch,
     trigger,
     formState: { errors },
@@ -216,14 +218,14 @@ export function JobWizard() {
                   <Input
                     id="ageMin"
                     type="number"
-                    {...register('ageMin', { valueAsNumber: true })}
+                    {...register('ageMin', { setValueAs: numberOrUndefined })}
                   />
                 </Field>
                 <Field label="Age max" htmlFor="ageMax" error={errors.ageMax?.message}>
                   <Input
                     id="ageMax"
                     type="number"
-                    {...register('ageMax', { valueAsNumber: true })}
+                    {...register('ageMax', { setValueAs: numberOrUndefined })}
                   />
                 </Field>
               </div>
@@ -286,7 +288,7 @@ export function JobWizard() {
                     id="dur"
                     type="number"
                     step="0.5"
-                    {...register('shootDurationHours', { valueAsNumber: true })}
+                    {...register('shootDurationHours', { setValueAs: numberOrUndefined })}
                   />
                 </Field>
                 <Field
@@ -297,7 +299,7 @@ export function JobWizard() {
                   <Input
                     id="headcount"
                     type="number"
-                    {...register('headcountRequired', { valueAsNumber: true })}
+                    {...register('headcountRequired', { setValueAs: numberOrUndefined })}
                   />
                 </Field>
               </div>
@@ -324,11 +326,17 @@ export function JobWizard() {
                 <Field label="Rate" error={errors.rateSetBy?.message}>
                   <Select
                     value={values.rateSetBy}
-                    onValueChange={(v) =>
-                      setValue('rateSetBy', v as CreateJobInput['rateSetBy'], {
-                        shouldValidate: true,
-                      })
-                    }
+                    onValueChange={(v) => {
+                      const nextRateSetBy = v as CreateJobInput['rateSetBy']
+                      setValue('rateSetBy', nextRateSetBy, { shouldValidate: true })
+                      // Rate amount is hidden + irrelevant when open to bids.
+                      // Clear it (and any error) so a lingering value can't
+                      // silently fail step validation and block Next.
+                      if (nextRateSetBy === 'open') {
+                        setValue('rateAmount', undefined, { shouldValidate: false })
+                        clearErrors('rateAmount')
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -351,7 +359,7 @@ export function JobWizard() {
                     id="rateAmount"
                     type="number"
                     step="0.01"
-                    {...register('rateAmount', { valueAsNumber: true })}
+                    {...register('rateAmount', { setValueAs: numberOrUndefined })}
                   />
                 </Field>
               ) : (

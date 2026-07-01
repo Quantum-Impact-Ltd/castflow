@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useJob, useUpdateJob } from '@/lib/hooks/use-jobs'
+import { numberOrUndefined } from '@/lib/forms'
 
 /** datetime-local → ISO-8601 (zod .datetime() requires the full ISO string). */
 function toIso(local: string): string {
@@ -173,10 +174,10 @@ function EditJobForm({ jobId, job }: { jobId: string; job: Job }) {
               <Input id="locationCity" {...register('locationCity')} />
             </Field>
             <Field label="Age min" htmlFor="ageMin" error={errors.ageMin?.message}>
-              <Input id="ageMin" type="number" {...register('ageMin', { valueAsNumber: true })} />
+              <Input id="ageMin" type="number" {...register('ageMin', { setValueAs: numberOrUndefined })} />
             </Field>
             <Field label="Age max" htmlFor="ageMax" error={errors.ageMax?.message}>
-              <Input id="ageMax" type="number" {...register('ageMax', { valueAsNumber: true })} />
+              <Input id="ageMax" type="number" {...register('ageMax', { setValueAs: numberOrUndefined })} />
             </Field>
           </div>
 
@@ -222,14 +223,14 @@ function EditJobForm({ jobId, job }: { jobId: string; job: Job }) {
                 id="dur"
                 type="number"
                 step="0.5"
-                {...register('shootDurationHours', { valueAsNumber: true })}
+                {...register('shootDurationHours', { setValueAs: numberOrUndefined })}
               />
             </Field>
             <Field label="Artists needed" htmlFor="headcount" error={errors.headcountRequired?.message}>
               <Input
                 id="headcount"
                 type="number"
-                {...register('headcountRequired', { valueAsNumber: true })}
+                {...register('headcountRequired', { setValueAs: numberOrUndefined })}
               />
             </Field>
           </div>
@@ -249,7 +250,7 @@ function EditJobForm({ jobId, job }: { jobId: string; job: Job }) {
                 id="rateAmount"
                 type="number"
                 step="0.01"
-                {...register('rateAmount', { valueAsNumber: true })}
+                {...register('rateAmount', { setValueAs: numberOrUndefined })}
               />
             </Field>
           )}
